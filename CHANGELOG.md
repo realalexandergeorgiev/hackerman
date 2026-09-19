@@ -3,6 +3,22 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.5.0] — 2026-09-19
+
+### Added
+
+- **Compact lists**: recipe cards in the Recipes tab and BloodHound collection render collapsed
+  (category, tier, title, ready/missing badges, copy-all and a two-line description) so 112
+  recipes stay scannable. Clicking a collapsed card opens the existing focus overlay with all
+  commands, notes, hover help and click-to-set. A `compact` chip in the toolbar toggles inline
+  expansion (persisted in `adah.ui.v1`, default on); Wizard step cards always stay expanded.
+
+### Changed
+
+- `recipeCard(r, alwaysExpanded)`: the previously unused second parameter now forces the expanded
+  rendering for the focus overlay and the Wizard flows.
+- Legend documents the compact mode; `completions/_hackerman` regenerated (version string).
+
 ## [1.4.0] — 2026-09-19
 
 ### Added

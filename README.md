@@ -1,4 +1,4 @@
-# Hackerman v1.4.0
+# Hackerman v1.5.0
 
 > Single-file, offline Active Directory attack helper for Kali — fill in the context, get the next-step commands.
 
@@ -43,6 +43,9 @@ non-obvious tools and attacks.
 - **Recipe focus overlay** — click any recipe card for a full-width popup (Esc / backdrop / ×
   closes). Copy buttons, hover help and click-to-set keep working inside; the overlay refreshes
   when the context changes.
+- **Compact lists** — recipe cards render collapsed (header + short description) by default so 112
+  recipes stay scannable; click a card to open it in the focus overlay, or switch the `compact`
+  chip off to expand everything inline. Wizard steps always stay expanded.
 - **zsh completion export** — the header button generates `_hackerman` from the embedded recipes
   (flags, subcommands, nxc `-M` modules, hashcat modes, xfreerdp options); see below.
 - **`proxychains` toggle** — prefixes network commands, local tools (Responder, hashcat, SMB
