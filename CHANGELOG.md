@@ -3,6 +3,29 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.11.0] — 2026-09-19
+
+### Added
+
+- Trust context variables **`trust_netbios`**, **`trust_domain_sid`** and **`trust_key`**; own vs
+  trusted SIDs are now clearly separated (`Own domain SID` vs `Trust SID`).
+- SID/NetBIOS acquisition commands in the trust recipes: `nxc ldap … --get-sid` (own and trusted
+  DC), `--dc-list` / `ldapsearch` for the partner NetBIOS (`flatName`) and domain SID
+  (`securityIdentifier`), plus trust-account listing before dumping the key.
+- BloodHound query **"Domain SIDs"** (`d.objectid`) — quick source for `trust_domain_sid`/extra-sid
+  (29 → 30 queries).
+- `trust-sid-history` is now a collect → forge → use runbook with an explicit
+  **flag → domain mapping table** in the note (which SID/FQDN/NetBIOS goes where, RC4-vs-AES caveat).
+
+### Fixed
+
+- `trust-raisechild` used **your own NetBIOS** (`{{netbios}}$`) for the trust account — trust
+  accounts are named after the **partner** domain, so it now uses `{{trust_netbios}}$`
+  (e.g. `HTB$` on the child for parent `HTB`).
+- Removed the ambiguous `parent_domain` variable (consolidated into `trust_domain`); ticketer now
+  uses `{{trust_key}}`/`{{domain_sid}}`/`{{trust_domain_sid}}-519`/`krbtgt/{{trust_domain}}`
+  consistently across both trust cards.
+
 ## [1.10.0] — 2026-09-19
 
 ### Fixed

