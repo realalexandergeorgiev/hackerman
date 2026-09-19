@@ -3,6 +3,27 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.2.0] — 2026-09-19
+
+### Added
+
+- **Complete AD CS ESC coverage (ESC1–ESC17)** with 8 new cards (ADCS category 7 → 15 recipes, total 101):
+  - `adcs-esc6` — CA SAN injection via request attributes, plus the ESC6+ESC9/16 combination.
+  - `adcs-esc9-esc16` — missing / CA-wide disabled SID security extension with victim UPN swap, shadow-credentials shortcut, revert and `-username` PKINIT override.
+  - `adcs-esc10` — weak Schannel mapping (`CertificateMappingMethods 0x4`) leading to an LDAPS shell.
+  - `adcs-esc11` — NTLM relay to the CA RPC/ICPR interface with coercion.
+  - `adcs-esc13` — issuance policy linked to a privileged group (group SID in the TGT).
+  - `adcs-esc15` — EKUwu / CVE-2024-49019 with Schannel and enrollment-agent scenarios.
+  - `adcs-esc17` — server-auth SAN for service impersonation (e.g. WSUS).
+  - `adcs-esc5-esc12-esc14` — PKI object ACLs, YubiHSM2 niche and weak `altSecurityIdentities` recon incl. OID group-link query.
+- New context variable `victim` (writeable victim account) for the ESC9/10/16 UPN-swap flows.
+- Hover help entries for all eight cards; `adcs-find` note now points to every ESC card.
+- Wizard `adcs` flow grew two steps: missing/weak mapping & CA flags, and relay/OID/EKUwu/server-auth.
+
+### Changed
+
+- Applicability tiers extended (`adcs-esc6` common; ESC9/10/11/13/15 situational; ESC17 and ESC5/12/14 rare). The PRI distribution check now validates coverage instead of exact counts.
+
 ## [1.1.1] — 2026-09-19
 
 ### Added
