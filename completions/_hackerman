@@ -1,0 +1,343 @@
+#compdef bloodyAD certipy coercer enum4linux-ng faketime hashcat impacket-addcomputer impacket-atexec impacket-dacledit impacket-describeTicket impacket-dfscoerce impacket-findDelegation impacket-GetNPUsers impacket-getST impacket-getTGT impacket-GetUserSPNs impacket-lookupsid impacket-mssqlclient impacket-netview impacket-ntlmrelayx impacket-owneredit impacket-petitpotam impacket-printerbug impacket-psexec impacket-raiseChild impacket-rbcd impacket-secretsdump impacket-smbexec impacket-smbserver impacket-ticketConverter impacket-ticketer impacket-wmiexec john kerbrute kinit klist kvno ldapdomaindump ldapsearch linpeas.sh msfvenom nxc responder rpcclient smbclient xfreerdp3
+# Hackerman v1.3.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs
+
+_hackerman() {
+  local tool=${words[1]:t}
+  case $tool in
+    bloodyAD) _hk_bloodyAD ;;
+    certipy) _hk_certipy ;;
+    coercer) _hk_coercer ;;
+    enum4linux-ng) _hk_enum4linux_ng ;;
+    faketime) _hk_faketime ;;
+    hashcat) _hk_hashcat ;;
+    impacket-addcomputer) _hk_impacket_addcomputer ;;
+    impacket-atexec) _hk_impacket_atexec ;;
+    impacket-dacledit) _hk_impacket_dacledit ;;
+    impacket-describeTicket) _hk_impacket_describeTicket ;;
+    impacket-dfscoerce) _hk_impacket_dfscoerce ;;
+    impacket-findDelegation) _hk_impacket_findDelegation ;;
+    impacket-GetNPUsers) _hk_impacket_GetNPUsers ;;
+    impacket-getST) _hk_impacket_getST ;;
+    impacket-getTGT) _hk_impacket_getTGT ;;
+    impacket-GetUserSPNs) _hk_impacket_GetUserSPNs ;;
+    impacket-lookupsid) _hk_impacket_lookupsid ;;
+    impacket-mssqlclient) _hk_impacket_mssqlclient ;;
+    impacket-netview) _hk_impacket_netview ;;
+    impacket-ntlmrelayx) _hk_impacket_ntlmrelayx ;;
+    impacket-owneredit) _hk_impacket_owneredit ;;
+    impacket-petitpotam) _hk_impacket_petitpotam ;;
+    impacket-printerbug) _hk_impacket_printerbug ;;
+    impacket-psexec) _hk_impacket_psexec ;;
+    impacket-raiseChild) _hk_impacket_raiseChild ;;
+    impacket-rbcd) _hk_impacket_rbcd ;;
+    impacket-secretsdump) _hk_impacket_secretsdump ;;
+    impacket-smbexec) _hk_impacket_smbexec ;;
+    impacket-smbserver) _hk_impacket_smbserver ;;
+    impacket-ticketConverter) _hk_impacket_ticketConverter ;;
+    impacket-ticketer) _hk_impacket_ticketer ;;
+    impacket-wmiexec) _hk_impacket_wmiexec ;;
+    john) _hk_john ;;
+    kerbrute) _hk_kerbrute ;;
+    kinit) _hk_kinit ;;
+    klist) _hk_klist ;;
+    kvno) _hk_kvno ;;
+    ldapdomaindump) _hk_ldapdomaindump ;;
+    ldapsearch) _hk_ldapsearch ;;
+    linpeas.sh) _hk_linpeas_sh ;;
+    msfvenom) _hk_msfvenom ;;
+    nxc) _hk_nxc ;;
+    responder) _hk_responder ;;
+    rpcclient) _hk_rpcclient ;;
+    smbclient) _hk_smbclient ;;
+    xfreerdp3) _hk_xfreerdp3 ;;
+  esac
+}
+
+_hk_bloodyAD() {
+  local -a subs
+  subs=(add get msldap remove set)
+  if (( CURRENT == 2 )); then _describe 'subcommand' subs; return; fi
+  local -a flags
+  flags=('--attr' '--bh' '--detail' '--filter' '--host' '--oldpass' '--otype' '--path' '--resolve-sd' '--right' '--target' '--transitive' '--zone' '-d' '-f' '-k' '-p' '-u')
+  _arguments -s $flags
+}
+
+_hk_certipy() {
+  local -a subs
+  subs=(account auth ca find forge relay req shadow template)
+  if (( CURRENT == 2 )); then _describe 'subcommand' subs; return; fi
+  local -a flags
+  flags=('-account' '-add-officer' '-application-policies' '-backup' '-bloodhound' '-ca' '-ca-pfx' '-config' '-crl' '-dc-ip' '-dns' '-domain' '-enable-template' '-hashes' '-issue-request' '-k' '-ldap-shell' '-no-pass' '-ns' '-on-behalf-of' '-p' '-pfx' '-retrieve' '-save-old' '-sid' '-stdout' '-target' '-template' '-u' '-upn' '-user' '-username' '-vulnerable' '-write-default-configuration')
+  _arguments -s $flags
+}
+
+_hk_coercer() {
+  local -a flags
+  flags=('--target' '-d' '-l' '-p' '-u')
+  _arguments -s $flags
+}
+
+_hk_enum4linux_ng() {
+  local -a flags
+  flags=('-A')
+  _arguments -s $flags
+}
+
+_hk_faketime() {
+  local -a flags
+  flags=('-dc-ip')
+  _arguments -s $flags
+}
+
+_hk_hashcat() {
+  local -a flags
+  flags=()
+  _arguments -s $flags '-m[mode]:mode:(1000 5600 13100 18200)'
+}
+
+_hk_impacket_addcomputer() {
+  local -a flags
+  flags=('-computer-name' '-computer-pass' '-dc-ip' '-k' '-method' '-no-pass')
+  _arguments -s $flags
+}
+
+_hk_impacket_atexec() {
+  local -a flags
+  flags=()
+  _arguments -s $flags
+}
+
+_hk_impacket_dacledit() {
+  local -a flags
+  flags=('-action' '-dc-ip' '-k' '-no-pass' '-principal' '-rights' '-target' '-target-dn')
+  _arguments -s $flags
+}
+
+_hk_impacket_describeTicket() {
+  local -a flags
+  flags=()
+  _arguments -s $flags
+}
+
+_hk_impacket_dfscoerce() {
+  local -a flags
+  flags=()
+  _arguments -s $flags
+}
+
+_hk_impacket_findDelegation() {
+  local -a flags
+  flags=('-dc-ip' '-k' '-no-pass')
+  _arguments -s $flags
+}
+
+_hk_impacket_GetNPUsers() {
+  local -a flags
+  flags=('-dc-ip' '-format' '-no-pass' '-outputfile' '-request' '-usersfile')
+  _arguments -s $flags
+}
+
+_hk_impacket_getST() {
+  local -a flags
+  flags=('-aesKey' '-altservice' '-dc-ip' '-hashes' '-impersonate' '-k' '-no-pass' '-spn')
+  _arguments -s $flags
+}
+
+_hk_impacket_getTGT() {
+  local -a flags
+  flags=('-aesKey' '-dc-ip' '-hashes')
+  _arguments -s $flags
+}
+
+_hk_impacket_GetUserSPNs() {
+  local -a flags
+  flags=('-dc-ip' '-k' '-no-pass' '-outputfile' '-request' '-request-user')
+  _arguments -s $flags
+}
+
+_hk_impacket_lookupsid() {
+  local -a flags
+  flags=('-k' '-no-pass')
+  _arguments -s $flags
+}
+
+_hk_impacket_mssqlclient() {
+  local -a flags
+  flags=('-hashes' '-k' '-no-pass' '-windows-auth')
+  _arguments -s $flags
+}
+
+_hk_impacket_netview() {
+  local -a flags
+  flags=()
+  _arguments -s $flags
+}
+
+_hk_impacket_ntlmrelayx() {
+  local -a flags
+  flags=('--adcs' '--add-computer' '--delegate-access' '--escalate-user' '--no-smb-server' '--template' '-c' '-l' '-q' '-smb2support' '-socks' '-socks-port' '-t' '-tf' '-ts')
+  _arguments -s $flags
+}
+
+_hk_impacket_owneredit() {
+  local -a flags
+  flags=('-action' '-dc-ip' '-k' '-new-owner' '-no-pass' '-target-dn')
+  _arguments -s $flags
+}
+
+_hk_impacket_petitpotam() {
+  local -a flags
+  flags=()
+  _arguments -s $flags
+}
+
+_hk_impacket_printerbug() {
+  local -a flags
+  flags=()
+  _arguments -s $flags
+}
+
+_hk_impacket_psexec() {
+  local -a flags
+  flags=('-hashes' '-k' '-no-pass')
+  _arguments -s $flags
+}
+
+_hk_impacket_raiseChild() {
+  local -a flags
+  flags=()
+  _arguments -s $flags
+}
+
+_hk_impacket_rbcd() {
+  local -a flags
+  flags=('-action' '-dc-ip' '-delegate-from' '-delegate-to' '-hashes' '-k' '-no-pass')
+  _arguments -s $flags
+}
+
+_hk_impacket_secretsdump() {
+  local -a flags
+  flags=('-dc-ip' '-hashes' '-just-dc' '-just-dc-ntlm' '-just-dc-user' '-k' '-no-pass' '-ntds' '-outputfile' '-sam' '-security' '-system' '-target-ip')
+  _arguments -s $flags
+}
+
+_hk_impacket_smbexec() {
+  local -a flags
+  flags=('-k' '-no-pass')
+  _arguments -s $flags
+}
+
+_hk_impacket_smbserver() {
+  local -a flags
+  flags=('-smb2support')
+  _arguments -s $flags
+}
+
+_hk_impacket_ticketConverter() {
+  local -a flags
+  flags=()
+  _arguments -s $flags
+}
+
+_hk_impacket_ticketer() {
+  local -a flags
+  flags=('-aesKey' '-domain' '-domain-sid' '-extra-sid' '-nthash' '-spn')
+  _arguments -s $flags
+}
+
+_hk_impacket_wmiexec() {
+  local -a flags
+  flags=('-k' '-no-pass')
+  _arguments -s $flags
+}
+
+_hk_john() {
+  local -a flags
+  flags=('--format' '--wordlist')
+  _arguments -s $flags
+}
+
+_hk_kerbrute() {
+  local -a flags
+  flags=('--dc' '--user-as-pass' '-d' '-o' '-t')
+  _arguments -s $flags
+}
+
+_hk_kinit() {
+  local -a flags
+  flags=('-R' '-V' '-k' '-t')
+  _arguments -s $flags
+}
+
+_hk_klist() {
+  local -a flags
+  flags=('-A' '-c' '-e' '-k' '-t')
+  _arguments -s $flags
+}
+
+_hk_kvno() {
+  local -a flags
+  flags=('-e')
+  _arguments -s $flags
+}
+
+_hk_ldapdomaindump() {
+  local -a flags
+  flags=('--no-html' '-o' '-p' '-u')
+  _arguments -s $flags
+}
+
+_hk_ldapsearch() {
+  local -a flags
+  flags=('-x')
+  _arguments -s $flags
+}
+
+_hk_linpeas_sh() {
+  local -a flags
+  flags=('-a')
+  _arguments -s $flags
+}
+
+_hk_msfvenom() {
+  local -a flags
+  flags=('-f' '-o' '-p')
+  _arguments -s $flags
+}
+
+_hk_nxc() {
+  local -a subs
+  subs=(ldap mssql smb winrm)
+  if (( CURRENT == 2 )); then _describe 'subcommand' subs; return; fi
+  local -a flags
+  flags=('--asreproast' '--bloodhound' '--continue-on-success' '--dns-server' '--dpapi' '--gen-relay-list' '--get-file' '--gmsa' '--groups' '--kerberoasting' '--local-auth' '--loggedon-users' '--lsa' '--ntds' '--pass-pol' '--put-file' '--query' '--sam' '--sccm' '--sessions' '--shares' '--trusted-for-delegation' '--use-kcache' '--users' '-H' '-X' '-c' '-d' '-k' '-o' '-p' '-q' '-u' '-x')
+  _arguments -s $flags '-M[module]:module:(adcs coerce_plus enum_av enum_dns enum_trusts gpp_autologin gpp_password laps lsassy maq nanodump printnightmare rdp spider_plus)'
+}
+
+_hk_responder() {
+  local -a flags
+  flags=('-A' '-I' '-wPv' '-wdv')
+  _arguments -s $flags
+}
+
+_hk_rpcclient() {
+  local -a flags
+  flags=('-N' '-U' '-c')
+  _arguments -s $flags
+}
+
+_hk_smbclient() {
+  local -a flags
+  flags=('-L' '-U' '-c')
+  _arguments -s $flags
+}
+
+_hk_xfreerdp3() {
+  local -a o
+  o=('+clipboard' '/auth-pkg-list:!ntlm,kerberos' '/cert:ignore' '/d:' '/drive:share,/tmp' '/dynamic-resolution' '/p:' '/pth:' '/remoteGuard' '/restricted-admin' '/sec:nla' '/u:' '/v:')
+  compadd -a o
+}
+
+# install:
+#   mkdir -p ~/.zsh/completions && cp _hackerman ~/.zsh/completions/
+#   # in ~/.zshrc: fpath=(~/.zsh/completions $fpath); autoload -Uz compinit && compinit

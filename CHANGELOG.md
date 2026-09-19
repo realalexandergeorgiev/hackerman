@@ -3,6 +3,28 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.3.0] — 2026-09-19
+
+### Added
+
+- **Recipe focus overlay**: click any recipe card (Recipes, Wizard steps, BloodHound collection) to
+  open it centered in a scrollable overlay. Closes via ×, `Esc` or backdrop click; body scroll is
+  locked and focus is moved into the panel. Guards keep buttons, badges, `‹var?›` placeholders and
+  text selections from opening the overlay. The content refreshes automatically when the context
+  changes, and hover help / click-to-set / copy keep working inside.
+- **zsh completion export**: the header button `zsh` generates a single `_hackerman` completion
+  file from the embedded recipes — per-tool flags, subcommands (certipy, bloodyAD, nxc,
+  sccmhunter), nxc `-M` modules, hashcat `-m` modes and xfreerdp slash options. The modal offers
+  copy and download and includes install instructions.
+- `tools/gen-zsh-completions.mjs` (dependency-free) regenerates `completions/_hackerman`
+  headlessly; the generated file is committed.
+- Legend documents both features.
+
+### Changed
+
+- Recipe cards now show a small `⤢` marker and a pointer cursor as the focus affordance.
+- README gained a zsh-completions section and updated tool help count (42 attack explanations).
+
 ## [1.2.0] — 2026-09-19
 
 ### Added

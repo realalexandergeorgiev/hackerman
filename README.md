@@ -1,4 +1,4 @@
-# Hackerman v1.2.0
+# Hackerman v1.3.0
 
 > Single-file, offline Active Directory attack helper for Kali — fill in the context, get the next-step commands.
 
@@ -39,7 +39,12 @@ non-obvious tools and attacks.
 - **Applicability tiers** — every recipe/flow is ranked `always` / `common` / `situational` /
   `rare`. Default sort is priority → ready, with tier filter chips in the toolbar.
 - **Hover help** — `?` markers on titles and command labels explain the attack or tool
-  (54 tool entries, 34 attack entries); toggle with the `help` chip.
+  (54 tool entries, 42 attack entries); toggle with the `help` chip.
+- **Recipe focus overlay** — click any recipe card for a full-width popup (Esc / backdrop / ×
+  closes). Copy buttons, hover help and click-to-set keep working inside; the overlay refreshes
+  when the context changes.
+- **zsh completion export** — the header button generates `_hackerman` from the embedded recipes
+  (flags, subcommands, nxc `-M` modules, hashcat modes, xfreerdp options); see below.
 - **`proxychains` toggle** — prefixes network commands, local tools (Responder, hashcat, SMB
   server, krb5 tooling) are exempt.
 - **93 recipes** across 13 categories, each with a copy button per command and for the whole card.
@@ -110,6 +115,31 @@ node --check /tmp/app.js
 
 Then open the page and check the browser console for errors.
 
+## zsh completions
+
+The **zsh** button in the header generates a single `_hackerman` completion file from the recipe
+data and offers it in a modal with copy and download. The same output is committed and can be
+regenerated headlessly:
+
+```sh
+node tools/gen-zsh-completions.mjs
+```
+
+Install:
+
+```zsh
+mkdir -p ~/.zsh/completions
+cp completions/_hackerman ~/.zsh/completions/
+# in ~/.zshrc:
+fpath=(~/.zsh/completions $fpath)
+autoload -Uz compinit && compinit
+```
+
+Completions are generated for directly callable binaries (`impacket-*`, `nxc`, `certipy`,
+`bloodyAD`, `kerbrute`, `xfreerdp3`, `hashcat`, …) including subcommands, nxc modules, hashcat
+modes and xfreerdp options. `*.py` helpers are skipped (they need a `python3` prefix, which zsh
+cannot key on).
+
 ## Disclaimer
 
 For **authorized security testing only** — HTB labs, your own infrastructure, or engagements with
@@ -131,6 +161,8 @@ and [thehacker.recipes](https://www.thehacker.recipes).
 | File | Purpose |
 |---|---|
 | `index.html` | the tool (single file, open in any browser) |
+| `completions/_hackerman` | generated zsh completions |
+| `tools/gen-zsh-completions.mjs` | headless generator for `completions/_hackerman` |
 | `README.md` | this file |
 | `CHANGELOG.md` | version history |
 | `.gitignore` | ignores pentest output (ccache, kirbi, hashes, loot) |
