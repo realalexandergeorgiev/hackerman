@@ -3,6 +3,20 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.5.1] — 2026-09-19
+
+### Changed
+
+- Recipe card header is now two rows: the **title on its own line** (larger, full width) and the
+  metadata (category, tier, ready/missing badges, focus marker, copy button) on a second line, so
+  titles stand out better.
+
+### Fixed
+
+- The header copy button was absolutely positioned against the document (no positioned ancestor)
+  and could float outside the card; it is now a static flex item inside the metadata row and sits
+  in the card's top-right corner.
+
 ## [1.5.0] — 2026-09-19
 
 ### Added

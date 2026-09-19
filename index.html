@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hackerman v1.5.0 — AD Attack Helper (Kali · HTB)</title>
+<title>Hackerman v1.5.1 — AD Attack Helper (Kali · HTB)</title>
 <style>
 :root{
   --bg:#0a0f1a; --panel:#0f1729; --panel2:#131d33; --line:#1e2b45;
@@ -89,8 +89,11 @@ main{padding:16px;max-width:1500px;margin:0 auto}
 #focusBody .recipe:hover{border:none}
 body.focus-open{overflow:hidden}
 .recipe.incomplete{border-color:#7f1d1d}
-.rc-head{display:flex;align-items:flex-start;gap:8px}
-.rc-head h3{margin:0;font-size:14.5px;flex:1}
+.rc-head{display:flex;flex-direction:column;gap:6px}
+.rc-title{display:flex;align-items:flex-start;gap:8px}
+.rc-title h3{margin:0;font-size:15px;line-height:1.3;flex:1}
+.rc-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.rc-meta .copy{position:static;margin-left:auto}
 .cat{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:5px;background:#0e2a3a;color:var(--accent);border:1px solid #164e63;white-space:nowrap}
 .tier{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:5px;white-space:nowrap;border:1px solid}
 .tier.t4{color:#34d399;border-color:#166534;background:#0b2318}
@@ -205,7 +208,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
 
 <header>
   <div class="hwrap">
-    <div class="brand">Hackerman <b>v1.5.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
+    <div class="brand">Hackerman <b>v1.5.1</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
     <div class="hactions">
       <select id="presetSel" title="Load preset"><option value="">— presets —</option></select>
       <button id="presetSave" title="Save current context as preset">Save</button>
@@ -260,7 +263,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
   <section id="tab-legend" class="tab"></section>
 </main>
 
-<footer class="mono">Hackerman v1.5.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
+<footer class="mono">Hackerman v1.5.1 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
 
 <div id="focusOverlay" class="hidden">
   <div id="focusBox" role="dialog" aria-modal="true" tabindex="-1" aria-label="recipe focus">
@@ -656,22 +659,29 @@ function recipeCard(r, alwaysExpanded){
   tier.textContent = TIERS[r.pri] ? TIERS[r.pri].name : TIERS[2].name;
   const fm = document.createElement('span');
   fm.className = 'focusmark'; fm.title = collapsed ? 'click to expand' : 'click the card to focus'; fm.textContent = '⤢';
-  head.appendChild(cat); head.appendChild(tier); head.appendChild(h3); head.appendChild(fm);
+  const all = rendered.map(x => x.text).join('\n');
+  const titleRow = document.createElement('div');
+  titleRow.className = 'rc-title';
+  titleRow.appendChild(h3);
+  const metaRow = document.createElement('div');
+  metaRow.className = 'rc-meta';
+  metaRow.appendChild(cat); metaRow.appendChild(tier);
   if(readyCount){
     const rb = document.createElement('span');
     rb.className = 'badge ready'; rb.title = 'commands runnable with the current context';
     rb.textContent = 'ready ' + readyCount + '/' + rendered.length;
-    head.appendChild(rb);
+    metaRow.appendChild(rb);
   }
   if(misses.length){
     const b = document.createElement('span');
     b.className = 'badge miss'; b.title = 'click to jump to the missing context fields';
     b.textContent = 'missing: ' + misses.join(', ');
     b.addEventListener('click', e => { e.stopPropagation(); focusContextFields(missKeys); });
-    head.appendChild(b);
+    metaRow.appendChild(b);
   }
-  const all = rendered.map(x => x.text).join('\n');
-  head.appendChild(mkCopyBtn(all));
+  metaRow.appendChild(fm);
+  metaRow.appendChild(mkCopyBtn(all));
+  head.appendChild(titleRow); head.appendChild(metaRow);
   card.appendChild(head);
 
   if(r.desc){
@@ -1064,7 +1074,7 @@ function renderLegend(){
   const tab = $('#tab-legend');
   tab.innerHTML = '';
   const about = document.createElement('div');
-  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.5.0</h2>' +
+  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.5.1</h2>' +
     '<p class="dim">Single-file Active Directory attack helper for Kali, built by <b>@bongoalex</b> with <b>deepseek</b>. ' +
     RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries. Offline, no dependencies, no telemetry.</p>' +
     '<p class="dim">Use only for authorized testing (HTB labs, your own infrastructure, signed engagements). Syntax is version-sensitive — cross-check against your target versions.</p>';
@@ -2846,7 +2856,7 @@ function zshEmit(data){
   const fnName = n => '_hk_' + n.replace(/[^A-Za-z0-9_]/g, '_');
   const q = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
   let out = '#compdef ' + names.join(' ') + '\n';
-  out += '# Hackerman v1.5.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
+  out += '# Hackerman v1.5.1 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
   out += '_hackerman() {\n  local tool=${words[1]:t}\n  case $tool in\n';
   names.forEach(n => { out += '    ' + n + ') ' + fnName(n) + ' ;;\n'; });
   out += '  esac\n}\n\n';
