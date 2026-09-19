@@ -1,4 +1,4 @@
-# Hackerman v1.5.0
+# Hackerman v1.6.0
 
 > Single-file, offline Active Directory attack helper for Kali — fill in the context, get the next-step commands.
 
@@ -43,14 +43,14 @@ non-obvious tools and attacks.
 - **Recipe focus overlay** — click any recipe card for a full-width popup (Esc / backdrop / ×
   closes). Copy buttons, hover help and click-to-set keep working inside; the overlay refreshes
   when the context changes.
-- **Compact lists** — recipe cards render collapsed (header + short description) by default so 112
+- **Compact lists** — recipe cards render collapsed (header + short description) by default so 115
   recipes stay scannable; click a card to open it in the focus overlay, or switch the `compact`
   chip off to expand everything inline. Wizard steps always stay expanded.
 - **zsh completion export** — the header button generates `_hackerman` from the embedded recipes
   (flags, subcommands, nxc `-M` modules, hashcat modes, xfreerdp options); see below.
 - **`proxychains` toggle** — prefixes network commands, local tools (Responder, hashcat, SMB
   server, krb5 tooling) are exempt.
-- **112 recipes** across 13 categories, each with a copy button per command and for the whole card.
+- **115 recipes** across 13 categories, each with a copy button per command and for the whole card.
 - **15 wizard flows** — pick what you have, get an ordered runbook with progress checkboxes and
   "copy flow as markdown".
 - **16 BloodHound Cypher queries** — collection commands plus pathfinding snippets (CE / legacy).
@@ -67,7 +67,7 @@ xdg-open index.html        # or just double-click the file
 3. Or use **Recipes** — search/filter, hover the `?` markers, click placeholders to fill them.
 4. Toggle **proxychains** when you attack through a pivot.
 
-## Coverage (112 recipes)
+## Coverage (115 recipes)
 
 | Category | # | Highlights |
 |---|---:|---|
@@ -82,7 +82,7 @@ xdg-open index.html        # or just double-click the file
 | Lateral Movement | 7 | WinRM, nxc exec, impacket exec family, **dcomexec/services/reg**, **rdp-auth helper**, file transfer |
 | Post-Exploitation | 17 | SeImpersonate, **UAC bypass**, **SeBackup**, **DSRM**, **DNSAdmins**, AV/Defender checks, **linpeas/winpeas**, **reverse shells**, GPO abuse, ADIDNS, **ZeroLogon**, **noPac**, **PrintNightmare**, **Certifried**, **KrbRelayUp**, **Entra ID Connect**, **ADFS Golden SAML**, **SCCM** |
 | MSSQL | 6 | connect (pw/hash/ccache), xp_cmdshell, **OLE/CLR RCE**, impersonation, linked servers, NetNTLM theft |
-| Trusts | 2 | trust enum, raiseChild / trust-key golden ticket |
+| Trusts | 5 | trust enum (+ direction/attributes), **cross-domain roasting**, **SID history / ExtraSIDs**, **foreign group membership**, raiseChild / trust-key golden ticket |
 | BloodHound Collection | 2 | bloodhound-python / **bloodhound-ce-python**, nxc `--bloodhound` |
 
 ### Wizard flows

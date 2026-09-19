@@ -3,6 +3,31 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.6.0] — 2026-09-19
+
+### Added
+
+- **Trust techniques** (Trusts category 2 → 5 recipes, total 115):
+  - `trust-cross-domain-roast` — Kerberoast/AS-REP against the trusted domain with impacket
+    `-target-domain`, nxc and hashcat.
+  - `trust-sid-history` — inter-realm golden tickets with `-extra-sid` / `-groups` / `-extra-pac`
+    from the trust key, plus ticket usage against the trusted DC and notes on SID filtering
+    (intra-forest vs forest quarantine, `netdom trust … /quarantine:no`, mimikatz `/sids:`).
+  - `trust-foreign-groups` — foreign security principals, `lookupsid`, group inspection and using
+    credentials from the owning domain against the trusting domain.
+- Trust context variables `trust_domain` and `trust_dc_ip`.
+- `trust-enum` extended: `nltest /trusted_domains`, `netdom trust … /verify`, raw
+  `trustedDomain` attribute query and notes on `trustDirection` / `trustAttributes`
+  (0x1 non-transitive, 0x4 quarantine, 0x8 forest-transitive, 0x20 intra-forest).
+- Hover help for the three new cards and a new `trusts` flow step
+  ("Cross-domain & SID history").
+
+### Changed
+
+- Tier filter chips are struck through and dimmed while disabled, so the off state is obvious
+  (`aria-pressed` added for screen readers).
+- README coverage updated to 115 recipes; `completions/_hackerman` regenerated.
+
 ## [1.5.1] — 2026-09-19
 
 ### Changed
