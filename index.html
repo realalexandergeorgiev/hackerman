@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hackerman v1.11.0 — AD Attack Helper (Kali · HTB)</title>
+<title>Hackerman v1.12.0 — AD Attack Helper (Kali · HTB)</title>
 <style>
 :root{
   --bg:#0a0f1a; --panel:#0f1729; --panel2:#131d33; --line:#1e2b45;
@@ -55,6 +55,8 @@ label.proxy.on{border-color:var(--accent);color:#fff}
 @keyframes fieldflash{0%,100%{box-shadow:0 0 0 0 transparent}50%{box-shadow:0 0 0 2px var(--warn)}}
 .field input.field-flash{animation:fieldflash .45s 3}
 .field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.field.hastip label{border-bottom:1px dotted #3b5a89;cursor:help}
+body.nohelp .field.hastip label{border-bottom:none;cursor:inherit}
 .ctx-summary{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:50vw}
 
 nav.tabs{position:sticky;top:var(--headerH,45px);z-index:40;display:flex;gap:2px;padding:0 16px;background:#0c1424;border-bottom:1px solid var(--line)}
@@ -219,7 +221,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
 
 <header>
   <div class="hwrap">
-    <div class="brand">Hackerman <b>v1.11.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
+    <div class="brand">Hackerman <b>v1.12.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
     <div class="hactions">
       <select id="presetSel" title="Load preset"><option value="">— presets —</option></select>
       <button id="presetSave" title="Save current context as preset">Save</button>
@@ -274,7 +276,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
   <section id="tab-legend" class="tab"></section>
 </main>
 
-<footer class="mono">Hackerman v1.11.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
+<footer class="mono">Hackerman v1.12.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
 
 <div id="focusOverlay" class="hidden">
   <div id="focusBox" role="dialog" aria-modal="true" tabindex="-1" aria-label="recipe focus">
@@ -315,48 +317,48 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
 const LS_STATE = 'adah.state.v1', LS_PROG = 'adah.progress.v1', LS_PRESETS = 'adah.presets.v1';
 
 const VAR_DEFS = [
-  {k:'domain',      label:'Domain FQDN',   ph:'argon.htb',                 grp:'Domain / DC', color:'v-domain', req:1},
-  {k:'netbios',     label:'NetBIOS',       ph:'ARGON',                     grp:'Domain / DC', color:'v-domain'},
+  {k:'domain',      label:'Domain FQDN',   ph:'argon.htb',                 grp:'Domain / DC', color:'v-domain', req:1, tip:'from the DC banner / <span class="mono">nmap</span> / BloodHound domains, or given in the challenge (e.g. argon.htb)'},
+  {k:'netbios',     label:'NetBIOS',       ph:'ARGON',                     grp:'Domain / DC', color:'v-domain', tip:'NetBIOS = domain part before the first dot, UPPERCASE (<span class="mono">nxc smb &lt;dc&gt;</span> banner, <span class="mono">nltest /dsgetdc</span>)'},
   {k:'realm',       label:'Realm',         ph:'ARGON.HTB',                 grp:'Domain / DC', color:'v-domain', derive:s=>(s.domain||'').toUpperCase(), src:['domain'], hint:'domain → UPPERCASE'},
   {k:'domain_dn',   label:'Domain DN',     ph:'DC=ARGON,DC=HTB',           grp:'Domain / DC', color:'v-host', derive:s=>s.domain?('DC='+s.domain.split('.').join(',DC=')):'', src:['domain'], hint:"'DC=' + domain parts"},
-  {k:'dc_host',     label:'DC host',       ph:'prod-dc',                   grp:'Domain / DC', color:'v-host', req:1},
+  {k:'dc_host',     label:'DC host',       ph:'prod-dc',                   grp:'Domain / DC', color:'v-host', req:1, tip:'short hostname of the DC from recon (<span class="mono">nmap -sV</span>, SMB banner, BloodHound)'},
   {k:'dc_fqdn',     label:'DC FQDN',       ph:'prod-dc.argon.htb',         grp:'Domain / DC', color:'v-host', derive:s=>s.dc_host?(s.dc_host.includes('.')?s.dc_host:(s.domain?s.dc_host+'.'+s.domain:s.dc_host)):'', src:['dc_host','domain'], hint:"dc_host + '.' + domain"},
-  {k:'dc_ip',       label:'DC IP',         ph:'172.16.6.100',              grp:'Domain / DC', color:'v-ip', req:1},
-  {k:'dc_dn',       label:'DC DN',         ph:'CN=PROD-DC,OU=DOMAIN CONTROLLERS,DC=ARGON,DC=HTB', grp:'Domain / DC', color:'v-host'},
-  {k:'trust_domain',label:'Trust domain', ph:'htb.local',                 grp:'Domain / DC', color:'v-domain'},
-  {k:'trust_dc_ip', label:'Trust DC IP',  ph:'172.16.6.200',              grp:'Domain / DC', color:'v-ip'},
-  {k:'trust_netbios',label:'Trust NetBIOS',ph:'HTB',                      grp:'Domain / DC', color:'v-domain'},
-  {k:'target_host', label:'Target host',   ph:'prod-sql',                  grp:'Target', color:'v-host', req:1},
+  {k:'dc_ip',       label:'DC IP',         ph:'172.16.6.100',              grp:'Domain / DC', color:'v-ip', req:1, tip:'IP of the DC from recon or the challenge scope'},
+  {k:'dc_dn',       label:'DC DN',         ph:'CN=PROD-DC,OU=DOMAIN CONTROLLERS,DC=ARGON,DC=HTB', grp:'Domain / DC', color:'v-host', tip:'distinguishedName of the DC: <span class="mono">bloodyad get object "DC01$" --attr distinguishedName</span> or ldapsearch'},
+  {k:'trust_domain',label:'Trust domain', ph:'htb.local',                 grp:'Domain / DC', color:'v-domain', tip:'FQDN of the partner domain: <span class="mono">bloodyad get trusts</span> / <span class="mono">nxc ldap --dc-list</span> / Windows: <span class="mono">nltest /domain_trusts</span>'},
+  {k:'trust_dc_ip', label:'Trust DC IP',  ph:'172.16.6.200',              grp:'Domain / DC', color:'v-ip', tip:'IP of the trusted domain DC (trust-enum recipe: <span class="mono">--dc-list</span>, DNS, or given)'},
+  {k:'trust_netbios',label:'Trust NetBIOS',ph:'HTB',                      grp:'Domain / DC', color:'v-domain', tip:'NetBIOS (flatName) of the partner: <span class="mono">nxc ldap &lt;dc&gt; -u .. -p .. --dc-list</span> or <span class="mono">ldapsearch ... (objectClass=trustedDomain) flatName</span>'},
+  {k:'target_host', label:'Target host',   ph:'prod-sql',                  grp:'Target', color:'v-host', req:1, tip:'short hostname of the machine you attack next (recon / BloodHound sessions)'},
   {k:'target_fqdn', label:'Target FQDN',   ph:'prod-sql.argon.htb',        grp:'Target', color:'v-host', derive:s=>s.target_host?(s.target_host.includes('.')?s.target_host:(s.domain?s.target_host+'.'+s.domain:s.target_host)):'', src:['target_host','domain'], hint:"target_host + '.' + domain"},
-  {k:'target_ip',   label:'Target IP',     ph:'172.16.6.50',               grp:'Target', color:'v-ip'},
-  {k:'target_user', label:'Impersonate',   ph:'Administrator',             grp:'Target', color:'v-user'},
-  {k:'spn',         label:'SPN',           ph:'MSSQLSvc/PROD-SQL',         grp:'Target', color:'v-spn'},
-  {k:'dn',          label:'Target DN',     ph:'CN=PROD-SQL,CN=COMPUTERS,DC=ARGON,DC=HTB', grp:'Target', color:'v-host'},
-  {k:'user',        label:'User',          ph:'eric.dutton',               grp:'Access', color:'v-user', req:1},
-  {k:'victim',      label:'Victim acct',   ph:'svc_web',                   grp:'Access', color:'v-user'},
-  {k:'password',    label:'Password',      ph:'…',                         grp:'Access', color:'v-secret'},
-  {k:'nthash',      label:'NT hash',       ph:'c5f7e15cca6397af0ac9b0bb0e926f95', grp:'Access', color:'v-hash'},
-  {k:'aeskey',      label:'AES key',       ph:'2c7633c5d3497ada…',         grp:'Access', color:'v-key'},
-  {k:'ccache',      label:'ccache path',   ph:'/home/kali/Administrator.ccache', grp:'Access', color:'v-file'},
-  {k:'krbtgt_hash', label:'krbtgt / key',  ph:'ntlm or aes of krbtgt',     grp:'Access', color:'v-hash'},
-  {k:'trust_key',   label:'Trust key',     ph:'NT hash of <trust_netbios>$',grp:'Access', color:'v-hash'},
-  {k:'domain_sid',  label:'Own domain SID',ph:'S-1-5-21-…',                grp:'Access', color:'v-sid'},
-  {k:'trust_domain_sid',label:'Trust SID', ph:'S-1-5-21-…',                grp:'Access', color:'v-sid'},
-  {k:'extra_sid',   label:'Extra SID',     ph:'S-1-5-21-…-519',            grp:'Access', color:'v-sid'},
-  {k:'attacker_ip', label:'Attacker IP',   ph:'10.10.14.5',                 grp:'Attacker', color:'v-ip', req:1},
-  {k:'iface',       label:'Interface',     ph:'tun0',                       grp:'Attacker', color:'v-flag'},
-  {k:'lport',       label:'Listener port', ph:'9001',                       grp:'Attacker', color:'v-num'},
-  {k:'proxy_chain', label:'Proxy chain',   ph:'socks5 127.0.0.1 1080',      grp:'Attacker', color:'v-flag'},
-  {k:'computer_name',label:'Rogue machine',ph:'EVIL$',                     grp:'Attack params', color:'v-user'},
-  {k:'computer_pass',label:'Machine pass', ph:'Password123!',              grp:'Attack params', color:'v-secret'},
-  {k:'ca',          label:'CA name',       ph:'argon-CA',                  grp:'Attack params', color:'v-spn'},
-  {k:'ca_host',     label:'CA host',       ph:'prod-dc.argon.htb',         grp:'Attack params', color:'v-host'},
-  {k:'template',    label:'Cert template', ph:'WebServer',                 grp:'Attack params', color:'v-spn'},
-  {k:'group',       label:'Group',         ph:'Domain Admins',             grp:'Attack params', color:'v-user'},
-  {k:'wordlist',    label:'Wordlist',      ph:'/usr/share/wordlists/rockyou.txt', grp:'Attack params', color:'v-file'},
-  {k:'keytab',      label:'Keytab file',   ph:'/etc/krb5.keytab',          grp:'Attack params', color:'v-file'},
-  {k:'hashfile',    label:'Hash out file', ph:'hashes.txt',                grp:'Attack params', color:'v-file'},
-  {k:'ou',          label:'OU (DN)',       ph:'CN=Computers,DC=ARGON,DC=HTB', grp:'Attack params', color:'v-host'}
+  {k:'target_ip',   label:'Target IP',     ph:'172.16.6.50',               grp:'Target', color:'v-ip', tip:'IP of the next target (recon / BloodHound)'},
+  {k:'target_user', label:'Impersonate',   ph:'Administrator',             grp:'Target', color:'v-user', tip:'account to impersonate / act as (e.g. Administrator, or the account you recreate)'},
+  {k:'spn',         label:'SPN',           ph:'MSSQLSvc/PROD-SQL',         grp:'Target', color:'v-spn', tip:'SPN to target: <span class="mono">impacket-GetUserSPNs -request</span>, <span class="mono">ldapsearch ... servicePrincipalName</span>, or <span class="mono">addspn.py -q</span>'},
+  {k:'dn',          label:'Target DN',     ph:'CN=PROD-SQL,CN=COMPUTERS,DC=ARGON,DC=HTB', grp:'Target', color:'v-host', tip:'target object DN: <span class="mono">bloodyad get object "NAME" --attr distinguishedName</span> or ldapsearch on sAMAccountName'},
+  {k:'user',        label:'User',          ph:'eric.dutton',               grp:'Access', color:'v-user', req:1, tip:'your foothold / a valid domain account (writeup, spray, previous dump)'},
+  {k:'victim',      label:'Victim acct',   ph:'svc_web',                   grp:'Access', color:'v-user', tip:'account whose hash/credential you found (secretsdump, BloodHound, poisoning)'},
+  {k:'password',    label:'Password',      ph:'…',                         grp:'Access', color:'v-secret', tip:'plaintext from spraying, cracked Kerberos hashes, or the challenge notes'},
+  {k:'nthash',      label:'NT hash',       ph:'c5f7e15cca6397af0ac9b0bb0e926f95', grp:'Access', color:'v-hash', tip:'32 hex chars: <span class="mono">impacket-secretsdump</span> or <span class="mono">nxc smb ... --ntds</span> (line format aad3b...:HASH)'},
+  {k:'aeskey',      label:'AES key',       ph:'2c7633c5d3497ada…',         grp:'Access', color:'v-key', tip:'64 hex chars (aes256_hmac): secretsdump or <span class="mono">KeyTabExtract</span>'},
+  {k:'ccache',      label:'ccache path',   ph:'/home/kali/Administrator.ccache', grp:'Access', color:'v-file', tip:'path printed by getTGT / getST / ticketer, or <span class="mono">impacket-ticketConverter</span> output'},
+  {k:'krbtgt_hash', label:'krbtgt / key',  ph:'ntlm or aes of krbtgt',     grp:'Access', color:'v-hash', tip:'<span class="mono">impacket-secretsdump -just-dc-user krbtgt "domain/user@dc"</span>'},
+  {k:'trust_key',   label:'Trust key',     ph:'NT hash of <trust_netbios>$',grp:'Access', color:'v-hash', tip:'NT hash of the partner trust account: <span class="mono">secretsdump -just-dc-user "&lt;trust_netbios&gt;$"</span>. Only RC4/NT works for forging (AES derivations cannot request a TGT).'},
+  {k:'domain_sid',  label:'Own domain SID',ph:'S-1-5-21-…',                grp:'Access', color:'v-sid', tip:'<span class="mono">nxc ldap &lt;dc&gt; -u .. -p .. --get-sid</span> / <span class="mono">impacket-lookupsid</span> / <span class="mono">bloodyad get object "&lt;domain_dn&gt;" --attr objectSid</span>'},
+  {k:'trust_domain_sid',label:'Trust SID', ph:'S-1-5-21-…',                grp:'Access', color:'v-sid', tip:'<span class="mono">--get-sid</span> against the trusted DC, or BloodHound query "Domain SIDs" (<span class="mono">d.objectid</span>)'},
+  {k:'extra_sid',   label:'Extra SID',     ph:'S-1-5-21-…-519',            grp:'Access', color:'v-sid', tip:'target domain SID + <span class="mono">-519</span> (Enterprise Admins) — see trust-sid-history; BloodHound "Domain SIDs"'},
+  {k:'attacker_ip', label:'Attacker IP',   ph:'10.10.14.5',                 grp:'Attacker', color:'v-ip', req:1, tip:'your VPN address: <span class="mono">ip a show tun0</span>'},
+  {k:'iface',       label:'Interface',     ph:'tun0',                       grp:'Attacker', color:'v-flag', tip:'VPN interface: <span class="mono">tun0</span> for HTB, <span class="mono">eth0</span> for a LAN'},
+  {k:'lport',       label:'Listener port', ph:'9001',                       grp:'Attacker', color:'v-num', tip:'any free local port for the listener (avoid 445/80/443 clashes)'},
+  {k:'proxy_chain', label:'Proxy chain',   ph:'socks5 127.0.0.1 1080',      grp:'Attacker', color:'v-flag', tip:'format <span class="mono">socks5 127.0.0.1 1080</span>; proxies are auto-prefixed when the chip is on'},
+  {k:'computer_name',label:'Rogue machine',ph:'EVIL$',                     grp:'Attack params', color:'v-user', tip:'name of the rogue computer you create — machine accounts end with <span class="mono">$</span>'},
+  {k:'computer_pass',label:'Machine pass', ph:'Password123!',              grp:'Attack params', color:'v-secret', tip:'password to set for the rogue machine account (choose your own, 14+ chars)'},
+  {k:'ca',          label:'CA name',       ph:'argon-CA',                  grp:'Attack params', color:'v-spn', tip:'CA name from <span class="mono">certipy find -u .. -p .. -dc-ip ..</span> ("CA Name")'},
+  {k:'ca_host',     label:'CA host',       ph:'prod-dc.argon.htb',         grp:'Attack params', color:'v-host', tip:'DNS host of the CA from certipy find ("DNS Name")'},
+  {k:'template',    label:'Cert template', ph:'WebServer',                 grp:'Attack params', color:'v-spn', tip:'certificate template name from certipy find (e.g. a vulnerable ESC1 template)'},
+  {k:'group',       label:'Group',         ph:'Domain Admins',             grp:'Attack params', color:'v-user', tip:'target group: <span class="mono">nxc ldap --groups</span> / <span class="mono">ldapsearch (objectClass=group)</span>'},
+  {k:'wordlist',    label:'Wordlist',      ph:'/usr/share/wordlists/rockyou.txt', grp:'Attack params', color:'v-file', tip:'cracking wordlist, e.g. <span class="mono">/usr/share/wordlists/rockyou.txt</span>'},
+  {k:'keytab',      label:'Keytab file',   ph:'/etc/krb5.keytab',          grp:'Attack params', color:'v-file', tip:'extracted keytab file: <span class="mono">find / -name "*.keytab"</span>; inspect with <span class="mono">klist -k -t</span>'},
+  {k:'hashfile',    label:'Hash out file', ph:'hashes.txt',                grp:'Attack params', color:'v-file', tip:'output file for dumped hashes (feeds hashcat)'},
+  {k:'ou',          label:'OU (DN)',       ph:'CN=Computers,DC=ARGON,DC=HTB', grp:'Attack params', color:'v-host', tip:'DN of the OU where rogue computers/objects are created: default <span class="mono">CN=Computers,&lt;domain_dn&gt;</span>'}
 ];
 
 const DEFAULT_STATE = {
@@ -781,11 +783,14 @@ function buildContext(){
       f.className = 'field';
       const l = document.createElement('label');
       l.innerHTML = esc(v.label) + (v.derive ? ' <span class="lauto">auto</span>' : '');
+      f.classList.add('hastip');
+      f.dataset.tip = '<b>' + esc(v.label) + '</b> <span class="dim mono">{{' + v.k + '}}</span><br>' +
+        (v.derive ? 'computed: ' + (v.hint || v.label) + ' — change the source fields instead'
+                  : '<span class="dim">how to get it:</span><br>' + (v.tip || ''));
       const i = document.createElement('input');
       i.type = 'text'; i.placeholder = v.ph || ''; i.autocomplete = 'off'; i.spellcheck = false;
       if(v.derive){
         i.readOnly = true; i.classList.add('derived');
-        i.title = 'computed: ' + (v.hint || v.label) + ' — change the source fields instead';
       }
       const handler = () => {
         if(v.derive) return;
@@ -1157,7 +1162,7 @@ function renderLegend(){
   const tab = $('#tab-legend');
   tab.innerHTML = '';
   const about = document.createElement('div');
-  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.11.0</h2>' +
+  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.12.0</h2>' +
     '<p class="dim">Single-file Active Directory attack helper for Kali, built by <b>@bongoalex</b> with <b>deepseek</b>. ' +
     RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries. Offline, no dependencies, no telemetry.</p>' +
     '<p class="dim">Use only for authorized testing (HTB labs, your own infrastructure, signed engagements). Syntax is version-sensitive — cross-check against your target versions.</p>';
@@ -1231,7 +1236,7 @@ function renderLegend(){
     '<p class="dim">Shortcuts: <kbd>/</kbd> search · <kbd>Ctrl/Cmd+K</kbd> focus search · presets in the header.</p>' +
     '<p class="dim">Every recipe carries an <b>applicability tier</b> (always → common → situational → rare). Default sort is priority → ready; the toolbar has a sort selector and tier filters.</p>' +
     '<p class="dim">Hover the <span class="infoq">?</span> markers on titles and command labels for a short explanation of the tool or attack. Toggle them with the <b>help</b> chip in the toolbar.</p>' +
-    '<p class="dim">Click a rendered value to <b>change</b> it, click a <span class="v-miss">‹label?›</span> placeholder to <b>set</b> it. Derived values jump to the source fields they are computed from.</p>' +
+    '<p class="dim">Click a rendered value to <b>change</b> it, click a <span class="v-miss">‹label?›</span> placeholder to <b>set</b> it. Derived values jump to the source fields they are computed from. <b>Hover a context field label</b> (dotted underline) to see <b>how to get</b> the value — SIDs, trust key, hashes, SPN, certipy fields, …</p>' +
     '<p class="dim">Click a recipe card to open it in a <b>focus overlay</b> (Esc / backdrop closes). Lists render collapsed by default — turn the <b>compact</b> chip off to expand every card inline. The <b>zsh</b> button in the header exports tab completions for the tools used here.</p>' +
     '<p class="dim">Version-sensitive syntax (bloodyAD v2 vs v1, nxc modules, certipy 5.x) is noted on the relevant cards — always cross-check <a href="https://www.thehacker.recipes" target="_blank" rel="noreferrer">thehacker.recipes</a>.</p>';
   tab.appendChild(ul);
@@ -3064,7 +3069,7 @@ function zshEmit(data){
   const fnName = n => '_hk_' + n.replace(/[^A-Za-z0-9_]/g, '_');
   const q = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
   let out = '#compdef ' + names.concat(Object.keys(aliases)).join(' ') + '\n';
-  out += '# Hackerman v1.11.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
+  out += '# Hackerman v1.12.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
   out += '_hackerman() {\n  local tool=${words[1]:t}\n  case $tool in\n';
   names.forEach(n => { out += '    ' + n + ') ' + fnName(n) + ' ;;\n'; });
   Object.keys(aliases).forEach(a => { out += '    ' + a + ') ' + fnName(aliases[a]) + ' ;;\n'; });

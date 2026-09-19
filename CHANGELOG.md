@@ -3,6 +3,17 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.12.0] — 2026-09-19
+
+### Added
+
+- **Context field tooltips** — hovering any context label (dotted underline) now shows *how to get
+  that value*: the exact acquisition commands for SIDs (`nxc --get-sid`, `lookupsid`, `objectSid`),
+  trust NetBIOS/key, hashes/AES keys, ccache, SPN/DN, certipy CA/template fields, attacker
+  IP/interface, wordlists, keytabs, … Derived fields show their formula instead of the native
+  `title` and are covered by the `help` chip toggle like everything else.
+- All 38 editable fields carry a tip; the legend explains the hover behaviour.
+
 ## [1.11.0] — 2026-09-19
 
 ### Added

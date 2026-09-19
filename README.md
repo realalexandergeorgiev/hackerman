@@ -1,4 +1,4 @@
-# Hackerman v1.11.0
+# Hackerman v1.12.0
 
 > Single-file, offline Active Directory attack helper for Kali — fill in the context, get the next-step commands.
 
@@ -40,6 +40,9 @@ non-obvious tools and attacks.
   `rare`. Default sort is priority → ready, with tier filter chips in the toolbar.
 - **Hover help** — `?` markers on titles and command labels explain the attack or tool
   (54 tool entries, 42 attack entries); toggle with the `help` chip.
+- **Context field tooltips** — hover any context label (dotted underline) for **how to get the
+  value**: `--get-sid` for SIDs, trust-account/key commands, hash sources, SPN/DN lookups, certipy
+  fields, … Derived fields show their formula. Toggle with the `help` chip.
 - **Recipe focus overlay** — click any recipe card for a full-width popup (Esc / backdrop / ×
   closes). Copy buttons, hover help and click-to-set keep working inside; the overlay refreshes
   when the context changes.
