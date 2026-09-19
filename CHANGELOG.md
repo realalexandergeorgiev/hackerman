@@ -3,6 +3,22 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.15.1] — 2026-09-19
+
+### Added
+
+- Second-domain card: **`-H` (pass-the-hash) variants** for the nxc collector, the bloodhound-python
+  collector (`--hashes`) and the `--groups` lookup.
+- **Membership discovery** in the second-domain card: `bloodyad get membership` (password + PtH) and
+  an LDAPS `ldapsearch … memberOf` — answers "which group is my user in?" before flattening with
+  `bhcli members --indirect`.
+- Context variables **`trust_nthash`** and derived **`trust_domain_dn`** (45 → 47 fields).
+- BloodHound query **"Groups of owned users (which group am I in?)"** (42 → 43).
+
+### Changed
+
+- `second-domain` wizard flow: step "Map your group" now starts with finding your own groups.
+
 ## [1.15.0] — 2026-09-19
 
 ### Added

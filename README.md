@@ -1,4 +1,4 @@
-# Hackerman v1.15.0
+# Hackerman v1.15.1
 
 > Single-file, offline Active Directory attack helper for Kali — fill in the context, get the next-step commands.
 
@@ -67,7 +67,7 @@ non-obvious tools and attacks.
 - **123 recipes** across 13 categories, each with a copy button per command and for the whole card.
 - **15 wizard flows** — pick what you have, get an ordered runbook with progress checkboxes and
   "copy flow as markdown".
-- **42 BloodHound Cypher queries** — collection commands plus pathfinding/rights snippets (CE / legacy):
+- **43 BloodHound Cypher queries** — collection commands plus pathfinding/rights snippets (CE / legacy):
   high-value paths, DCSync/write rights, LAPS/gMSA readers, sessions on owned hosts, ADCS CA rights, domain SIDs, …
 - **BH workflow (`bhcli`)** — terminal-first BloodHound: setup/audit recipes, **mark Owned/Tier Zero**
   (users + computers via `bhcli mark`, groups/Domains/OUs via the CE GUI), a `bhcli` copy button on
@@ -165,7 +165,7 @@ bhcli cypher 'MATCH (c:Computer {unconstraineddelegation:true}) RETURN c.name' |
 ```
 
 Every Cypher query in the BloodHound tab has a **bhcli** copy button that produces the exact
-`bhcli cypher '<query>'` command, and **export for bhcli** downloads all 42 queries as
+`bhcli cypher '<query>'` command, and **export for bhcli** downloads all 43 queries as
 `hackerman-bhcli-queries.json`, importable with:
 
 ```sh
