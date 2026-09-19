@@ -1,5 +1,5 @@
-#compdef bhcli bloodhound-ce-python bloodhound-cli bloodyad certipy coercer enum4linux-ng faketime hashcat impacket-addcomputer impacket-atexec impacket-dacledit impacket-describeTicket impacket-dfscoerce impacket-findDelegation impacket-GetNPUsers impacket-getST impacket-getTGT impacket-GetUserSPNs impacket-lookupsid impacket-mssqlclient impacket-netview impacket-ntlmrelayx impacket-owneredit impacket-petitpotam impacket-printerbug impacket-psexec impacket-raiseChild impacket-rbcd impacket-secretsdump impacket-smbexec impacket-smbserver impacket-ticketConverter impacket-ticketer impacket-wmiexec john kerbrute kinit klist kvno ldapdomaindump ldapsearch linpeas.sh mitm6 msfvenom nxc responder roadrecon rpcclient smbclient xfreerdp3 bloodyAD
-# Hackerman v1.12.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs
+#compdef bhcli bloodhound-ce-python bloodhound-cli bloodyad certipy coercer enum4linux-ng faketime hashcat impacket-addcomputer impacket-atexec impacket-dacledit impacket-describeTicket impacket-dfscoerce impacket-findDelegation impacket-GetNPUsers impacket-getST impacket-getTGT impacket-GetUserSPNs impacket-lookupsid impacket-mssqlclient impacket-netview impacket-ntlmrelayx impacket-owneredit impacket-petitpotam impacket-printerbug impacket-psexec impacket-raiseChild impacket-rbcd impacket-secretsdump impacket-smbexec impacket-smbserver impacket-ticketConverter impacket-ticketer impacket-wmiexec john kerbrute kinit klist kvno ldapdomaindump ldapsearch linpeas.sh mitm6 msfvenom nmap nxc openssl responder roadrecon rpcclient smbclient xfreerdp3 bloodyAD
+# Hackerman v1.13.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs
 
 _hackerman() {
   local tool=${words[1]:t}
@@ -49,7 +49,9 @@ _hackerman() {
     linpeas.sh) _hk_linpeas_sh ;;
     mitm6) _hk_mitm6 ;;
     msfvenom) _hk_msfvenom ;;
+    nmap) _hk_nmap ;;
     nxc) _hk_nxc ;;
+    openssl) _hk_openssl ;;
     responder) _hk_responder ;;
     roadrecon) _hk_roadrecon ;;
     rpcclient) _hk_rpcclient ;;
@@ -88,7 +90,7 @@ _hk_bloodyad() {
   subs=(add get msldap remove set)
   if (( CURRENT == 2 )); then _describe 'subcommand' subs; return; fi
   local -a flags
-  flags=('--attr' '--bh' '--dc-ip' '--detail' '--filter' '--host' '--oldpass' '--otype' '--path' '--resolve-sd' '--right' '--target' '--transitive' '--zone' '-d' '-f' '-k' '-p' '-t' '-u')
+  flags=('--attr' '--bh' '--dc-ip' '--detail' '--filter' '--host' '--oldpass' '--otype' '--path' '--resolve-sd' '--right' '--target' '--transitive' '--zone' '-d' '-f' '-k' '-p' '-s' '-t' '-u')
   _arguments -s $flags
 }
 
@@ -139,7 +141,7 @@ _hk_impacket_atexec() {
 
 _hk_impacket_dacledit() {
   local -a flags
-  flags=('-action' '-dc-ip' '-k' '-no-pass' '-principal' '-rights' '-target' '-target-dn')
+  flags=('-action' '-dc-ip' '-k' '-no-pass' '-principal' '-rights' '-target' '-target-dn' '-use-ldaps')
   _arguments -s $flags
 }
 
@@ -211,7 +213,7 @@ _hk_impacket_ntlmrelayx() {
 
 _hk_impacket_owneredit() {
   local -a flags
-  flags=('-action' '-dc-ip' '-k' '-new-owner' '-no-pass' '-target-dn')
+  flags=('-action' '-dc-ip' '-k' '-new-owner' '-no-pass' '-target-dn' '-use-ldaps')
   _arguments -s $flags
 }
 
@@ -241,7 +243,7 @@ _hk_impacket_raiseChild() {
 
 _hk_impacket_rbcd() {
   local -a flags
-  flags=('-action' '-dc-ip' '-delegate-from' '-delegate-to' '-hashes' '-k' '-no-pass')
+  flags=('-action' '-dc-ip' '-delegate-from' '-delegate-to' '-hashes' '-k' '-no-pass' '-use-ldaps')
   _arguments -s $flags
 }
 
@@ -341,13 +343,25 @@ _hk_msfvenom() {
   _arguments -s $flags
 }
 
+_hk_nmap() {
+  local -a flags
+  flags=('-p')
+  _arguments -s $flags
+}
+
 _hk_nxc() {
   local -a subs
   subs=(ldap mssql smb winrm)
   if (( CURRENT == 2 )); then _describe 'subcommand' subs; return; fi
   local -a flags
-  flags=('--asreproast' '--bloodhound' '--continue-on-success' '--dc-list' '--dns-server' '--dpapi' '--gen-relay-list' '--get-file' '--get-sid' '--gmsa' '--groups' '--kerberoasting' '--local-auth' '--loggedon-users' '--lsa' '--ntds' '--pass-pol' '--put-file' '--query' '--rid-brute' '--sam' '--sccm' '--sessions' '--shares' '--trusted-for-delegation' '--use-kcache' '--users' '-H' '-X' '-c' '-d' '-k' '-o' '-p' '-q' '-u' '-x')
+  flags=('--asreproast' '--bloodhound' '--continue-on-success' '--dc-list' '--dns-server' '--dpapi' '--gen-relay-list' '--get-file' '--get-sid' '--gmsa' '--groups' '--kerberoasting' '--local-auth' '--loggedon-users' '--lsa' '--ntds' '--pass-pol' '--port' '--put-file' '--query' '--rid-brute' '--sam' '--sccm' '--sessions' '--shares' '--trusted-for-delegation' '--use-kcache' '--users' '-H' '-X' '-c' '-d' '-k' '-o' '-p' '-q' '-u' '-x')
   _arguments -s $flags '-M[module]:module:(adcs coerce_plus enum_av enum_dns gpp_autologin gpp_password laps lsassy maq nanodump printnightmare rdp spider_plus)'
+}
+
+_hk_openssl() {
+  local -a flags
+  flags=('-connect' '-showcerts')
+  _arguments -s $flags
 }
 
 _hk_responder() {

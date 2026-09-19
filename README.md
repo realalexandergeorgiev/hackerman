@@ -1,4 +1,4 @@
-# Hackerman v1.12.0
+# Hackerman v1.13.0
 
 > Single-file, offline Active Directory attack helper for Kali — fill in the context, get the next-step commands.
 
@@ -43,20 +43,24 @@ non-obvious tools and attacks.
 - **Context field tooltips** — hover any context label (dotted underline) for **how to get the
   value**: `--get-sid` for SIDs, trust-account/key commands, hash sources, SPN/DN lookups, certipy
   fields, … Derived fields show their formula. Toggle with the `help` chip.
+- **LDAPS by default** — every raw `ldapsearch` runs over `ldaps://` (636) with
+  `LDAPTLS_REQCERT=never` (self-signed DC certs); a dedicated **LDAP over TLS** card covers the
+  STARTTLS fallback, certificate grab and per-tool TLS flags (nxc `--port 636`, bloodyAD `-s`,
+  impacket `-use-ldaps`, certipy defaults to LDAPS).
 - **Recipe focus overlay** — click any recipe card for a full-width popup (Esc / backdrop / ×
   closes). Copy buttons, hover help and click-to-set keep working inside; the overlay refreshes
   when the context changes.
 - **Visible requirements** — every recipe carries requirement tags (DA, DCSync, local admin, write
   rights, ADCS enrollment, …) as amber chips with the full list on expand/overlay; wizard flows
   show prerequisites and per-step `needs:` hints, so it is clear what a technique actually requires.
-- **Compact lists** — recipe cards render collapsed (header + short description) by default so 119
+- **Compact lists** — recipe cards render collapsed (header + short description) by default so 120
   recipes stay scannable; click a card to open it in the focus overlay, or switch the `compact`
   chip off to expand everything inline. Wizard steps always stay expanded.
 - **zsh completion export** — the header button generates `_hackerman` from the embedded recipes
   (flags, subcommands, nxc `-M` modules, hashcat modes, xfreerdp options); see below.
 - **`proxychains` toggle** — prefixes network commands, local tools (Responder, hashcat, SMB
   server, krb5 tooling) are exempt.
-- **119 recipes** across 13 categories, each with a copy button per command and for the whole card.
+- **120 recipes** across 13 categories, each with a copy button per command and for the whole card.
 - **15 wizard flows** — pick what you have, get an ordered runbook with progress checkboxes and
   "copy flow as markdown".
 - **30 BloodHound Cypher queries** — collection commands plus pathfinding/rights snippets (CE / legacy):
@@ -76,7 +80,7 @@ xdg-open index.html        # or just double-click the file
 3. Or use **Recipes** — search/filter, hover the `?` markers, click placeholders to fill them.
 4. Toggle **proxychains** when you attack through a pivot.
 
-## Coverage (119 recipes)
+## Coverage (120 recipes)
 
 | Category | # | Highlights |
 |---|---:|---|

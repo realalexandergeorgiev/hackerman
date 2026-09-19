@@ -3,6 +3,24 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.13.0] — 2026-09-19
+
+### Added
+
+- New recipe **"LDAP over TLS — LDAPS vs STARTTLS"** (Recon & Auth): port check, anonymous RootDSE
+  over LDAPS, encrypted password bind, DC certificate grab via `openssl s_client` and
+  `LDAPTLS_CACERT`, plus a tool support matrix.
+- Per-tool TLS variants: nxc `--port 636` (plus note about the automatic LDAPS fallback on
+  signing-required), bloodyAD `-s` (`-ss`/`-sss` to relax signing/CBT), impacket `-use-ldaps`
+  for dacledit/rbcd/owneredit, certipy defaults-to-LDAPS note.
+
+### Changed
+
+- **All `ldapsearch` commands now run over LDAPS (636)** with `LDAPTLS_REQCERT=never` (self-signed
+  DC certificates) — `ldap-dump`, ESC5/ESC13/ESC14, Entra Connect, trust-enum, foreign groups.
+  Notes explain the STARTTLS fallback (`-H ldap://<dc> -ZZ`) for DCs without a certificate.
+- Context tooltips and the `ldapsearch` help entry prefer `-H ldaps://<dc>`.
+
 ## [1.12.0] — 2026-09-19
 
 ### Added

