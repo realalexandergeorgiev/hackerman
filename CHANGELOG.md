@@ -3,6 +3,20 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.14.0] — 2026-09-19
+
+### Added
+
+- New recipe **"Cross-trust coercion & relay"** (Trusts): coerce a partner DC (`coerce_plus`,
+  PrinterBug, PetitPotam incl. WebDAV listener, coercer), relay its machine account into the partner
+  domain (LDAP(S) `--escalate-user`/`--delegate-access`, ESC8 `--adcs --template DomainController`,
+  `certipy relay` ESC11) or coerce it into an unconstrained-delegation host of your own domain.
+- Note documents the constraints: trust direction / pass-through, selective authentication,
+  `ldap-checker` for signing/channel binding, Server 2025 default EPA, SMB-sourced NTLM vs WebDAV
+  and why DC machine credentials are not crackable.
+- `trusts` wizard flow gained a **"Coerce & relay across the trust"** step; `relay-coerce` and
+  `trust-enum` notes cross-link the new card.
+
 ## [1.13.0] — 2026-09-19
 
 ### Added

