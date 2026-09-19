@@ -1,4 +1,4 @@
-# Hackerman v1.1.0
+# Hackerman v1.1.1
 
 > Single-file, offline Active Directory attack helper for Kali — fill in the context, get the next-step commands.
 
@@ -31,7 +31,9 @@ non-obvious tools and attacks.
   hashes magenta, AES keys purple, SPNs blue, file paths violet, SIDs indigo. Missing values are
   highlighted (`‹DC IP?›`), and the card gets a `missing:` badge.
 - **Click-to-set placeholders** — click any `‹value?›` inside a command or note to set it right
-  there in a small popover (or jump to the context field for derived values).
+  there in a small popover. Rendered values are clickable too: click `eric.dutton` to change it
+  (a selection guard keeps text marking/copying working). Derived values jump to their source
+  fields instead.
 - **Readiness highlighting** — commands that can run with the current context get a brighter
   background and a `ready` badge; `ready only` filter and `ready → priority` sort are available.
 - **Applicability tiers** — every recipe/flow is ranked `always` / `common` / `situational` /

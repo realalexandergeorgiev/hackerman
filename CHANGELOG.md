@@ -3,6 +3,18 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.1.1] — 2026-09-19
+
+### Added
+
+- **Edit values by click**: rendered `{{variables}}` in commands and notes are clickable now and
+  open the popover in `Change` mode with the current value pre-filled (`eric.dutton` →
+  `Change User {{user}}`). A selection guard prevents the popover from opening while text is
+  selected, so marking and copying inside commands keeps working.
+- Derived values (`realm`, `domain_dn`, `dc_fqdn`, `target_fqdn`) are clickable as well and jump
+  to the source fields they are computed from (with the usual flash highlight).
+- Legend documents the click-to-set / click-to-change behavior.
+
 ## [1.1.0] — 2026-09-19
 
 ### Added
