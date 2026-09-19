@@ -3,6 +3,27 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.8.0] — 2026-09-19
+
+### Added
+
+- **13 new BloodHound queries** (16 → 29) in the BloodHound tab:
+  - paths/rights: owned → any high-value target, DCSync/domain-object write rights, write rights
+    over users, AddMember/write rights over groups, OU write rights (inheritance), sessions on
+    owned computers.
+  - credential access: LAPS readers, gMSA readers, passwords in user descriptions, privileged
+    kerberoastable accounts (`adminCount=1`).
+  - execution/ADCS: `CanRDP|ExecuteDCOM` from owned, ADCS CA permissions (ESC7, CE).
+  - helper: shortest path between two named objects.
+- CE/legacy differences are documented in the query notes (`highvalue` vs `system_tags`,
+  `EnterpriseCA` nodes, description property availability).
+
+### Changed
+
+- Constrained delegation query now returns `trustedtoauth` as well, marking protocol transition
+  (T2A4D) accounts where `getST -impersonate` needs no victim credentials.
+- README and `completions/_hackerman` updated.
+
 ## [1.7.0] — 2026-09-19
 
 ### Added

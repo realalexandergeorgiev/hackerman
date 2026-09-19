@@ -56,7 +56,8 @@ non-obvious tools and attacks.
 - **115 recipes** across 13 categories, each with a copy button per command and for the whole card.
 - **15 wizard flows** — pick what you have, get an ordered runbook with progress checkboxes and
   "copy flow as markdown".
-- **16 BloodHound Cypher queries** — collection commands plus pathfinding snippets (CE / legacy).
+- **29 BloodHound Cypher queries** — collection commands plus pathfinding/rights snippets (CE / legacy):
+  high-value paths, DCSync/write rights, LAPS/gMSA readers, sessions on owned hosts, ADCS CA rights, …
 - **Search** (`/` or `Ctrl/Cmd+K`), category/tier filters, `localStorage` UI state.
 
 ## Quick start

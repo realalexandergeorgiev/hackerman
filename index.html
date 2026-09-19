@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hackerman v1.7.0 — AD Attack Helper (Kali · HTB)</title>
+<title>Hackerman v1.8.0 — AD Attack Helper (Kali · HTB)</title>
 <style>
 :root{
   --bg:#0a0f1a; --panel:#0f1729; --panel2:#131d33; --line:#1e2b45;
@@ -216,7 +216,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
 
 <header>
   <div class="hwrap">
-    <div class="brand">Hackerman <b>v1.7.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
+    <div class="brand">Hackerman <b>v1.8.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
     <div class="hactions">
       <select id="presetSel" title="Load preset"><option value="">— presets —</option></select>
       <button id="presetSave" title="Save current context as preset">Save</button>
@@ -271,7 +271,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
   <section id="tab-legend" class="tab"></section>
 </main>
 
-<footer class="mono">Hackerman v1.7.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
+<footer class="mono">Hackerman v1.8.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
 
 <div id="focusOverlay" class="hidden">
   <div id="focusBox" role="dialog" aria-modal="true" tabindex="-1" aria-label="recipe focus">
@@ -1127,7 +1127,7 @@ function renderLegend(){
   const tab = $('#tab-legend');
   tab.innerHTML = '';
   const about = document.createElement('div');
-  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.7.0</h2>' +
+  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.8.0</h2>' +
     '<p class="dim">Single-file Active Directory attack helper for Kali, built by <b>@bongoalex</b> with <b>deepseek</b>. ' +
     RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries. Offline, no dependencies, no telemetry.</p>' +
     '<p class="dim">Use only for authorized testing (HTB labs, your own infrastructure, signed engagements). Syntax is version-sensitive — cross-check against your target versions.</p>';
@@ -2963,7 +2963,7 @@ function zshEmit(data){
   const fnName = n => '_hk_' + n.replace(/[^A-Za-z0-9_]/g, '_');
   const q = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
   let out = '#compdef ' + names.join(' ') + '\n';
-  out += '# Hackerman v1.7.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
+  out += '# Hackerman v1.8.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
   out += '_hackerman() {\n  local tool=${words[1]:t}\n  case $tool in\n';
   names.forEach(n => { out += '    ' + n + ') ' + fnName(n) + ' ;;\n'; });
   out += '  esac\n}\n\n';
@@ -3089,7 +3089,7 @@ CYPHER.push(
 {t:'Kerberoastable users with a path to DA',q:'MATCH p=shortestPath((u:User {hasspn:true})-[*1..]->(g:Group {name:"DOMAIN ADMINS@{{realm}}"})) RETURN p',n:'Roast these first — even a low-priv service account may own the path.'},
 {t:'AS-REP roastable users',q:'MATCH (u:User {dontreqpreauth:true}) RETURN u.name',n:'Kerberos pre-auth disabled — roastable without credentials.'},
 {t:'Unconstrained delegation computers',q:'MATCH (c:Computer {unconstraineddelegation:true}) RETURN c.name',n:'Coerce a DC into authenticating to one of these and steal its TGT.'},
-{t:'Constrained delegation',q:'MATCH (u) WHERE u.allowedtodelegate IS NOT NULL RETURN u.name, u.allowedtodelegate',n:'S4U2Proxy targets — check which services can be impersonated.'},
+{t:'Constrained delegation (incl. protocol transition)',q:'MATCH (u) WHERE u.allowedtodelegate IS NOT NULL RETURN u.name, u.allowedtodelegate, u.trustedtoauth',n:'S4U2Proxy targets — check which services can be impersonated. <span class="mono">trustedtoauth:true</span> means protocol transition (T2A4D), so <span class="mono">getST -impersonate</span> needs no victim credentials.'},
 {t:'RBCD: who can act on behalf of computers',q:'MATCH p=(a)-[:AllowedToAct]->(c:Computer) RETURN p',n:'Resource-based constrained delegation edges (Edge: AllowedToAct).'},
 {t:'Write rights over computers (from owned)',q:'MATCH p=(u {owned:true})-[:GenericAll|GenericWrite|WriteDacl|WriteOwner|Owns]->(c:Computer) RETURN p',n:'These are your RBCD / shadow-credentials candidates.'},
 {t:'Local admin (AdminTo) from owned',q:'MATCH p=(u {owned:true})-[:AdminTo]->(c:Computer) RETURN p',n:'Hosts where you can dump SAM/LSA right away.'},
@@ -3099,7 +3099,20 @@ CYPHER.push(
 {t:'ADCS certificate templates with edges',q:'MATCH p=(u:User)-[:Enroll|GenericAll|WriteOwner|WriteDacl|Owns]->(t:CertTemplate) RETURN p',n:'BloodHound CE only (ADCS collector enabled). Combine with certipy findings.'},
 {t:'All owned objects',q:'MATCH (n {owned:true}) RETURN n',n:'Quick sanity check of what BloodHound knows you control.'},
 {t:'Domain trusts',q:'MATCH p=(d:Domain)-[:TrustedBy]->(d2:Domain) RETURN p',n:'Find parent/child and forest trust relationships.'},
-{t:'Foreign group members (cross-domain)',q:'MATCH p=(u:User)-[:MemberOf*1..]->(g:Group) WHERE NOT g.name ENDS WITH "@{{realm}}" RETURN p',n:'Accounts from other domains nested in your groups — a common trust abuse path.'}
+{t:'Foreign group members (cross-domain)',q:'MATCH p=(u:User)-[:MemberOf*1..]->(g:Group) WHERE NOT g.name ENDS WITH "@{{realm}}" RETURN p',n:'Accounts from other domains nested in your groups — a common trust abuse path.'},
+{t:'Shortest path from owned to any high-value target',q:'MATCH p=shortestPath((n {owned:true})-[*1..]->(m)) WHERE m.highvalue = true RETURN p',n:'Broader than the Domain Admins query — covers DCs, CAs and tagged Tier-0 objects. In BloodHound CE tags live on <span class="mono">system_tags</span>: <span class="mono">MATCH (m) WHERE m.system_tags CONTAINS "admin_tier_0"</span>.'},
+{t:'DCSync / domain object write rights',q:'MATCH p=(u)-[:DCSync|GetChanges|GetChangesAll|GenericAll|WriteDacl|WriteOwner]->(d:Domain) RETURN p',n:'Anyone in this list can replicate secrets or rewrite the domain object — instant Domain Admin via DCSync.'},
+{t:'Write rights over users (from owned)',q:'MATCH p=(u {owned:true})-[:GenericAll|GenericWrite|WriteDacl|WriteOwner|ForceChangePassword|AddKeyCredentialLink|Owns]->(t:User) RETURN p',n:'Password reset, shadow credentials or targeted kerberoast targets — see the ACL/DACL recipes.'},
+{t:'Rights over groups (from owned)',q:'MATCH p=(u {owned:true})-[:AddMember|GenericAll|GenericWrite|WriteDacl|WriteOwner|Owns]->(g:Group) RETURN p',n:'AddMember or GenericAll on a group means adding yourself and re-authenticating. Prioritize Domain Admins/Enterprise Admins/Owner groups.'},
+{t:'Write rights on OUs (inheritance)',q:'MATCH p=(u {owned:true})-[:GenericAll|GenericWrite|WriteDacl|WriteOwner]->(o:OU) RETURN p',n:'Rights on an OU can inherit to every object inside it — combine with <span class="mono">dacledit -inheritance</span>.'},
+{t:'Sessions on computers I own',q:'MATCH p=(c:Computer {owned:true})-[:HasSession]->(u:User) RETURN p',n:'Users authenticating to your hosts leave credentials/tickets in LSASS — harvest them before moving on.'},
+{t:'LAPS password readers',q:'MATCH p=(u)-[:ReadLAPSPassword]->(c:Computer) RETURN p',n:'Who can read LAPS passwords — local admin credentials for those machines.'},
+{t:'gMSA password readers',q:'MATCH p=(a)-[:ReadGMSAPassword]->(g) RETURN p',n:'Who can read a group Managed Service Account password — often a service account with broad rights.'},
+{t:'Passwords in user descriptions',q:'MATCH (u:User) WHERE u.description IS NOT NULL AND toLower(u.description) CONTAINS "pass" RETURN u.name, u.description',n:'Only populated if your collector ingested the description property (nxc/CE collectors usually do). Also try "pwd" and "secret".'},
+{t:'Privileged kerberoastable accounts',q:'MATCH (u:User {hasspn:true, admincount:true}) RETURN u.name, u.serviceprincipalnames',n:'<span class="mono">adminCount=1</span> means the account is (or was) protected — roasting these usually yields high-value passwords.'},
+{t:'RDP / DCOM access from owned',q:'MATCH p=(u {owned:true})-[:CanRDP|ExecuteDCOM]->(c:Computer) RETURN p',n:'Alternative execution paths next to CanPSRemote/AdminTo.'},
+{t:'ADCS CA permissions (ESC7)',q:'MATCH p=(u)-[:ManageCA|ManageCertificates|GenericAll|WriteDacl|WriteOwner]->(ca:EnterpriseCA) RETURN p',n:'Requires BloodHound CE ADCS collection. ManageCA/ManageCertificates rights enable the ESC7 path (see the certipy ca recipe).'},
+{t:'Shortest path between two objects (helper)',q:'MATCH p=shortestPath((a {name:"<FROM>"})-[*1..]->(b {name:"<TO>"})) RETURN p',n:'Replace <FROM> and <TO> with node names, e.g. "USER@CORP.LOCAL" or "DC01.CORP.LOCAL".'}
 );
 
 initUI();
