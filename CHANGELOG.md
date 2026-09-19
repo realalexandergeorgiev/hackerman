@@ -3,6 +3,56 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.1.0] — 2026-09-19
+
+### Added
+
+- **Click-to-set placeholders**: every missing `‹value?›` in commands and notes is clickable and
+  opens an inline popover (save / context / cancel) that writes the value into the context and
+  re-renders instantly. Derived variables redirect to their source fields.
+- **Applicability tiers** for all recipes and flows: `always` / `common` / `situational` / `rare`
+  with colored badges, centrally maintained in `PRI_TIERS` / `FLOW_PRI`.
+- **Sort selector** `priority → ready` (new default), `ready → priority`, `data order`; tier
+  filter chips (multi-toggle, persisted) plus the existing `ready only` filter.
+- **Hover help**: 54 tool explanations and 34 attack explanations behind `?` markers on titles and
+  command labels (custom tooltip panel, keyboard focusable, `help` chip to toggle).
+- **Readiness UI**: ready commands get a brighter background and `ready` badge; cards show
+  `ready n/m`; `ready only` filter and ready counter in the toolbar.
+- **Derived-field UX**: dashed border, cyan value, `auto` tag, formula tooltip, and hover/focus
+  highlights the source fields (`src`/`hint` metadata).
+- **Required-field guard**: amber marker on empty required fields, header counter
+  (`N required missing` → `all required set`) that opens and flashes the missing fields.
+- **`example` button** in the header: fills the context with the argon.htb demo values.
+- **19 new recipes** (74 → 93) in 13 categories:
+  - Recon: `kerbrute`, `pw-spray`, `session-hunt`, `ldap-dump`
+  - Kerberos: `ticket-inspect`
+  - ADCS: `adcs-esc2-esc3`, `adcs-esc7`, `adcs-golden-cert`
+  - DACL: `dacl-adminsdholder`
+  - Creds: `linux-loot`, `win-registry-loot`
+  - Post: `av-defender`, `pe-suites` (linpeas/winPEAS), `revshells`, `cve-zerologon`,
+    `cve-nopac`, `cve-printnightmare`, `sccm`
+  - MSSQL: `mssql-alt-rce` (OLE/CLR)
+- **Kerberos auth helper expanded** (`kerberos-auth`, now 32 commands): clock-skew tooling
+  (`date`, `ntpdate -u`, `rdate -n`, `chronyc makestep`, `faketime` for single commands),
+  environment troubleshooting (`echo $KRB5CCNAME`, `unset KRB5CCNAME`, `klist -A/-c`), verbose
+  `kinit -V`, `kvno -e`, and a "where tickets land" section.
+
+### Changed
+
+- **Inline `KRB5CCNAME`** on all 55 env-dependent commands (`-k -no-pass`, `--use-kcache`,
+  `certipy -k`) so every command is copy-paste safe; fixed the double-path bug in `ccache-usage`.
+- Wizard flows integrated with the new recipes: `nopwn` + kerbrute/pw-spray, `creds` +
+  session-hunt, `keytab` + linux-loot, `foothold` + pe-suites/av-defender/win-registry-loot/
+  revshells, `adcs` + ESC2/3/7/Golden, `dacl` + AdminSDHolder, `mssql` + alt-rce, `da` +
+  golden-cert.
+- Legend documents tiers and hover help; toolbar reorganized (sort selector, tier chips, help
+  chip, ready counter).
+
+### Fixed
+
+- `ccache-usage` export no longer prefixes an absolute ccache path with `$(pwd)/`.
+- Kerberos recipes no longer rely on an implicitly exported `KRB5CCNAME`.
+
 ## [1.0.0] — 2026-09-18
 
 Initial release. Single-file, offline AD attack helper for Kali, built by @bongoalex with deepseek.
