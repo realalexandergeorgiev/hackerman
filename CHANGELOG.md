@@ -3,6 +3,29 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.10.0] — 2026-09-19
+
+### Fixed
+
+- `trust-enum`: replaced the removed NetExec `-M enum_trusts` module with the `--dc-list` LDAP flag
+  (lists DCs of the current and trusted domains including trust attributes).
+- **`bloodyad` spelling**: all 100 command templates now use the Kali binary name `bloodyad`
+  (pipx installs both `bloodyad` and `bloodyAD`). `HELP_TOOL` has entries for both spellings, zsh
+  completions include both, and the basics note explains the naming.
+- **bloodyAD BloodHound collector**: `--path` must point to an existing directory — `bloodyad-enum`
+  and `bh-nxc` now run `mkdir -p bloodhound` first and collect into `./bloodhound`
+  (previously `--path {{hashfile}}` / `--path loot.zip` aborted). Notes updated, `bloodhound/`
+  added to `.gitignore`.
+
+### Added
+
+- **BloodHound CE minimal setup** integrated into `bhcli-setup`: Docker install, official
+  `bloodhound-cli` download/unpack, `install` (prints the admin password), `running`, `logs`
+  (exit 137 = out of memory), `resetpwd`, `down/up`, `update` — plus the existing bhcli
+  auth/upload/mark workflow. Notes cover RAM (≥ 8 GB), localhost binding and ingest paths.
+- Hover help and zsh completions for `bloodhound-cli` (with subcommands).
+- README "BloodHound without the GUI" section starts with the CE setup snippet.
+
 ## [1.9.0] — 2026-09-19
 
 ### Added

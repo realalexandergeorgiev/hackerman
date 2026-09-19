@@ -6,6 +6,7 @@
 hashes.txt
 kerb.hash
 loot/
+bloodhound/
 *.log
 
 # editor / OS

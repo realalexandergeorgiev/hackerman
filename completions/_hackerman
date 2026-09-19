@@ -1,12 +1,13 @@
-#compdef bhcli bloodhound-ce-python bloodyAD certipy coercer enum4linux-ng faketime hashcat impacket-addcomputer impacket-atexec impacket-dacledit impacket-describeTicket impacket-dfscoerce impacket-findDelegation impacket-GetNPUsers impacket-getST impacket-getTGT impacket-GetUserSPNs impacket-lookupsid impacket-mssqlclient impacket-netview impacket-ntlmrelayx impacket-owneredit impacket-petitpotam impacket-printerbug impacket-psexec impacket-raiseChild impacket-rbcd impacket-secretsdump impacket-smbexec impacket-smbserver impacket-ticketConverter impacket-ticketer impacket-wmiexec john kerbrute kinit klist kvno ldapdomaindump ldapsearch linpeas.sh mitm6 msfvenom nxc responder roadrecon rpcclient smbclient xfreerdp3
-# Hackerman v1.9.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs
+#compdef bhcli bloodhound-ce-python bloodhound-cli bloodyad certipy coercer enum4linux-ng faketime hashcat impacket-addcomputer impacket-atexec impacket-dacledit impacket-describeTicket impacket-dfscoerce impacket-findDelegation impacket-GetNPUsers impacket-getST impacket-getTGT impacket-GetUserSPNs impacket-lookupsid impacket-mssqlclient impacket-netview impacket-ntlmrelayx impacket-owneredit impacket-petitpotam impacket-printerbug impacket-psexec impacket-raiseChild impacket-rbcd impacket-secretsdump impacket-smbexec impacket-smbserver impacket-ticketConverter impacket-ticketer impacket-wmiexec john kerbrute kinit klist kvno ldapdomaindump ldapsearch linpeas.sh mitm6 msfvenom nxc responder roadrecon rpcclient smbclient xfreerdp3 bloodyAD
+# Hackerman v1.10.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs
 
 _hackerman() {
   local tool=${words[1]:t}
   case $tool in
     bhcli) _hk_bhcli ;;
     bloodhound-ce-python) _hk_bloodhound_ce_python ;;
-    bloodyAD) _hk_bloodyAD ;;
+    bloodhound-cli) _hk_bloodhound_cli ;;
+    bloodyad) _hk_bloodyad ;;
     certipy) _hk_certipy ;;
     coercer) _hk_coercer ;;
     enum4linux-ng) _hk_enum4linux_ng ;;
@@ -54,6 +55,7 @@ _hackerman() {
     rpcclient) _hk_rpcclient ;;
     smbclient) _hk_smbclient ;;
     xfreerdp3) _hk_xfreerdp3 ;;
+    bloodyAD) _hk_bloodyad ;;
   esac
 }
 
@@ -72,12 +74,21 @@ _hk_bloodhound_ce_python() {
   _arguments -s $flags
 }
 
-_hk_bloodyAD() {
+_hk_bloodhound_cli() {
+  local -a subs
+  subs=(down install logs resetpwd running update)
+  if (( CURRENT == 2 )); then _describe 'subcommand' subs; return; fi
+  local -a flags
+  flags=('--base-url' '--edition' '--uri' '--user' '--username' '-d')
+  _arguments -s $flags
+}
+
+_hk_bloodyad() {
   local -a subs
   subs=(add get msldap remove set)
   if (( CURRENT == 2 )); then _describe 'subcommand' subs; return; fi
   local -a flags
-  flags=('--attr' '--bh' '--detail' '--filter' '--host' '--oldpass' '--otype' '--path' '--resolve-sd' '--right' '--target' '--transitive' '--zone' '-d' '-f' '-k' '-p' '-t' '-u')
+  flags=('--attr' '--bh' '--dc-ip' '--detail' '--filter' '--host' '--oldpass' '--otype' '--path' '--resolve-sd' '--right' '--target' '--transitive' '--zone' '-d' '-f' '-k' '-p' '-t' '-u')
   _arguments -s $flags
 }
 
@@ -335,8 +346,8 @@ _hk_nxc() {
   subs=(ldap mssql smb winrm)
   if (( CURRENT == 2 )); then _describe 'subcommand' subs; return; fi
   local -a flags
-  flags=('--asreproast' '--bloodhound' '--continue-on-success' '--dns-server' '--dpapi' '--gen-relay-list' '--get-file' '--gmsa' '--groups' '--kerberoasting' '--local-auth' '--loggedon-users' '--lsa' '--ntds' '--pass-pol' '--put-file' '--query' '--rid-brute' '--sam' '--sccm' '--sessions' '--shares' '--trusted-for-delegation' '--use-kcache' '--users' '-H' '-X' '-c' '-d' '-k' '-o' '-p' '-q' '-u' '-x')
-  _arguments -s $flags '-M[module]:module:(adcs coerce_plus enum_av enum_dns enum_trusts gpp_autologin gpp_password laps lsassy maq nanodump printnightmare rdp spider_plus)'
+  flags=('--asreproast' '--bloodhound' '--continue-on-success' '--dc-list' '--dns-server' '--dpapi' '--gen-relay-list' '--get-file' '--gmsa' '--groups' '--kerberoasting' '--local-auth' '--loggedon-users' '--lsa' '--ntds' '--pass-pol' '--put-file' '--query' '--rid-brute' '--sam' '--sccm' '--sessions' '--shares' '--trusted-for-delegation' '--use-kcache' '--users' '-H' '-X' '-c' '-d' '-k' '-o' '-p' '-q' '-u' '-x')
+  _arguments -s $flags '-M[module]:module:(adcs coerce_plus enum_av enum_dns gpp_autologin gpp_password laps lsassy maq nanodump printnightmare rdp spider_plus)'
 }
 
 _hk_responder() {

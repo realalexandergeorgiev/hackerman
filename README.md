@@ -1,4 +1,4 @@
-# Hackerman v1.9.0
+# Hackerman v1.10.0
 
 > Single-file, offline Active Directory attack helper for Kali — fill in the context, get the next-step commands.
 
@@ -89,7 +89,7 @@ xdg-open index.html        # or just double-click the file
 | Post-Exploitation | 17 | SeImpersonate, **UAC bypass**, **SeBackup**, **DSRM**, **DNSAdmins**, AV/Defender checks, **linpeas/winpeas**, **reverse shells**, GPO abuse, ADIDNS, **ZeroLogon**, **noPac**, **PrintNightmare**, **Certifried**, **KrbRelayUp**, **Entra ID Connect**, **ADFS Golden SAML**, **SCCM** |
 | MSSQL | 6 | connect (pw/hash/ccache), xp_cmdshell, **OLE/CLR RCE**, impersonation, linked servers, NetNTLM theft |
 | Trusts | 5 | trust enum (+ direction/attributes), **cross-domain roasting**, **SID history / ExtraSIDs**, **foreign group membership**, raiseChild / trust-key golden ticket |
-| BloodHound | 6 | bloodhound-python / **bloodhound-ce-python**, nxc `--bloodhound`, **bhcli** (setup, lists/audit, cypher, alternatives) |
+| BloodHound | 6 | bloodhound-python / **bloodhound-ce-python**, nxc `--bloodhound`, **bhcli workflow** (CE setup, lists/audit, cypher, alternatives) |
 
 ### Wizard flows
 
@@ -126,7 +126,20 @@ Then open the page and check the browser console for errors.
 
 ## BloodHound without the GUI (bhcli)
 
-The BloodHound tab includes a **CLI workflow** section built around
+The BloodHound tab includes a **CLI workflow** section. Start with a minimal local
+BloodHound CE (Docker; **≥ 8 GB RAM**, otherwise the container may exit with code 137):
+
+```sh
+sudo apt update && sudo apt install -y docker.io docker-compose-v2   # Desktop/Podman also work
+sudo usermod -aG docker $USER                                         # re-login afterwards
+wget https://github.com/SpecterOps/bloodhound-cli/releases/latest/download/bloodhound-cli-linux-amd64.tar.gz
+tar -xvzf bloodhound-cli-linux-amd64.tar.gz && sudo mv bloodhound-cli /usr/local/bin/
+bloodhound-cli install     # prints the generated admin password
+bloodhound-cli running     # container status; 'logs', 'resetpwd', 'update', 'down/up' for management
+# UI: http://localhost:8080/ui/login  (user: admin)
+```
+
+Then talk to it from the terminal with
 [bhcli](https://github.com/exploide/bhcli), an unofficial client for the BloodHound CE API
 (works with the default PostgreSQL backend and Neo4j alike):
 

