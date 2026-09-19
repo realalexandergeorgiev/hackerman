@@ -1,4 +1,4 @@
-# Hackerman v1.6.0
+# Hackerman v1.7.0
 
 > Single-file, offline Active Directory attack helper for Kali — fill in the context, get the next-step commands.
 
@@ -43,6 +43,9 @@ non-obvious tools and attacks.
 - **Recipe focus overlay** — click any recipe card for a full-width popup (Esc / backdrop / ×
   closes). Copy buttons, hover help and click-to-set keep working inside; the overlay refreshes
   when the context changes.
+- **Visible requirements** — every recipe carries requirement tags (DA, DCSync, local admin, write
+  rights, ADCS enrollment, …) as amber chips with the full list on expand/overlay; wizard flows
+  show prerequisites and per-step `needs:` hints, so it is clear what a technique actually requires.
 - **Compact lists** — recipe cards render collapsed (header + short description) by default so 115
   recipes stay scannable; click a card to open it in the focus overlay, or switch the `compact`
   chip off to expand everything inline. Wizard steps always stay expanded.

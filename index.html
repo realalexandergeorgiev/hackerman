@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hackerman v1.6.1 — AD Attack Helper (Kali · HTB)</title>
+<title>Hackerman v1.7.0 — AD Attack Helper (Kali · HTB)</title>
 <style>
 :root{
   --bg:#0a0f1a; --panel:#0f1729; --panel2:#131d33; --line:#1e2b45;
@@ -108,6 +108,13 @@ body.focus-open{overflow:hidden}
 .chip.t3.on{background:#0e2a3a;border-color:#164e63;color:#22d3ee}
 .chip.t2.on{background:#251a07;border-color:#78350f;color:#fbbf24}
 .chip.t1.on{background:#151c2b;border-color:#334155;color:#94a3b8}
+.reqchip{font-size:10.5px;padding:2px 7px;border-radius:5px;border:1px solid #7c4a03;background:#2a1c05;color:#fbbf24;white-space:nowrap}
+.reqrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px}
+.badge.reqmore{color:#fbbf24}
+.stepreq{font-size:11.5px;color:#fbbf24;margin:0 0 8px}
+.prereqbox{background:#1c1508;border:1px solid #7c4a03;border-radius:8px;padding:7px 10px;font-size:12.3px;color:#e8d9b8;margin:0 0 12px}
+.prereqbox b{color:#fbbf24}
+.flowreqs{font-size:11.5px;color:#fbbf24;margin:0}
 #tierFilter .chip:not(.on){text-decoration:line-through;opacity:.6}
 .desc{color:var(--dim);font-size:12.5px;margin:0}
 .badge{font-size:11px;color:var(--warn)}
@@ -209,7 +216,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
 
 <header>
   <div class="hwrap">
-    <div class="brand">Hackerman <b>v1.6.1</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
+    <div class="brand">Hackerman <b>v1.7.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
     <div class="hactions">
       <select id="presetSel" title="Load preset"><option value="">— presets —</option></select>
       <button id="presetSave" title="Save current context as preset">Save</button>
@@ -264,7 +271,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
   <section id="tab-legend" class="tab"></section>
 </main>
 
-<footer class="mono">Hackerman v1.6.1 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
+<footer class="mono">Hackerman v1.7.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
 
 <div id="focusOverlay" class="hidden">
   <div id="focusBox" role="dialog" aria-modal="true" tabindex="-1" aria-label="recipe focus">
@@ -626,6 +633,14 @@ function renderNote(html){
   });
 }
 
+function reqChip(t, prefix){
+  const d = REQ_DEFS[t];
+  const c = document.createElement('span');
+  c.className = 'reqchip'; c.textContent = (prefix ? 'needs: ' : '') + d.label;
+  c.title = 'requires: ' + d.tip;
+  return c;
+}
+
 function recipeCard(r, alwaysExpanded){
   const card = document.createElement('div');
   card.className = 'recipe';
@@ -669,6 +684,15 @@ function recipeCard(r, alwaysExpanded){
   const metaRow = document.createElement('div');
   metaRow.className = 'rc-meta';
   metaRow.appendChild(cat); metaRow.appendChild(tier);
+  const reqs = reqSorted(r.reqs);
+  reqs.slice(0, 2).forEach(t => metaRow.appendChild(reqChip(t, false)));
+  if(reqs.length > 2){
+    const n = document.createElement('span');
+    n.className = 'badge reqmore';
+    n.title = reqs.slice(2).map(t => REQ_DEFS[t].label + ': ' + REQ_DEFS[t].tip).join(' | ');
+    n.textContent = '+' + (reqs.length - 2);
+    metaRow.appendChild(n);
+  }
   if(readyCount){
     const rb = document.createElement('span');
     rb.className = 'badge ready'; rb.title = 'commands runnable with the current context';
@@ -692,6 +716,15 @@ function recipeCard(r, alwaysExpanded){
     p.className = 'desc';
     p.textContent = r.desc;
     card.appendChild(p);
+  }
+  if(!collapsed && reqs.length){
+    const reqRow = document.createElement('div');
+    reqRow.className = 'reqrow';
+    const rl = document.createElement('span');
+    rl.className = 'dim'; rl.textContent = 'requires:';
+    reqRow.appendChild(rl);
+    reqs.forEach(t => reqRow.appendChild(reqChip(t, false)));
+    card.appendChild(reqRow);
   }
   if(!collapsed){
     rendered.forEach((x, i) => {
@@ -940,6 +973,8 @@ function renderWizard(){
         top.appendChild(rb);
       }
       const d = document.createElement('p'); d.textContent = f.when || '';
+      const rq = document.createElement('p');
+      if(f.reqs && f.reqs.length){ rq.className = 'flowreqs'; rq.textContent = 'requires: ' + f.reqs.join(' · '); }
       const meta = document.createElement('div');
       const pr = flowProgress(f);
       meta.className = 'meta';
@@ -949,7 +984,7 @@ function renderWizard(){
       const fill = document.createElement('i');
       fill.style.width = (pr.total ? Math.round(pr.done / pr.total * 100) : 0) + '%';
       bar.appendChild(fill); meta.appendChild(bar);
-      card.appendChild(top); card.appendChild(d); card.appendChild(meta);
+      card.appendChild(top); card.appendChild(d); card.appendChild(rq); card.appendChild(meta);
       card.addEventListener('click', () => { activeFlow = f.id; renderWizard(); window.scrollTo({top:0}); });
       grid.appendChild(card);
     });
@@ -968,12 +1003,19 @@ function renderWizard(){
   const pr = flowProgress(f);
   const h2 = document.createElement('h2'); h2.textContent = f.title;
   const wp = document.createElement('p'); wp.textContent = f.when || '';
+  const prereq = document.createElement('div');
+  if(f.reqs && f.reqs.length){
+    prereq.className = 'prereqbox';
+    prereq.innerHTML = '<b>Requirements:</b> ' + f.reqs.map(esc).join(' · ');
+  }
   const bar = document.createElement('div');
   bar.className = 'pbar'; bar.style.maxWidth = '280px';
   const fill = document.createElement('i');
   fill.style.width = (pr.total ? Math.round(pr.done / pr.total * 100) : 0) + '%';
   bar.appendChild(fill);
-  head.appendChild(h2); head.appendChild(wp); head.appendChild(bar);
+  head.appendChild(h2); head.appendChild(wp);
+  if(prereq.className) head.appendChild(prereq);
+  head.appendChild(bar);
   const actions = document.createElement('div');
   actions.style.margin = '10px 0 18px';
   const copyFlow = document.createElement('button');
@@ -1002,6 +1044,12 @@ function renderWizard(){
     h3.textContent = (i + 1) + '. ' + step.t;
     sh.appendChild(cb); sh.appendChild(h3);
     el.appendChild(sh);
+    const sr = stepReqs(step);
+    if(sr){
+      const p = document.createElement('p');
+      p.className = 'stepreq'; p.textContent = 'needs: ' + sr;
+      el.appendChild(p);
+    }
     if(step.d){
       const p = document.createElement('p');
       p.className = 'stip'; p.innerHTML = renderNote(step.d);
@@ -1079,7 +1127,7 @@ function renderLegend(){
   const tab = $('#tab-legend');
   tab.innerHTML = '';
   const about = document.createElement('div');
-  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.6.1</h2>' +
+  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.7.0</h2>' +
     '<p class="dim">Single-file Active Directory attack helper for Kali, built by <b>@bongoalex</b> with <b>deepseek</b>. ' +
     RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries. Offline, no dependencies, no telemetry.</p>' +
     '<p class="dim">Use only for authorized testing (HTB labs, your own infrastructure, signed engagements). Syntax is version-sensitive — cross-check against your target versions.</p>';
@@ -1127,6 +1175,21 @@ function renderLegend(){
     ttable.appendChild(tr);
   });
   tab.appendChild(ttable);
+
+  const h2r = document.createElement('h2'); h2r.className = 'sec'; h2r.textContent = 'Requirement tags';
+  tab.appendChild(h2r);
+  const rtable = document.createElement('table');
+  rtable.className = 'tbl';
+  Object.keys(REQ_DEFS).sort((a, b) => REQ_DEFS[b].sev - REQ_DEFS[a].sev).forEach(t => {
+    const tr = document.createElement('tr');
+    const td1 = document.createElement('td');
+    const chip = document.createElement('span');
+    chip.className = 'reqchip'; chip.textContent = REQ_DEFS[t].label;
+    td1.appendChild(chip);
+    const td2 = document.createElement('td'); td2.textContent = REQ_DEFS[t].tip;
+    tr.appendChild(td1); tr.appendChild(td2); rtable.appendChild(tr);
+  });
+  tab.appendChild(rtable);
 
   const h2 = document.createElement('h2'); h2.className = 'sec'; h2.textContent = 'How this works';
   tab.appendChild(h2);
@@ -2481,7 +2544,7 @@ cmds:[
  [`KRB5CCNAME={{ccache}} impacket-secretsdump -k -no-pass -just-dc-user '{{netbios}}$' '{{domain}}/{{user}}@{{dc_fqdn}}'`,'trust key via ccache'],
  [`impacket-ticketer -nthash '{{krbtgt_hash}}' -domain-sid '{{domain_sid}}' -domain {{domain}} -extra-sid '{{extra_sid}}' -spn krbtgt/{{parent_domain}} '{{target_user}}'`,'forge inter-realm golden (extra-sid = parent SID-519)'],
  [`export KRB5CCNAME=$(pwd)/'{{target_user}}.ccache' && nxc smb <PARENT_DC> -u '{{target_user}}' -k --use-kcache --ntds`,'use it against the parent DC']
-],note:'Automated route: <span class="mono">raiseChild.py</span> dumps the trust key, forges the ticket and psexecs to the parent DC (force a host with <span class="mono">-target-exec &lt;parent-dc&gt;</span>). Manual route needs: child domain SID, trust key, parent domain SID + <span class="mono">-519</span> (Enterprise Admins RID), and SPN <span class="mono">krbtgt/&lt;parent.fqdn&gt;</span>. Compare with <span class="mono">thehacker.recipes</span> for your exact trust direction.'});
+],note:'<b>Requires Domain Admin (or DCSync rights) in the child domain</b> — the trust key comes from secretsdump, which needs replication rights. Automated route: <span class="mono">raiseChild.py</span> dumps the trust key, forges the ticket and psexecs to the parent DC (force a host with <span class="mono">-target-exec &lt;parent-dc&gt;</span>). Manual route needs: child domain SID, trust key, parent domain SID + <span class="mono">-519</span> (Enterprise Admins RID), and SPN <span class="mono">krbtgt/&lt;parent.fqdn&gt;</span>. Compare with <span class="mono">thehacker.recipes</span> for your exact trust direction.'});
 
 R({id:'trust-cross-domain-roast',cat:'trust',title:'Cross-domain roasting via trust',desc:'Trusts let your credentials be accepted in the other domain — its service accounts and pre-auth-less users are roastable too.',
 cmds:[
@@ -2503,7 +2566,7 @@ cmds:[
  [`export KRB5CCNAME=$(pwd)/'{{target_user}}.ccache' && nxc smb {{trust_domain}} -u '{{target_user}}' -k --use-kcache --ntds`,'use it against the trusted DC'],
  [`impacket-psexec -k -no-pass '{{domain}}/{{target_user}}@{{trust_domain}}'`,'exec via the inter-realm ticket'],
  [`impacket-secretsdump -k -no-pass '{{trust_domain}}'`,'dump with the ticket']
-],note:'SID filtering decides whether this works: <b>intra-forest</b> child↔parent trusts allow SID history (Quarantine off), while <b>forest trusts</b> strip SIDs that do not belong to the trusted domain (Quarantine on). Check the trust attributes with the trust-enum recipe; labs can disable it with <span class="mono">netdom trust &lt;domain&gt; /domain:&lt;trust&gt; /quarantine:no</span> and <span class="mono">/enablesidhistory:yes</span>. On Windows, mimikatz <span class="mono">kerberos::golden /sids:...</span> does the same.'});
+],note:'<b>Requires DCSync / Domain Admin in the child domain</b> to dump the inter-realm trust key. SID filtering decides whether this works: <b>intra-forest</b> child↔parent trusts allow SID history (Quarantine off), while <b>forest trusts</b> strip SIDs that do not belong to the trusted domain (Quarantine on). Check the trust attributes with the trust-enum recipe; labs can disable it with <span class="mono">netdom trust &lt;domain&gt; /domain:&lt;trust&gt; /quarantine:no</span> and <span class="mono">/enablesidhistory:yes</span>. On Windows, mimikatz <span class="mono">kerberos::golden /sids:...</span> does the same.'});
 
 R({id:'trust-foreign-groups',cat:'trust',title:'Foreign group membership',desc:'Users from a trusted domain can be members of your groups (and vice versa) — their own credentials then work against your resources.',
 cmds:[
@@ -2536,7 +2599,7 @@ cmds:[
 /* @@RECIPES@@ */
 /* ===== WIZARD FLOWS ===== */
 FLOWS.push(
-{id:'creds',title:'I have valid credentials (user + password)',when:'A domain account with a known password — the most common starting point.',
+{id:'creds',title:'I have valid credentials (user + password)',when:'A domain account with a known password — the most common starting point.', reqs:['a valid domain account (password)'],
 need:['user','password'],
 steps:[
  {t:'Verify and enumerate',d:'Confirm where the creds work, then look at shares, sessions and users.',r:['auth-check','user-enum','shares','session-hunt']},
@@ -2546,7 +2609,7 @@ steps:[
  {t:'Escalate via ACLs / services',d:'Depending on what BloodHound and get writable showed.',r:['dacl-enum','mssql-connect','dacl-genericall-user','dacl-genericall-computer']},
  {t:'If admin: dump and move',d:'Local admin on a host → SAM/LSA/LSASS. Domain Admin → DCSync.',r:['lat-winrm','creds-sam-lsa','creds-dpapi','creds-dcsync']}
 ]},
-{id:'hash',title:'I have an NT hash (pass-the-hash)',when:'Dumped a hash but could not / do not want to crack it.',
+{id:'hash',title:'I have an NT hash (pass-the-hash)',when:'Dumped a hash but could not / do not want to crack it.', reqs:['an NT hash'],
 need:['user','nthash'],
 steps:[
  {t:'Check where the hash works',d:'Any NTLM-accepting service — SMB, WinRM, LDAP, MSSQL.',r:['pth-check']},
@@ -2554,7 +2617,7 @@ steps:[
  {t:'Execute',d:'Remote shell or command execution.',r:['lat-smb-exec','lat-impacket-exec','lat-winrm']},
  {t:'Dump if admin',d:'Local secrets, then domain secrets if you landed on a DC / got DA.',r:['creds-sam-lsa','creds-dcsync']}
 ]},
-{id:'aes',title:'I have an AES key or a ccache',when:'Machine/service account key or an existing Kerberos ticket.',
+{id:'aes',title:'I have an AES key or a ccache',when:'Machine/service account key or an existing Kerberos ticket.', reqs:['an AES key or a Kerberos ccache'],
 need:['user'], needAny:['ccache','aeskey'],
 steps:[
  {t:'Set up Kerberos on Kali',d:'krb5.conf, /etc/hosts and a valid TGT — -k/-no-pass only works when this is in place.',r:['kerberos-auth']},
@@ -2563,7 +2626,7 @@ steps:[
  {t:'Collect BloodHound with the ticket',d:'Kerberos-only collection works even when NTLM is blocked.',r:['bh-nxc']},
  {t:'Dump',d:'Use the ticket to read secrets.',r:['creds-sam-lsa','creds-dcsync']}
 ]},
-{id:'keytab',title:'I found a keytab file',when:'Linux host or backup contains /etc/krb5.keytab (common on HTB).',
+{id:'keytab',title:'I found a keytab file',when:'Linux host or backup contains /etc/krb5.keytab (common on HTB).', reqs:['a keytab file of a machine/service account'],
 steps:[
  {t:'Loot the Linux box',d:'Hunt for ccache/keytab files, configs, history and sudo rights before extracting anything.',r:['linux-loot']},
  {t:'Extract the keys and get a TGT',d:'KeyTabExtract gives you NTLM + AES128/256 of the machine account; the same card requests the TGT with the correct trailing $ (kerberos-auth has the kinit -k -t variant).',r:['keytab']},
@@ -2571,17 +2634,17 @@ steps:[
  {t:'Use the ticket',d:'Export the ccache, validate it and authenticate. The Kerberos setup card covers krb5.conf and hosts entries.',r:['kerberos-auth','ccache-usage','ticket-inspect','getst']},
  {t:'Dump and move',d:'Service accounts often have rights over specific targets.',r:['creds-sam-lsa','creds-dcsync']}
 ]},
-{id:'rbcd',title:'I have write rights over a computer (RBCD)',when:'GenericAll / GenericWrite / WriteAccountRestrictions / WriteDACL on a computer object — the classic delegation attack.',
+{id:'rbcd',title:'I have write rights over a computer (RBCD)',when:'GenericAll / GenericWrite / WriteAccountRestrictions / WriteDACL on a computer object — the classic delegation attack.', reqs:['write rights over a computer object'],
 need:['target_host'], needAny:['password','nthash','ccache'],
 steps:[
  {t:'Enumerate delegation state',d:'Confirm the target and any existing delegation entries.',r:['deleg-enum','rbcd-read']},
- {t:'Create your rogue machine account',d:'Check MachineAccountQuota; add the computer you will delegate from.',r:['rbcd-addcomputer']},
- {t:'Grant RBCD to your machine',d:'Point msDS-AllowedToActOnBehalfOfOtherIdentity at your controlled account (the full bloodyAD variant sits in the cleanup card).',r:['rbcd-write']},
+ {t:'Create your rogue machine account',d:'Check MachineAccountQuota; add the computer you will delegate from.',req:'MachineAccountQuota > 0 or an owned machine account',r:['rbcd-addcomputer']},
+ {t:'Grant RBCD to your machine',d:'Point msDS-AllowedToActOnBehalfOfOtherIdentity at your controlled account (the full bloodyAD variant sits in the cleanup card).',req:'write rights over the target computer (GenericAll/GenericWrite/WriteDACL)',r:['rbcd-write']},
  {t:'Request the impersonation ticket',d:'Impersonate Administrator to cifs/HOST of the target.',r:['rbcd-getst']},
  {t:'Use the ticket and dump',d:'Export ccache, verify, then SAM/LSA/DPAPI/NTDS.',r:['rbcd-use']},
  {t:'Cleanup',d:'Flush RBCD and delete the rogue machine account.',r:['rbcd-bloodyad']}
 ]},
-{id:'constrained',title:'I found constrained delegation',when:'An account has msDS-AllowedToDelegateTo — S4U2Proxy/Protocol Transition abuse.',
+{id:'constrained',title:'I found constrained delegation',when:'An account has msDS-AllowedToDelegateTo — S4U2Proxy/Protocol Transition abuse.', reqs:['an account with msDS-AllowedToDelegateTo and its key (keytab/hash/AES)'],
 need:['spn'], needAny:['password','nthash','ccache','aeskey'],
 steps:[
  {t:'Enumerate the delegation',d:'Find which account may delegate to which service.',r:['deleg-enum']},
@@ -2589,25 +2652,25 @@ steps:[
  {t:'Target SPN missing or unreachable?',d:'Move the delegation SPN onto the DC with bloodyAD (needs write on the DC object), then request the ticket with -altservice HOST/DC.',r:['spn-hijack-deleg']},
  {t:'Use the ticket',d:'Export and use the ccache (Kerberos env: see kerberos-auth), then dump.',r:['kerberos-auth','ccache-usage','creds-sam-lsa','creds-dcsync']}
 ]},
-{id:'unconstrained',title:'I found unconstrained delegation (or a coerced DC)',when:'A host is trusted for delegation and you can make a machine authenticate to it.',
+{id:'unconstrained',title:'I found unconstrained delegation (or a coerced DC)',when:'A host is trusted for delegation and you can make a machine authenticate to it.', reqs:['local admin on a delegation host or a relay position, plus a coercion vector'],
 need:['user'], needAny:['password','nthash','ccache'],
 steps:[
  {t:'Confirm the host',d:'Unconstrained computers cache TGTs of authenticating users.',r:['deleg-enum']},
- {t:'Coerce authentication',d:'Make the DC authenticate to the unconstrained host.',r:['relay-coerce']},
+ {t:'Coerce authentication',d:'Make the DC authenticate to the unconstrained host.',req:'local admin on the delegation host (or relay listener) + coercion vector',r:['relay-coerce']},
  {t:'Steal the tickets',d:'Dump LSASS on the unconstrained host — DC machine TGT included.',r:['unconstrained-coerce','creds-sam-lsa']},
  {t:'DCSync',d:'With the DC machine account you can replicate secrets.',r:['creds-dcsync']}
 ]},
-{id:'adcs',title:'I found an ADCS vulnerability',when:'Certipy reported a vulnerable template or web enrollment (ESC1–ESC8+).',
+{id:'adcs',title:'I found an ADCS vulnerability',when:'Certipy reported a vulnerable template or web enrollment (ESC1–ESC8+).', reqs:['an ADCS misconfiguration, usually with enrollment rights'],
 need:['user'], needAny:['password','nthash','ccache'],
 steps:[
  {t:'Enumerate properly',d:'Get the full picture before requesting anything.',r:['adcs-find']},
- {t:'Exploit the template',d:'ESC1 (supplied SAN), ESC4 (rewrite template), ESC2/ESC3 (any-purpose / enrollment agent), ESC7 (CA rights).',r:['adcs-esc1','adcs-esc4','adcs-esc2-esc3','adcs-esc7']},
+ {t:'Exploit the template',d:'ESC1 (supplied SAN), ESC4 (rewrite template), ESC2/ESC3 (any-purpose / enrollment agent), ESC7 (CA rights).',req:'enrollment rights on the vulnerable template',r:['adcs-esc1','adcs-esc4','adcs-esc2-esc3','adcs-esc7']},
  {t:'Missing/weak mapping & CA flags',d:'ESC9/ESC16 (no SID extension, UPN swap), ESC10 (Schannel mapping), ESC6 (SAN via request attributes).',r:['adcs-esc9-esc16','adcs-esc10','adcs-esc6']},
  {t:'Relay, OID groups, EKUwu, server auth',d:'ESC11 (RPC relay), ESC13 (linked issuance policy), ESC15 (EKUwu), ESC17 (server-auth SAN), ESC5/12/14 recon, Certifried.',r:['adcs-esc11','adcs-esc13','adcs-esc15','adcs-esc17','adcs-esc5-esc12-esc14','cve-certifried']},
  {t:'Relay to the CA',d:'ESC8 if web enrollment over HTTP is exposed.',r:['adcs-esc8','relay-coerce']},
  {t:'Use the certificate',d:'certipy auth gives you the NT hash — then PtH or DCSync. With CA key backup: golden certificate for persistence.',r:['creds-dcsync','adcs-golden-cert']}
 ]},
-{id:'dacl',title:'I have rights over a user / group / computer',when:'GenericAll, GenericWrite, WriteDACL, WriteOwner, ForceChangePassword, AddSelf or AddKeyCredentialLink.',
+{id:'dacl',title:'I have rights over a user / group / computer',when:'GenericAll, GenericWrite, WriteDACL, WriteOwner, ForceChangePassword, AddSelf or AddKeyCredentialLink.', reqs:['write rights (GenericAll/GenericWrite/WriteDACL/WriteOwner) over an object'],
 need:['user'], needAny:['password','nthash','ccache'],
 steps:[
  {t:'Read the ACL and find write rights',d:'Confirm exactly which object/attribute you can write.',r:['dacl-enum','bloodyad-writable']},
@@ -2618,7 +2681,7 @@ steps:[
  {t:'Domain object (WriteDACL/Owner)',d:'Grant DCSync, take ownership, or abuse AdminSDHolder for protected groups.',r:['dacl-writedacl-dcsync','dacl-writeowner','dacl-adminsdholder']},
  {t:'Cleanup',d:'Remove the ACEs, key credentials and group memberships you added.',r:['shadow-creds','dacl-genericall-group']}
 ]},
-{id:'mssql',title:'I have MSSQL access',when:'A SQL login or Windows account reaches a MSSQL server.',
+{id:'mssql',title:'I have MSSQL access',when:'A SQL login or Windows account reaches a MSSQL server.', reqs:['a reachable MSSQL login'],
 need:['target_host'], needAny:['password','nthash','ccache'],
 steps:[
  {t:'Connect',d:'Windows auth or SQL login; hash and Kerberos also supported.',r:['mssql-connect']},
@@ -2627,7 +2690,7 @@ steps:[
  {t:'Steal the service account hash',d:'Coerce NTLM out and crack or relay it.',r:['mssql-coerce','relay-ldap','relay-smb']},
  {t:'Loot local secrets',d:'The SQL service account often has local admin elsewhere — SPN + Kerberos helps.',r:['kerberoast','creds-sam-lsa']}
 ]},
-{id:'nopwn',title:'No credentials — only network access',when:'Internal position, nothing but a Kali box attached to the network.',
+{id:'nopwn',title:'No credentials — only network access',when:'Internal position, nothing but a Kali box attached to the network.', reqs:['network access only — no credentials'],
 steps:[
  {t:'Poison name resolution',d:'LLMNR/NBT-NS/mDNS — capture hashes from misconfigured clients. If those are disabled, take over IPv6 DNS with mitm6.',r:['relay-responder','mitm6']},
  {t:'Enumerate anonymously',d:'Null sessions, SMB, DNS.',r:['anon-enum','user-enum']},
@@ -2636,36 +2699,36 @@ steps:[
  {t:'Relay the auth',d:'SMB → dump; LDAP(S) → DCSync rights; ADCS → certificate.',r:['relay-smb','relay-ldap','relay-rbcd','adcs-esc8']},
  {t:'Crack captures',d:'NetNTLMv2 offline, then reuse passwords.',r:['relay-responder']}
 ]},
-{id:'foothold',title:'I have a shell on a Windows host',when:'Foothold achieved — privilege escalation and lateral movement.',
+{id:'foothold',title:'I have a shell on a Windows host',when:'Foothold achieved — privilege escalation and lateral movement.', reqs:['a shell on a Windows host (medium integrity at least)'],
 needAny:['password','nthash','ccache'],
 steps:[
  {t:'Enumerate host & credential reach',d:'What is local (winPEAS) and which of my credentials actually reach which services.',r:['auth-check','pth-check','pe-suites']},
- {t:'Privilege escalation',d:'SeImpersonate/UAC/Kerberos relay paths to SYSTEM — check AV/Defender first.',r:['post-seimpersonate','uac-bypass','krbrelay','av-defender']},
+ {t:'Privilege escalation',d:'SeImpersonate/UAC/Kerberos relay paths to SYSTEM — check AV/Defender first.',req:'a shell plus SeImpersonate/UAC/Kerberos relay path',r:['post-seimpersonate','uac-bypass','krbrelay','av-defender']},
  {t:'Loot local secrets',d:'SAM/LSA/LSASS/DPAPI plus registry autologon, saved creds and SeBackup file copies.',r:['creds-sam-lsa','creds-dpapi','win-registry-loot','sebackup']},
  {t:'Enable remote access',d:'RDP / firewall / reverse shells / file transfer.',r:['lat-rdp','rdp-auth','revshells','lat-transfer']},
  {t:'Move laterally',d:'Reuse hashes and tickets on other hosts.',r:['lat-winrm','lat-smb-exec','lat-impacket-exec']}
 ]},
-{id:'trusts',title:'There are domain trusts (child/parent/forest)',when:'BloodHound or enumeration shows a parent or sibling domain.',
+{id:'trusts',title:'There are domain trusts (child/parent/forest)',when:'BloodHound or enumeration shows a parent or sibling domain.', reqs:['a domain user; escalation needs DA/DCSync in the child domain'],
 need:['user'], needAny:['password','nthash','ccache'],
 steps:[
  {t:'Enumerate the trusts',d:'Understand direction and which domain you control.',r:['trust-enum']},
  {t:'Cross-domain & SID history',d:'Roast the other domain, forge extra-SID tickets with the trust key, and check foreign group memberships.',r:['trust-cross-domain-roast','trust-sid-history','trust-foreign-groups']},
- {t:'Abuse the trust',d:'Trust key extraction + inter-realm golden ticket, or raiseChild.',r:['trust-raisechild']},
+ {t:'Abuse the trust',d:'Trust key extraction + inter-realm golden ticket, or raiseChild.',req:'Domain Admin / DCSync rights in the child domain (trust key)',r:['trust-raisechild']},
  {t:'Hybrid identity',d:'AD Connect connector accounts (MSOL/ADSync) and AD FS Golden SAML bridge on-prem AD into Entra ID and federated apps.',r:['entra-connect','adfs-goldensaml']},
  {t:'Dump',d:'Once the parent DC accepts your ticket, DCSync it.',r:['creds-dcsync']}
 ]},
-{id:'gpo',title:'I can modify a GPO or ADIDNS',when:'GenericWrite/WriteDACL on a GPO object, or AD-integrated DNS is writable.',
+{id:'gpo',title:'I can modify a GPO or ADIDNS',when:'GenericWrite/WriteDACL on a GPO object, or AD-integrated DNS is writable.', reqs:['write rights on a GPO or AD-integrated DNS'],
 need:['user'], needAny:['password','nthash','ccache'],
 steps:[
  {t:'Find write rights',d:'Locate writable GPOs and GPP creds.',r:['post-gpo','bloodyad-writable']},
  {t:'Push a task / hijack DNS',d:'Immediate scheduled task via GPO, or spoof names via DNS records.',r:['post-gpo','post-adidns']},
  {t:'Catch the callbacks',d:'Coerce or poison to capture what the pushed config reaches for.',r:['relay-responder','relay-coerce']}
 ]},
-{id:'da',title:'I am Domain Admin / I have the krbtgt hash',when:'Endgame: persistence and full forest compromise.',
+{id:'da',title:'I am Domain Admin / I have the krbtgt hash',when:'Endgame: persistence and full forest compromise.', reqs:['Domain Admin or the krbtgt hash'],
 needAny:['krbtgt_hash','aeskey','ccache'],
 steps:[
  {t:'Dump everything',d:'krbtgt + all hashes.',r:['creds-dcsync']},
- {t:'Forge golden tickets',d:'Persistence that survives password resets — krbtgt or CA key (golden certificate).',r:['golden-ticket','adcs-golden-cert']},
+ {t:'Forge golden tickets',d:'Persistence that survives password resets — krbtgt or CA key (golden certificate).',req:'krbtgt hash or the CA private key',r:['golden-ticket','adcs-golden-cert']},
  {t:'Pivot to trusts',d:'Use trust keys and extra SIDs for parent/forest domains.',r:['trust-enum','trust-raisechild']},
  {t:'Extract the rest',d:'Offline ntds parsing, DSRM local admin and DNSAdmins plugin abuse for persistence.',r:['creds-ntds-offline','dsrm','dnsadmins']}
 ]}
@@ -2900,7 +2963,7 @@ function zshEmit(data){
   const fnName = n => '_hk_' + n.replace(/[^A-Za-z0-9_]/g, '_');
   const q = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
   let out = '#compdef ' + names.join(' ') + '\n';
-  out += '# Hackerman v1.6.1 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
+  out += '# Hackerman v1.7.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
   out += '_hackerman() {\n  local tool=${words[1]:t}\n  case $tool in\n';
   names.forEach(n => { out += '    ' + n + ') ' + fnName(n) + ' ;;\n'; });
   out += '  esac\n}\n\n';
@@ -2927,6 +2990,97 @@ function zshEmit(data){
   return out;
 }
 function buildZshCompletion(){ return zshEmit(zshToolData()); }
+
+/* ===== REQUIREMENTS ===== */
+const REQ_DEFS = {
+  da:          {label:'DA', tip:'Domain Admin or equivalent rights', sev:100},
+  dcsync:      {label:'DCSync', tip:'DS-Replication rights (usually Domain Admin)', sev:95},
+  manageca:    {label:'ManageCA', tip:'Manage CA / Manage Certificates on the CA', sev:90},
+  trustkey:    {label:'trust key', tip:'inter-realm trust key (DCSync in the child domain)', sev:88},
+  backup:      {label:'Backup Op', tip:'SeBackupPrivilege / Backup Operators', sev:85},
+  localadmin:  {label:'local admin', tip:'local administrator on the target host', sev:80},
+  dacl:        {label:'write rights', tip:'GenericAll / GenericWrite / WriteDACL / WriteOwner over the object', sev:75},
+  enroll:      {label:'ADCS enroll', tip:'enrollment rights on a (vulnerable) certificate template', sev:70},
+  quota:       {label:'MachineQuota', tip:'ms-DS-MachineAccountQuota > 0 or an owned machine account', sev:65},
+  role:        {label:'role', tip:'membership or rights on a specific group or role', sev:60},
+  coercion:    {label:'coercion', tip:'a working authentication coercion vector', sev:55},
+  signingoff:  {label:'relay target', tip:'target accepts relayed auth (SMB/LDAP signing not enforced)', sev:50},
+  mssql:       {label:'MSSQL', tip:'a reachable MSSQL login', sev:45},
+  shell:       {label:'shell', tip:'code execution / shell on the target', sev:40},
+  artifact:    {label:'artifact', tip:'looted material (keytab, ccache, hives, certificates)', sev:35},
+  root:        {label:'root', tip:'root on the Linux host', sev:30},
+  trustedcreds:{label:'trust creds', tip:'credentials accepted in the trusted domain', sev:25},
+  creds:       {label:'creds', tip:'a domain account (password, NT hash or ticket)', sev:20},
+  nocreds:     {label:'no creds', tip:'works unauthenticated / via poisoning or null sessions', sev:10}
+};
+const REQS = {
+  'auth-check':['creds'], 'pth-check':['creds'], 'kerb-check':['creds','artifact'], 'shares':['creds'],
+  'user-enum':['creds'], 'anon-enum':['nocreds'], 'kerbrute':['nocreds'], 'pw-spray':['nocreds'],
+  'session-hunt':['localadmin','creds'], 'ldap-dump':['creds'],
+  'bloodyad-basics':['creds'], 'bloodyad-writable':['creds'], 'bloodyad-spn':['creds','dacl'],
+  'bloodyad-password':['creds','dacl'], 'bloodyad-uac':['creds','dacl'], 'bloodyad-groups':['creds','dacl'],
+  'bloodyad-enum':['creds'], 'bloodyad-badsuccessor':['creds','role'],
+  'keytab':['artifact','shell'], 'kerberos-auth':['creds'], 'asrep':['nocreds','creds'],
+  'kerberoast':['creds'], 'targeted-kerberoast':['creds','dacl'], 'gettgt':['creds'], 'getst':['creds'],
+  'ccache-usage':['artifact'], 'golden-ticket':['dcsync'], 'silver-ticket':['artifact'], 'ticket-inspect':['artifact'],
+  'deleg-enum':['creds'], 'rbcd-read':['creds','dacl'], 'rbcd-addcomputer':['creds','quota'],
+  'rbcd-write':['creds','dacl'], 'rbcd-getst':['creds','dacl'], 'rbcd-use':['creds'],
+  'rbcd-bloodyad':['creds','dacl','quota'], 'constrained-getst':['creds'], 'spn-hijack-deleg':['creds','dacl'],
+  'unconstrained-coerce':['localadmin','coercion'],
+  'adcs-find':['creds'], 'adcs-esc1':['creds','enroll'], 'adcs-esc4':['creds','dacl'],
+  'adcs-esc8':['nocreds','coercion','signingoff'], 'adcs-esc2-esc3':['creds','enroll'],
+  'adcs-esc7':['creds','manageca'], 'adcs-golden-cert':['manageca','localadmin'], 'adcs-esc6':['creds','enroll'],
+  'adcs-esc9-esc16':['creds','dacl'], 'adcs-esc10':['creds','dacl'], 'adcs-esc11':['creds','coercion'],
+  'adcs-esc13':['creds','enroll'], 'adcs-esc15':['creds','enroll'], 'adcs-esc17':['creds','enroll'],
+  'adcs-esc5-esc12-esc14':['creds','dacl'],
+  'dacl-enum':['creds'], 'dacl-genericall-user':['creds','dacl'], 'dacl-genericall-computer':['creds','dacl'],
+  'dacl-genericall-group':['creds','dacl'], 'dacl-forcechangepassword':['creds','dacl'],
+  'dacl-writedacl-dcsync':['creds','dacl'], 'dacl-writeowner':['creds','dacl'],
+  'shadow-creds':['creds','dacl'], 'dacl-adminsdholder':['creds','dacl'],
+  'creds-dcsync':['dcsync'], 'creds-sam-lsa':['localadmin'], 'creds-dpapi':['localadmin'],
+  'creds-gmsa':['creds','dacl'], 'creds-ntds-offline':['backup','localadmin'], 'linux-loot':['shell','root'],
+  'win-registry-loot':['localadmin'], 'sebackup':['backup'],
+  'relay-responder':['nocreds'], 'relay-smb':['nocreds','signingoff'], 'relay-ldap':['nocreds','signingoff'],
+  'relay-rbcd':['nocreds','signingoff'], 'relay-socks':['nocreds','signingoff'],
+  'relay-coerce':['creds','coercion'], 'mitm6':['nocreds','signingoff'],
+  'lat-winrm':['localadmin'], 'lat-smb-exec':['localadmin'], 'lat-impacket-exec':['localadmin'],
+  'lat-rdp':['localadmin'], 'rdp-auth':['creds'], 'lat-transfer':['localadmin'], 'lat-impacket-extras':['localadmin'],
+  'post-seimpersonate':['shell'], 'post-gpo':['creds','dacl'], 'post-adidns':['creds','dacl'],
+  'av-defender':['localadmin'], 'pe-suites':['shell'], 'revshells':['shell'], 'cve-zerologon':['nocreds'],
+  'cve-nopac':['creds','quota'], 'cve-printnightmare':['creds'], 'sccm':['creds','signingoff'],
+  'uac-bypass':['shell'], 'dsrm':['localadmin'], 'dnsadmins':['role','localadmin'],
+  'cve-certifried':['creds','quota'], 'krbrelay':['shell','signingoff'], 'entra-connect':['creds','localadmin'],
+  'adfs-goldensaml':['localadmin','artifact'],
+  'mssql-connect':['mssql'], 'mssql-xpcmdshell':['mssql'], 'mssql-impersonate':['mssql'],
+  'mssql-linked':['mssql'], 'mssql-coerce':['mssql','coercion'], 'mssql-alt-rce':['mssql'],
+  'trust-enum':['creds'], 'trust-raisechild':['da'], 'trust-cross-domain-roast':['trustedcreds'],
+  'trust-sid-history':['trustkey','da'], 'trust-foreign-groups':['creds'],
+  'bh-python':['creds'], 'bh-nxc':['creds']
+};
+const REQ_ISSUES = [];
+function reqSorted(reqs){ return (reqs || []).slice().sort((a, b) => (REQ_DEFS[b] ? REQ_DEFS[b].sev : 0) - (REQ_DEFS[a] ? REQ_DEFS[a].sev : 0)); }
+function applyReqs(){
+  Object.keys(REQS).forEach(id => {
+    if(!RECIPES.find(r => r.id === id)) REQ_ISSUES.push('REQS: unknown recipe id ' + id);
+    (REQS[id] || []).forEach(t => { if(!REQ_DEFS[t]) REQ_ISSUES.push('REQS: unknown tag ' + t + ' on ' + id); });
+  });
+  RECIPES.forEach(r => {
+    if(!REQS[r.id]){ REQ_ISSUES.push('REQS: missing entry for ' + r.id); r.reqs = ['creds']; return; }
+    r.reqs = REQS[r.id].filter(t => REQ_DEFS[t]);
+  });
+}
+function stepReqs(step){
+  if(step.req) return step.req;
+  const seen = [];
+  (step.r || []).forEach(id => {
+    const r = RECIPES.find(x => x.id === id);
+    if(!r) return;
+    (r.reqs || []).forEach(t => { if(['creds','nocreds','artifact'].indexOf(t) < 0 && seen.indexOf(t) < 0) seen.push(t); });
+  });
+  seen.sort((a, b) => REQ_DEFS[b].sev - REQ_DEFS[a].sev);
+  return seen.slice(0, 3).map(t => REQ_DEFS[t].label).join(' · ');
+}
+applyReqs();
 
 /* ===== BLOODHOUND CYPHER ===== */
 CYPHER.push(

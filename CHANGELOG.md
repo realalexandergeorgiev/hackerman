@@ -3,6 +3,27 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.7.0] — 2026-09-19
+
+### Added
+
+- **Structured requirements** for all 115 recipes: 19 tags (`DA`, `DCSync`, `ManageCA`, `trust key`,
+  `Backup Op`, `local admin`, `write rights`, `ADCS enroll`, `MachineQuota`, `role`, `coercion`,
+  `relay target`, `MSSQL`, `shell`, `artifact`, `root`, `trust creds`, `creds`, `no creds`) with
+  severity ordering and tooltips, maintained centrally in `REQ_DEFS`/`REQS`.
+- Card meta rows show up to two requirement chips plus `+N`; expanded cards and the focus overlay
+  list every requirement; the Legend documents all tags.
+- Wizard flows carry prerequisites (`requires:` line on the flow card and a prerequisites box in
+  the detail view) plus automatic per-step `needs:` hints derived from the step's recipes, with
+  manual overrides on critical steps (RBCD, ADCS, trusts, foothold, unconstrained, da).
+- Trust escalation recipes (`trust-sid-history`, `trust-raisechild`) spell out explicitly that they
+  require Domain Admin / DCSync rights in the child domain; roasting and enumeration only need
+  trusted credentials.
+
+### Changed
+
+- README feature list and Legend updated; `completions/_hackerman` regenerated.
+
 ## [1.6.1] — 2026-09-19
 
 ### Fixed
