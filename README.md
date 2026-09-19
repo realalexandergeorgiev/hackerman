@@ -1,4 +1,4 @@
-# Hackerman v1.3.0
+# Hackerman v1.4.0
 
 > Single-file, offline Active Directory attack helper for Kali — fill in the context, get the next-step commands.
 
@@ -47,7 +47,7 @@ non-obvious tools and attacks.
   (flags, subcommands, nxc `-M` modules, hashcat modes, xfreerdp options); see below.
 - **`proxychains` toggle** — prefixes network commands, local tools (Responder, hashcat, SMB
   server, krb5 tooling) are exempt.
-- **93 recipes** across 13 categories, each with a copy button per command and for the whole card.
+- **112 recipes** across 13 categories, each with a copy button per command and for the whole card.
 - **15 wizard flows** — pick what you have, get an ordered runbook with progress checkboxes and
   "copy flow as markdown".
 - **16 BloodHound Cypher queries** — collection commands plus pathfinding snippets (CE / legacy).
@@ -64,23 +64,23 @@ xdg-open index.html        # or just double-click the file
 3. Or use **Recipes** — search/filter, hover the `?` markers, click placeholders to fill them.
 4. Toggle **proxychains** when you attack through a pivot.
 
-## Coverage (93 recipes)
+## Coverage (112 recipes)
 
 | Category | # | Highlights |
 |---|---:|---|
 | Recon & Auth | 10 | auth checks (pw/PtH/ccache), shares, spider_plus, user/group enum, **kerbrute**, password spraying, **session hunting**, **LDAP dumps** |
-| BloodyAD | 7 | auth styles (pw/hash/ccache/keytab), `get writable`, SPN add/del, password/UAC/groups |
+| BloodyAD | 8 | auth styles (pw/hash/ccache/keytab), `get writable`, SPN add/del, password/UAC/groups, **BadSuccessor/dMSA** |
 | Kerberos | 11 | **kerberos-auth helper** (krb5.conf, hosts, ntp/rdate/faketime, unset, kinit/klist/kvno, per-tool cheat sheet), keytab extraction, AS-REP, kerberoasting, targeted kerberoast, getTGT/getST, golden/silver, **ticket inspection/renewal** |
 | Delegation & RBCD | 10 | full RBCD runbook, **SPN hijack → constrained delegation → DC takeover**, constrained/unconstrained abuse |
 | ADCS / Certipy | 15 | find, ESC1, **ESC2/ESC3**, ESC4, **ESC5/12/14 recon**, **ESC6**, **ESC7**, ESC8 relay, **ESC9/ESC16**, **ESC10**, **ESC11**, **ESC13**, **ESC15 (EKUwu)**, **ESC17**, **golden certificate** |
 | ACL / DACL Abuse | 9 | enum, GenericAll user/computer/group, ForceChangePassword/AddSelf, WriteDACL→DCSync, WriteOwner, shadow credentials, **AdminSDHolder** |
-| Creds & Secrets | 7 | DCSync, SAM/LSA/LSASS, DPAPI, gMSA/LAPS, offline ntds.dit, **Linux loot**, **Windows registry loot** |
-| Poisoning & Relay | 6 | Responder, ntlmrelayx SMB/LDAP/ADCS/SOCKS, RBCD via relay, coercion |
-| Lateral Movement | 6 | WinRM, nxc exec, impacket exec family, **rdp-auth helper**, file transfer |
-| Post-Exploitation | 10 | SeImpersonate potatoes, **AV/Defender checks**, **linpeas/winpeas**, **reverse shells**, GPO abuse, ADIDNS, **ZeroLogon**, **noPac**, **PrintNightmare**, **SCCM** |
+| Creds & Secrets | 8 | DCSync, SAM/LSA/LSASS, DPAPI, gMSA/LAPS, offline ntds.dit, **SeBackupPrivilege**, **Linux loot**, **Windows registry loot** |
+| Poisoning & Relay | 7 | Responder, **mitm6**, ntlmrelayx SMB/LDAP(S) incl. LDAP shell + LAPS/gMSA dumps, ADCS/SOCKS relay, RBCD via relay, coercion |
+| Lateral Movement | 7 | WinRM, nxc exec, impacket exec family, **dcomexec/services/reg**, **rdp-auth helper**, file transfer |
+| Post-Exploitation | 17 | SeImpersonate, **UAC bypass**, **SeBackup**, **DSRM**, **DNSAdmins**, AV/Defender checks, **linpeas/winpeas**, **reverse shells**, GPO abuse, ADIDNS, **ZeroLogon**, **noPac**, **PrintNightmare**, **Certifried**, **KrbRelayUp**, **Entra ID Connect**, **ADFS Golden SAML**, **SCCM** |
 | MSSQL | 6 | connect (pw/hash/ccache), xp_cmdshell, **OLE/CLR RCE**, impersonation, linked servers, NetNTLM theft |
 | Trusts | 2 | trust enum, raiseChild / trust-key golden ticket |
-| BloodHound Collection | 2 | bloodhound-python, nxc `--bloodhound` |
+| BloodHound Collection | 2 | bloodhound-python / **bloodhound-ce-python**, nxc `--bloodhound` |
 
 ### Wizard flows
 

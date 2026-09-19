@@ -3,6 +3,39 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.4.0] — 2026-09-19
+
+### Added
+
+- **11 new recipes** (101 → 112, 13 categories):
+  - `lat-impacket-extras` — DCOM execution (`dcomexec` MMC20/ShellWindows/ShellBrowserWindow), remote
+    `services` management, remote `reg` query/save, `rdpcheck`.
+  - `mitm6` — IPv6 DHCPv6/DNS takeover with ntlmrelayx (LDAPS escalate, RBCD, SOCKS).
+  - `sebackup` — SeBackupPrivilege: `reg save` SAM/SYSTEM/SECURITY, `robocopy /b` for ntds.dit,
+    offline secretsdump parsing.
+  - `bloodyad-badsuccessor` — Windows Server 2025 dMSA abuse: `badsuccessor_check`, create a linked
+    dMSA, read the managed password, cleanup.
+  - `uac-bypass` — fodhelper / eventvwr / computerdefaults registry tricks via WinRM.
+  - `dsrm` — dump and reuse the DC DSRM local Administrator hash (incl. logon behavior note).
+  - `dnsadmins` — ServerLevelPluginDll DLL load as SYSTEM on the DC plus cleanup.
+  - `cve-certifried` — CVE-2022-26923 machine account dNSHostName spoofing → DC certificate.
+  - `krbrelay` — KrbRelayUp full/relay/spawn chain (RBCD, shadow credentials, ADCS variants).
+  - `entra-connect` — MSOL/ADSync connector account recon, ROADtools tenant enumeration, DCSync path.
+  - `adfs-goldensaml` — ADFSDump + ADFSpoof Golden SAML forging for federated apps.
+- Extensions of existing cards: `relay-ldap` (interactive LDAP shell, `--dump-laps`, `--dump-gmsa`),
+  `user-enum`/`anon-enum` (`--rid-brute`), `creds-gmsa` (Windows LAPS v2 `msLAPS-Password`),
+  `linux-loot` (SSH key reuse), `bh-python` (`bloodhound-ce-python`).
+- Hover help for `mitm6`, `roadrecon`, `ADFSpoof.py` and `bloodhound-ce-python`, plus 11 attack
+  explanations and applicability tiers for all new cards.
+- Wizard flows: `nopwn` + mitm6, `foothold` + UAC/KrbRelay/SeBackup, `dacl` + BadSuccessor,
+  `adcs` + Certifried, `da` + DSRM/DNSAdmins, `trusts` + new "Hybrid identity" step
+  (Entra ID Connect, ADFS Golden SAML).
+
+### Changed
+
+- Coverage is now **112 recipes**; README coverage table updated.
+- `completions/_hackerman` regenerated (49 tools).
+
 ## [1.3.0] — 2026-09-19
 
 ### Added
