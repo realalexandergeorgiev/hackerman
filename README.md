@@ -1,4 +1,4 @@
-# Hackerman v1.14.0
+# Hackerman v1.15.0
 
 > Single-file, offline Active Directory attack helper for Kali — fill in the context, get the next-step commands.
 
@@ -57,19 +57,20 @@ non-obvious tools and attacks.
 - **Visible requirements** — every recipe carries requirement tags (DA, DCSync, local admin, write
   rights, ADCS enrollment, …) as amber chips with the full list on expand/overlay; wizard flows
   show prerequisites and per-step `needs:` hints, so it is clear what a technique actually requires.
-- **Compact lists** — recipe cards render collapsed (header + short description) by default so 121
+- **Compact lists** — recipe cards render collapsed (header + short description) by default so 123
   recipes stay scannable; click a card to open it in the focus overlay, or switch the `compact`
   chip off to expand everything inline. Wizard steps always stay expanded.
 - **zsh completion export** — the header button generates `_hackerman` from the embedded recipes
   (flags, subcommands, nxc `-M` modules, hashcat modes, xfreerdp options); see below.
 - **`proxychains` toggle** — prefixes network commands, local tools (Responder, hashcat, SMB
   server, krb5 tooling) are exempt.
-- **121 recipes** across 13 categories, each with a copy button per command and for the whole card.
+- **123 recipes** across 13 categories, each with a copy button per command and for the whole card.
 - **15 wizard flows** — pick what you have, get an ordered runbook with progress checkboxes and
   "copy flow as markdown".
-- **30 BloodHound Cypher queries** — collection commands plus pathfinding/rights snippets (CE / legacy):
+- **42 BloodHound Cypher queries** — collection commands plus pathfinding/rights snippets (CE / legacy):
   high-value paths, DCSync/write rights, LAPS/gMSA readers, sessions on owned hosts, ADCS CA rights, domain SIDs, …
-- **bhcli workflow** — terminal-first BloodHound: setup/audit recipes, a `bhcli` copy button on
+- **BH workflow (`bhcli`)** — terminal-first BloodHound: setup/audit recipes, **mark Owned/Tier Zero**
+  (users + computers via `bhcli mark`, groups/Domains/OUs via the CE GUI), a `bhcli` copy button on
   every Cypher query and a JSON export for `bhcli queries` (see below).
 - **Search** (`/` or `Ctrl/Cmd+K`), category/tier filters, `localStorage` UI state.
 
@@ -84,7 +85,7 @@ xdg-open index.html        # or just double-click the file
 3. Or use **Recipes** — search/filter, hover the `?` markers, click placeholders to fill them.
 4. Toggle **proxychains** when you attack through a pivot.
 
-## Coverage (121 recipes)
+## Coverage (123 recipes)
 
 | Category | # | Highlights |
 |---|---:|---|
@@ -164,7 +165,7 @@ bhcli cypher 'MATCH (c:Computer {unconstraineddelegation:true}) RETURN c.name' |
 ```
 
 Every Cypher query in the BloodHound tab has a **bhcli** copy button that produces the exact
-`bhcli cypher '<query>'` command, and **export for bhcli** downloads all 30 queries as
+`bhcli cypher '<query>'` command, and **export for bhcli** downloads all 42 queries as
 `hackerman-bhcli-queries.json`, importable with:
 
 ```sh

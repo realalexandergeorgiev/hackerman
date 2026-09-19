@@ -3,6 +3,35 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.15.0] — 2026-09-19
+
+### Added
+
+- BloodHound card **"bhcli — mark Owned / Tier Zero (pwned objects)"**: `bhcli mark` for users and
+  computers (single, `--file`, stdin, bulk piping from `bhcli users`/`computers`), CE GUI
+  right-click marking for groups/OUs/GPOs/CAs **and Domain nodes**, verification query.
+- BloodHound card **"Second domain foothold — collect, map, mark"** plus wizard flow **"I have a
+  foothold in the second/partner domain"**: collector against the partner DC, `bhcli upload`,
+  group flattening (`bhcli members --indirect 'IT@REALM'`), marking, group queries, abuse and
+  cross-domain follow-up.
+- BloodHound queries **30 → 42**: owned per domain, owned→Tier Zero (CE `system_tags` + legacy
+  `highvalue`), owned→any Domain Admins group, "what a group controls", effective members,
+  sessions/local admin of group members, shadow-credential/WriteSPN rights, Coerce-and-relay edges,
+  cross-domain sessions, foreign members both directions, Tier Zero inventory.
+- Context variables **`trust_user`**, **`trust_pass`** and derived **`trust_realm`** for the second
+  domain (copy-paste-ready partner-domain commands).
+
+### Fixed
+
+- BloodHound **"Domain trusts"** query used `TrustedBy`, which CE 7.4 replaced with
+  `SameForestTrust`/`CrossForestTrust` and the traversable `SpoofSIDHistory`/`AbuseTGTDelegation`.
+- `unconstrained-coerce` coerced the wrong host: target is now the DC and `LISTENER` the
+  delegation host; added the LSASS→ccache path (`nxc -M lsassy` saves tickets to
+  `~/.nxc/modules/lsassy/`) and DCSync-as-DC$ commands. Note explains that coercion alone prints no
+  ticket and that DC machine hashes are uncrackable.
+- `trust-coerce-relay`: listener-first ordering documented (ntlmrelayx/responder before coercing),
+  `relay-coerce` note now explains LISTENER semantics (Kali vs delegation host).
+
 ## [1.14.0] — 2026-09-19
 
 ### Added
