@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hackerman v1.6.0 — AD Attack Helper (Kali · HTB)</title>
+<title>Hackerman v1.6.1 — AD Attack Helper (Kali · HTB)</title>
 <style>
 :root{
   --bg:#0a0f1a; --panel:#0f1729; --panel2:#131d33; --line:#1e2b45;
@@ -209,7 +209,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
 
 <header>
   <div class="hwrap">
-    <div class="brand">Hackerman <b>v1.6.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
+    <div class="brand">Hackerman <b>v1.6.1</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
     <div class="hactions">
       <select id="presetSel" title="Load preset"><option value="">— presets —</option></select>
       <button id="presetSave" title="Save current context as preset">Save</button>
@@ -264,7 +264,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
   <section id="tab-legend" class="tab"></section>
 </main>
 
-<footer class="mono">Hackerman v1.6.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
+<footer class="mono">Hackerman v1.6.1 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
 
 <div id="focusOverlay" class="hidden">
   <div id="focusBox" role="dialog" aria-modal="true" tabindex="-1" aria-label="recipe focus">
@@ -1079,7 +1079,7 @@ function renderLegend(){
   const tab = $('#tab-legend');
   tab.innerHTML = '';
   const about = document.createElement('div');
-  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.6.0</h2>' +
+  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.6.1</h2>' +
     '<p class="dim">Single-file Active Directory attack helper for Kali, built by <b>@bongoalex</b> with <b>deepseek</b>. ' +
     RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries. Offline, no dependencies, no telemetry.</p>' +
     '<p class="dim">Use only for authorized testing (HTB labs, your own infrastructure, signed engagements). Syntax is version-sensitive — cross-check against your target versions.</p>';
@@ -2566,10 +2566,9 @@ steps:[
 {id:'keytab',title:'I found a keytab file',when:'Linux host or backup contains /etc/krb5.keytab (common on HTB).',
 steps:[
  {t:'Loot the Linux box',d:'Hunt for ccache/keytab files, configs, history and sudo rights before extracting anything.',r:['linux-loot']},
- {t:'Extract the keys',d:'KeyTabExtract gives you NTLM + AES128/256 of the service account.',r:['keytab']},
- {t:'Get a TGT',d:'Prefer AES256 if RC4 is disabled.',r:['gettgt']},
+ {t:'Extract the keys and get a TGT',d:'KeyTabExtract gives you NTLM + AES128/256 of the machine account; the same card requests the TGT with the correct trailing $ (kerberos-auth has the kinit -k -t variant).',r:['keytab']},
  {t:'What may the machine account do?',d:'A keytab plus msDS-AllowedToDelegateTo is a full takeover path. Check the delegation target and the T2A4D flag (0x1000000). If the target SPN does not exist, redirect it onto the DC.',r:['deleg-enum','constrained-getst','spn-hijack-deleg']},
- {t:'Use the ticket',d:'Export the ccache and authenticate. The Kerberos setup card covers krb5.conf and hosts entries.',r:['kerberos-auth','ccache-usage','getst']},
+ {t:'Use the ticket',d:'Export the ccache, validate it and authenticate. The Kerberos setup card covers krb5.conf and hosts entries.',r:['kerberos-auth','ccache-usage','ticket-inspect','getst']},
  {t:'Dump and move',d:'Service accounts often have rights over specific targets.',r:['creds-sam-lsa','creds-dcsync']}
 ]},
 {id:'rbcd',title:'I have write rights over a computer (RBCD)',when:'GenericAll / GenericWrite / WriteAccountRestrictions / WriteDACL on a computer object — the classic delegation attack.',
@@ -2577,7 +2576,7 @@ need:['target_host'], needAny:['password','nthash','ccache'],
 steps:[
  {t:'Enumerate delegation state',d:'Confirm the target and any existing delegation entries.',r:['deleg-enum','rbcd-read']},
  {t:'Create your rogue machine account',d:'Check MachineAccountQuota; add the computer you will delegate from.',r:['rbcd-addcomputer']},
- {t:'Grant RBCD to your machine',d:'Point msDS-AllowedToActOnBehalfOfOtherIdentity at your controlled account.',r:['rbcd-write','rbcd-bloodyad']},
+ {t:'Grant RBCD to your machine',d:'Point msDS-AllowedToActOnBehalfOfOtherIdentity at your controlled account (the full bloodyAD variant sits in the cleanup card).',r:['rbcd-write']},
  {t:'Request the impersonation ticket',d:'Impersonate Administrator to cifs/HOST of the target.',r:['rbcd-getst']},
  {t:'Use the ticket and dump',d:'Export ccache, verify, then SAM/LSA/DPAPI/NTDS.',r:['rbcd-use']},
  {t:'Cleanup',d:'Flush RBCD and delete the rogue machine account.',r:['rbcd-bloodyad']}
@@ -2594,7 +2593,7 @@ steps:[
 need:['user'], needAny:['password','nthash','ccache'],
 steps:[
  {t:'Confirm the host',d:'Unconstrained computers cache TGTs of authenticating users.',r:['deleg-enum']},
- {t:'Coerce authentication',d:'Make the DC authenticate to the unconstrained host.',r:['relay-coerce','unconstrained-coerce']},
+ {t:'Coerce authentication',d:'Make the DC authenticate to the unconstrained host.',r:['relay-coerce']},
  {t:'Steal the tickets',d:'Dump LSASS on the unconstrained host — DC machine TGT included.',r:['unconstrained-coerce','creds-sam-lsa']},
  {t:'DCSync',d:'With the DC machine account you can replicate secrets.',r:['creds-dcsync']}
 ]},
@@ -2612,9 +2611,10 @@ steps:[
 need:['user'], needAny:['password','nthash','ccache'],
 steps:[
  {t:'Read the ACL and find write rights',d:'Confirm exactly which object/attribute you can write.',r:['dacl-enum','bloodyad-writable']},
- {t:'User takeover',d:'Pick the least destructive option: shadow credentials, targeted kerberoast, password reset, group add — or a dMSA via BadSuccessor.',r:['dacl-genericall-user','dacl-forcechangepassword','shadow-creds','bloodyad-badsuccessor']},
+ {t:'User takeover',d:'Pick the least destructive option: shadow credentials, targeted kerberoast, password reset, group add.',r:['dacl-genericall-user','dacl-forcechangepassword','shadow-creds']},
  {t:'Computer takeover',d:'Shadow credentials on the machine, or RBCD with a rogue computer.',r:['dacl-genericall-computer','rbcd-addcomputer','rbcd-write','rbcd-getst']},
  {t:'Group takeover',d:'Add yourself to the group, then re-authenticate.',r:['dacl-genericall-group']},
+ {t:'dMSA / BadSuccessor (Server 2025)',d:'If the domain allows it, create a delegated MSA linked to a privileged account — verify with badsuccessor_check first.',r:['bloodyad-badsuccessor']},
  {t:'Domain object (WriteDACL/Owner)',d:'Grant DCSync, take ownership, or abuse AdminSDHolder for protected groups.',r:['dacl-writedacl-dcsync','dacl-writeowner','dacl-adminsdholder']},
  {t:'Cleanup',d:'Remove the ACEs, key credentials and group memberships you added.',r:['shadow-creds','dacl-genericall-group']}
 ]},
@@ -2639,7 +2639,7 @@ steps:[
 {id:'foothold',title:'I have a shell on a Windows host',when:'Foothold achieved — privilege escalation and lateral movement.',
 needAny:['password','nthash','ccache'],
 steps:[
- {t:'Enumerate the host',d:'Who am I, what privileges, what is local.',r:['auth-check','pth-check','pe-suites']},
+ {t:'Enumerate host & credential reach',d:'What is local (winPEAS) and which of my credentials actually reach which services.',r:['auth-check','pth-check','pe-suites']},
  {t:'Privilege escalation',d:'SeImpersonate/UAC/Kerberos relay paths to SYSTEM — check AV/Defender first.',r:['post-seimpersonate','uac-bypass','krbrelay','av-defender']},
  {t:'Loot local secrets',d:'SAM/LSA/LSASS/DPAPI plus registry autologon, saved creds and SeBackup file copies.',r:['creds-sam-lsa','creds-dpapi','win-registry-loot','sebackup']},
  {t:'Enable remote access',d:'RDP / firewall / reverse shells / file transfer.',r:['lat-rdp','rdp-auth','revshells','lat-transfer']},
@@ -2900,7 +2900,7 @@ function zshEmit(data){
   const fnName = n => '_hk_' + n.replace(/[^A-Za-z0-9_]/g, '_');
   const q = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
   let out = '#compdef ' + names.join(' ') + '\n';
-  out += '# Hackerman v1.6.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
+  out += '# Hackerman v1.6.1 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
   out += '_hackerman() {\n  local tool=${words[1]:t}\n  case $tool in\n';
   names.forEach(n => { out += '    ' + n + ') ' + fnName(n) + ' ;;\n'; });
   out += '  esac\n}\n\n';

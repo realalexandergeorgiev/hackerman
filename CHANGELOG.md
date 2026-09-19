@@ -3,6 +3,23 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.6.1] — 2026-09-19
+
+### Fixed
+
+- **Wizard flow corrections** (audited all 15 flows against their recipes):
+  - `keytab`: removed the generic user-oriented `gettgt` step — a keytab belongs to a machine
+    account and the keytab recipe already requests the TGT with the trailing `$`; added
+    `ticket-inspect` to the ticket step.
+  - `dacl`: `bloodyad-badsuccessor` moved out of "User takeover" into its own step
+    "dMSA / BadSuccessor (Server 2025)".
+  - `foothold`: first step renamed to "Enumerate host & credential reach" (auth checks are
+    reachability checks, not host enumeration).
+  - `rbcd`: the full `rbcd-bloodyad` variant is no longer duplicated in the grant step and
+    stays in the cleanup step where the remove commands live.
+  - `unconstrained`: coercion step references `relay-coerce` only; `unconstrained-coerce` keeps
+    its ticket-stealing role in the next step.
+
 ## [1.6.0] — 2026-09-19
 
 ### Added
