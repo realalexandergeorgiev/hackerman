@@ -3,6 +3,26 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.9.0] — 2026-09-19
+
+### Added
+
+- **bhcli workflow** (BloodHound category 2 → 6 recipes, total 119): `bhcli-setup` (install, auth,
+  upload, mark Owned), `bhcli-recon` (users/computers/groups, nested memberships, stats, audit),
+  `bhcli-cypher` (run the 29 queries through the CE API with jq snippets) and
+  `bhcli-alternatives` (Blade, CypherHound, deathhound, PyPI bloodhound-cli, cypher-shell).
+- BloodHound tab now starts with a **"CLI workflow (bhcli)"** section; every Cypher query has a
+  **bhcli copy button** and an **export for bhcli** action that downloads all queries as
+  `hackerman-bhcli-queries.json` (native `{name, query, description}` array, importable with
+  `bhcli queries <file>`; format verified against bhcli's source).
+- New requirement tag `bh` ("BH data": a running BloodHound CE with ingested data); `bhcli` added
+  to hover help and zsh completions (with subcommands).
+- README section "BloodHound without the GUI (bhcli)" incl. alternatives table.
+
+### Changed
+
+- Category rename: "BloodHound Collection" → "BloodHound"; `completions/_hackerman` regenerated.
+
 ## [1.8.0] — 2026-09-19
 
 ### Added

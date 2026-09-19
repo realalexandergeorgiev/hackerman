@@ -1,4 +1,4 @@
-# Hackerman v1.7.0
+# Hackerman v1.9.0
 
 > Single-file, offline Active Directory attack helper for Kali — fill in the context, get the next-step commands.
 
@@ -46,18 +46,20 @@ non-obvious tools and attacks.
 - **Visible requirements** — every recipe carries requirement tags (DA, DCSync, local admin, write
   rights, ADCS enrollment, …) as amber chips with the full list on expand/overlay; wizard flows
   show prerequisites and per-step `needs:` hints, so it is clear what a technique actually requires.
-- **Compact lists** — recipe cards render collapsed (header + short description) by default so 115
+- **Compact lists** — recipe cards render collapsed (header + short description) by default so 119
   recipes stay scannable; click a card to open it in the focus overlay, or switch the `compact`
   chip off to expand everything inline. Wizard steps always stay expanded.
 - **zsh completion export** — the header button generates `_hackerman` from the embedded recipes
   (flags, subcommands, nxc `-M` modules, hashcat modes, xfreerdp options); see below.
 - **`proxychains` toggle** — prefixes network commands, local tools (Responder, hashcat, SMB
   server, krb5 tooling) are exempt.
-- **115 recipes** across 13 categories, each with a copy button per command and for the whole card.
+- **119 recipes** across 13 categories, each with a copy button per command and for the whole card.
 - **15 wizard flows** — pick what you have, get an ordered runbook with progress checkboxes and
   "copy flow as markdown".
 - **29 BloodHound Cypher queries** — collection commands plus pathfinding/rights snippets (CE / legacy):
   high-value paths, DCSync/write rights, LAPS/gMSA readers, sessions on owned hosts, ADCS CA rights, …
+- **bhcli workflow** — terminal-first BloodHound: setup/audit recipes, a `bhcli` copy button on
+  every Cypher query and a JSON export for `bhcli queries` (see below).
 - **Search** (`/` or `Ctrl/Cmd+K`), category/tier filters, `localStorage` UI state.
 
 ## Quick start
@@ -71,7 +73,7 @@ xdg-open index.html        # or just double-click the file
 3. Or use **Recipes** — search/filter, hover the `?` markers, click placeholders to fill them.
 4. Toggle **proxychains** when you attack through a pivot.
 
-## Coverage (115 recipes)
+## Coverage (119 recipes)
 
 | Category | # | Highlights |
 |---|---:|---|
@@ -87,7 +89,7 @@ xdg-open index.html        # or just double-click the file
 | Post-Exploitation | 17 | SeImpersonate, **UAC bypass**, **SeBackup**, **DSRM**, **DNSAdmins**, AV/Defender checks, **linpeas/winpeas**, **reverse shells**, GPO abuse, ADIDNS, **ZeroLogon**, **noPac**, **PrintNightmare**, **Certifried**, **KrbRelayUp**, **Entra ID Connect**, **ADFS Golden SAML**, **SCCM** |
 | MSSQL | 6 | connect (pw/hash/ccache), xp_cmdshell, **OLE/CLR RCE**, impersonation, linked servers, NetNTLM theft |
 | Trusts | 5 | trust enum (+ direction/attributes), **cross-domain roasting**, **SID history / ExtraSIDs**, **foreign group membership**, raiseChild / trust-key golden ticket |
-| BloodHound Collection | 2 | bloodhound-python / **bloodhound-ce-python**, nxc `--bloodhound` |
+| BloodHound | 6 | bloodhound-python / **bloodhound-ce-python**, nxc `--bloodhound`, **bhcli** (setup, lists/audit, cypher, alternatives) |
 
 ### Wizard flows
 
@@ -121,6 +123,34 @@ node --check /tmp/app.js
 ```
 
 Then open the page and check the browser console for errors.
+
+## BloodHound without the GUI (bhcli)
+
+The BloodHound tab includes a **CLI workflow** section built around
+[bhcli](https://github.com/exploide/bhcli), an unofficial client for the BloodHound CE API
+(works with the default PostgreSQL backend and Neo4j alike):
+
+```sh
+git clone https://github.com/exploide/bhcli.git && cd bhcli && pipx install .
+bhcli auth http://localhost:8080          # store an API token
+bhcli upload *.zip                        # ingest collector output
+bhcli mark Owned --file valid-users.txt   # mark owned accounts
+bhcli audit -d corp.local                 # quick findings list
+bhcli cypher 'MATCH (c:Computer {unconstraineddelegation:true}) RETURN c.name' | jq
+```
+
+Every Cypher query in the BloodHound tab has a **bhcli** copy button that produces the exact
+`bhcli cypher '<query>'` command, and **export for bhcli** downloads all 29 queries as
+`hackerman-bhcli-queries.json`, importable with:
+
+```sh
+bhcli queries hackerman-bhcli-queries.json
+```
+
+Alternatives (covered in the `bhcli-alternatives` recipe): **Blade** (CE + Neo4j, ready-made
+ADCS/privilege lists), **CypherHound** (query templates + CE importer), **deathhound** (Neo4j),
+the PyPI **bloodhound-cli** (legacy + CE, `--edition`), and `cypher-shell` (Neo4j backend only).
+SpecterOps' `bloodhound-cli` only installs/manages the server — it does not query.
 
 ## zsh completions
 

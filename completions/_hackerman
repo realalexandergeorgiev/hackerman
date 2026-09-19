@@ -1,9 +1,10 @@
-#compdef bloodhound-ce-python bloodyAD certipy coercer enum4linux-ng faketime hashcat impacket-addcomputer impacket-atexec impacket-dacledit impacket-describeTicket impacket-dfscoerce impacket-findDelegation impacket-GetNPUsers impacket-getST impacket-getTGT impacket-GetUserSPNs impacket-lookupsid impacket-mssqlclient impacket-netview impacket-ntlmrelayx impacket-owneredit impacket-petitpotam impacket-printerbug impacket-psexec impacket-raiseChild impacket-rbcd impacket-secretsdump impacket-smbexec impacket-smbserver impacket-ticketConverter impacket-ticketer impacket-wmiexec john kerbrute kinit klist kvno ldapdomaindump ldapsearch linpeas.sh mitm6 msfvenom nxc responder roadrecon rpcclient smbclient xfreerdp3
-# Hackerman v1.8.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs
+#compdef bhcli bloodhound-ce-python bloodyAD certipy coercer enum4linux-ng faketime hashcat impacket-addcomputer impacket-atexec impacket-dacledit impacket-describeTicket impacket-dfscoerce impacket-findDelegation impacket-GetNPUsers impacket-getST impacket-getTGT impacket-GetUserSPNs impacket-lookupsid impacket-mssqlclient impacket-netview impacket-ntlmrelayx impacket-owneredit impacket-petitpotam impacket-printerbug impacket-psexec impacket-raiseChild impacket-rbcd impacket-secretsdump impacket-smbexec impacket-smbserver impacket-ticketConverter impacket-ticketer impacket-wmiexec john kerbrute kinit klist kvno ldapdomaindump ldapsearch linpeas.sh mitm6 msfvenom nxc responder roadrecon rpcclient smbclient xfreerdp3
+# Hackerman v1.9.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs
 
 _hackerman() {
   local tool=${words[1]:t}
   case $tool in
+    bhcli) _hk_bhcli ;;
     bloodhound-ce-python) _hk_bloodhound_ce_python ;;
     bloodyAD) _hk_bloodyAD ;;
     certipy) _hk_certipy ;;
@@ -54,6 +55,15 @@ _hackerman() {
     smbclient) _hk_smbclient ;;
     xfreerdp3) _hk_xfreerdp3 ;;
   esac
+}
+
+_hk_bhcli() {
+  local -a subs
+  subs=(audit auth computers cypher domains groups mark members queries stats status upload users)
+  if (( CURRENT == 2 )); then _describe 'subcommand' subs; return; fi
+  local -a flags
+  flags=('--description' '--domain' '--enabled' '--file' '--indirect' '--sam' '--sid' '-d')
+  _arguments -s $flags
 }
 
 _hk_bloodhound_ce_python() {

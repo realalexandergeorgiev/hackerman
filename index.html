@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hackerman v1.8.0 — AD Attack Helper (Kali · HTB)</title>
+<title>Hackerman v1.9.0 — AD Attack Helper (Kali · HTB)</title>
 <style>
 :root{
   --bg:#0a0f1a; --panel:#0f1729; --panel2:#131d33; --line:#1e2b45;
@@ -133,6 +133,9 @@ body.focus-open{overflow:hidden}
 .copy{position:absolute;top:6px;right:6px;padding:2px 8px;font-size:11px;background:#132038;border-color:#24334f;color:var(--dim)}
 .copy:hover{color:#fff}
 .copy.done{color:var(--ok);border-color:var(--ok)}
+.cmd.has-bhcli{padding-right:104px}
+.cmd.has-bhcli .copy:not(.bhcli-copy){right:64px}
+.cmd.has-bhcli .copy.bhcli-copy{right:6px}
 .note{font-size:12.3px;color:#a8b8d8;background:#0d1a2e;border-left:3px solid var(--accent2);border-radius:0 7px 7px 0;padding:7px 10px}
 .note b{color:var(--accent2)}
 .v-domain{color:var(--v-domain)} .v-host{color:var(--v-host)} .v-ip{color:var(--v-ip)}
@@ -216,7 +219,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
 
 <header>
   <div class="hwrap">
-    <div class="brand">Hackerman <b>v1.8.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
+    <div class="brand">Hackerman <b>v1.9.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
     <div class="hactions">
       <select id="presetSel" title="Load preset"><option value="">— presets —</option></select>
       <button id="presetSave" title="Save current context as preset">Save</button>
@@ -271,7 +274,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
   <section id="tab-legend" class="tab"></section>
 </main>
 
-<footer class="mono">Hackerman v1.8.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
+<footer class="mono">Hackerman v1.9.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
 
 <div id="focusOverlay" class="hidden">
   <div id="focusBox" role="dialog" aria-modal="true" tabindex="-1" aria-label="recipe focus">
@@ -382,7 +385,7 @@ const CATS = [
   {id:'post',    name:'Post-Exploitation'},
   {id:'mssql',   name:'MSSQL'},
   {id:'trust',   name:'Trusts'},
-  {id:'bh',      name:'BloodHound Collection'}
+  {id:'bh',      name:'BloodHound'}
 ];
 
 function loadJSON(key, fb){ try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? fb : v; } catch(e){ return fb; } }
@@ -479,14 +482,15 @@ function toast(msg){
   clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 1400);
 }
 
-function mkCopyBtn(text, cls){
+function mkCopyBtn(text, cls, label){
   const b = document.createElement('button');
+  const txt = label || 'copy';
   b.className = 'copy' + (cls ? ' ' + cls : '');
-  b.textContent = 'copy';
+  b.textContent = txt;
   b.addEventListener('click', () => {
     copyText(text);
     b.classList.add('done'); b.textContent = '✓';
-    setTimeout(() => { b.classList.remove('done'); b.textContent = 'copy'; }, 1200);
+    setTimeout(() => { b.classList.remove('done'); b.textContent = txt; }, 1200);
   });
   return b;
 }
@@ -1089,17 +1093,40 @@ function flowMarkdown(f){
 }
 
 /* ============================== bloodhound tab ============================== */
+function stripHtml(s){ return String(s || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(); }
+function buildBhcliQueries(){
+  return JSON.stringify(CYPHER.map(q => ({ name: q.t, query: q.q, description: stripHtml(q.n) })), null, 2);
+}
 function renderBH(){
   const tab = $('#tab-bh');
   tab.innerHTML = '';
+  const h0 = document.createElement('h2');
+  h0.className = 'sec'; h0.textContent = 'CLI workflow (bhcli)';
+  tab.appendChild(h0);
+  RECIPES.filter(r => r.cat === 'bh' && r.id.indexOf('bhcli-') === 0).forEach(r => tab.appendChild(recipeCard(r)));
+
   const h1 = document.createElement('h2');
   h1.className = 'sec'; h1.textContent = 'Collection';
   tab.appendChild(h1);
-  RECIPES.filter(r => r.cat === 'bh').forEach(r => tab.appendChild(recipeCard(r)));
+  RECIPES.filter(r => r.cat === 'bh' && r.id.indexOf('bhcli-') !== 0).forEach(r => tab.appendChild(recipeCard(r)));
 
   const h2 = document.createElement('h2');
   h2.className = 'sec'; h2.textContent = 'Cypher queries (BloodHound CE / Legacy)';
   tab.appendChild(h2);
+  const bar = document.createElement('div');
+  bar.className = 'toolbar';
+  bar.style.position = 'static';
+  const exp = document.createElement('button');
+  exp.className = 'ghost';
+  exp.textContent = 'export for bhcli';
+  exp.title = 'download hackerman-bhcli-queries.json (import with: bhcli queries <file>)';
+  exp.addEventListener('click', () => openModal('bhcli query export', buildBhcliQueries(), null, 'hackerman-bhcli-queries.json'));
+  bar.appendChild(exp);
+  const hint = document.createElement('span');
+  hint.className = 'dim'; hint.style.fontSize = '12px';
+  hint.textContent = 'import with: bhcli queries hackerman-bhcli-queries.json';
+  bar.appendChild(hint);
+  tab.appendChild(bar);
   CYPHER.forEach(q => {
     const box = document.createElement('div');
     box.className = 'cyber';
@@ -1112,11 +1139,12 @@ function renderBH(){
       box.appendChild(n);
     }
     const cmd = document.createElement('div');
-    cmd.className = 'cmd';
+    cmd.className = 'cmd has-bhcli';
     const pre = document.createElement('pre');
     pre.textContent = q.q;
     cmd.appendChild(pre);
     cmd.appendChild(mkCopyBtn(q.q));
+    cmd.appendChild(mkCopyBtn("bhcli cypher '" + q.q.replace(/'/g, "'\\''") + "'", 'bhcli-copy', 'bhcli'));
     box.appendChild(cmd);
     tab.appendChild(box);
   });
@@ -1127,7 +1155,7 @@ function renderLegend(){
   const tab = $('#tab-legend');
   tab.innerHTML = '';
   const about = document.createElement('div');
-  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.8.0</h2>' +
+  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.9.0</h2>' +
     '<p class="dim">Single-file Active Directory attack helper for Kali, built by <b>@bongoalex</b> with <b>deepseek</b>. ' +
     RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries. Offline, no dependencies, no telemetry.</p>' +
     '<p class="dim">Use only for authorized testing (HTB labs, your own infrastructure, signed engagements). Syntax is version-sensitive — cross-check against your target versions.</p>';
@@ -2733,12 +2761,54 @@ steps:[
  {t:'Extract the rest',d:'Offline ntds parsing, DSRM local admin and DNSAdmins plugin abuse for persistence.',r:['creds-ntds-offline','dsrm','dnsadmins']}
 ]}
 );
+R({id:'bhcli-setup',cat:'bh',title:'bhcli — setup & data ingest',desc:'Unofficial CLI for the BloodHound CE API: authenticate once, then query, mark and audit from the terminal.',
+cmds:[
+ [`git clone https://github.com/exploide/bhcli.git && cd bhcli && pipx install .`,'install (pipx handles the venv)','n'],
+ [`bhcli auth http://localhost:8080`,'store an API token (prompts for user/password)'],
+ [`bhcli status api-version`,'verify the connection'],
+ [`bhcli upload *.zip`,'ingest collector output'],
+ [`bhcli domains --sid`,'list known domains and SIDs'],
+ [`bhcli mark Owned --file valid-users.txt`,'mark accounts as Owned']
+],note:'Talks to the BloodHound CE REST API, so it works regardless of the graph backend (PostgreSQL by default, Neo4j optional). The token is stored in <span class="mono">~/.config/bhcli/bhcli.ini</span>. Tab completion for bash/zsh/fish ships with the Click framework. Do not confuse it with SpecterOps <span class="mono">bloodhound-cli</span>, which only installs and manages the server.'});
+
+R({id:'bhcli-recon',cat:'bh',title:'bhcli — lists, stats & audit',desc:'Terminal answers instead of GUI clicking: users/computers/groups, nested memberships, stats and a quick audit.',
+cmds:[
+ [`bhcli users --domain {{domain}} --enabled --description`,'enabled users and descriptions'],
+ [`bhcli users --description | grep -iE 'pass|pwd|secret'`,'grep descriptions for credentials'],
+ [`bhcli computers --domain {{domain}} --sam`,'computers plus sAMAccountName'],
+ [`bhcli groups`,'all groups'],
+ [`bhcli members --indirect 'DOMAIN ADMINS@{{realm}}'`,'flattened nested memberships'],
+ [`bhcli stats -d {{domain}}`,'domain statistics (users, admins, CAs, templates)'],
+ [`bhcli audit -d {{domain}}`,'quick audit: ADCS, GenericWrite, roastables, unconstrained, old OS']
+],note:'<span class="mono">audit</span> is the closest thing to a one-shot findings list; combine it with the Cypher queries for custom paths. Output is one object per line — ideal for piping into wordlists or spraying tools.'});
+
+R({id:'bhcli-cypher',cat:'bh',title:'bhcli — run Cypher queries from the terminal',desc:'Run the queries from this page through the CE API and post-process the JSON with jq — no GUI needed.',
+cmds:[
+ [`bhcli cypher 'MATCH (u:User {hasspn:true}) RETURN u.name, u.serviceprincipalnames' | jq -c '.nodes[].properties | [.name, .serviceprincipalnames]'`,'kerberoastable users as flat JSON'],
+ [`bhcli cypher 'MATCH p=shortestPath((n {owned:true})-[*1..]->(m:Group {name:"DOMAIN ADMINS@{{realm}}"})) RETURN p' | jq -c '.nodes[].properties.name'`,'owned → DA path nodes'],
+ [`bhcli cypher 'MATCH (u)-[:DCSync|GetChanges|GetChangesAll]->(d:Domain) RETURN u.name' | jq -c '.nodes[].properties.name'`,'who can DCSync'],
+ [`bhcli cypher 'MATCH (c:Computer {unconstraineddelegation:true}) RETURN c.name' | jq -c '.nodes[].properties.name'`,'unconstrained delegation hosts'],
+ [`bhcli queries hackerman-bhcli-queries.json`,'import all queries from the export button below'],
+ [`bhcli cypher "$(cat query.cypher)" | jq`,'run a query from a file']
+],note:'<span class="mono">cypher</span> prints JSON with <span class="mono">nodes</span>/<span class="mono">relationships</span> arrays — the jq snippets flatten them. Use the <b>bhcli</b> copy button on any query below to get the exact command, or import all 29 with the export button. Everything runs server-side against CE, so the PostgreSQL backend works too.'});
+
+R({id:'bhcli-alternatives',cat:'bh',title:'BloodHound CLI alternatives',desc:'Other terminal clients for BloodHound/Neo4j and when to pick which.',
+cmds:[
+ [`pipx install bloodhound-cli && bloodhound-cli --edition ce user -d {{domain}} --base-url http://localhost:8080 --username admin`,'PyPI bloodhound-cli (legacy + CE backends)','n'],
+ [`bloodhound-cli --edition ce highvalue -d {{domain}} --base-url http://localhost:8080 --username admin`,'high-value users via the PyPI CLI','n'],
+ [`bloodhound-cli --edition legacy user -d {{domain}} --uri bolt://localhost:7687 --user neo4j`,'legacy Neo4j backend','n'],
+ [`git clone https://github.com/CyberCX-STA/blade.git && cd blade && make build-linux`,'Blade (Go, CE + Neo4j): inject, ADCS/roast lists, owned','n'],
+ [`git clone https://github.com/0xSterny/deathhound.git`,'DeathHound (Neo4j query CLI)','n'],
+ [`git clone https://github.com/fin3ss3g0d/cypherhound.git`,'CypherHound (query templates + CE importer)','n'],
+ [`cypher-shell -a bolt://localhost:7687 -u neo4j -p '<password>' 'MATCH (n) RETURN count(n)'`,'Neo4j backend only: direct Cypher shell']
+],note:'Pick by backend and need: <b>bhcli</b> (CE API — queries, mark Owned, audit, upload; best default), <b>Blade</b> (CE + Neo4j with ready-made ADCS/privilege lists), <b>CypherHound</b> (large query template collection + CE import), <b>deathhound</b> (Neo4j), PyPI <b>bloodhound-cli</b> (legacy + CE, simple user/admin/highvalue commands), <b>cypher-shell</b> (only when CE uses the Neo4j backend). SpecterOps <span class="mono">bloodhound-cli</span> manages the server, it does not query.'});
+
 /* ===== APPLICABILITY PRIORITIES ===== */
 const PRI_TIERS = {
   4: 'auth-check shares user-enum kerbrute bloodyad-writable kerberos-auth kerberoast ccache-usage adcs-find creds-sam-lsa lat-transfer pe-suites revshells bh-python bh-nxc',
-  3: 'pth-check kerb-check anon-enum pw-spray ldap-dump bloodyad-basics bloodyad-enum bloodyad-groups bloodyad-password asrep gettgt getst golden-ticket deleg-enum rbcd-read rbcd-addcomputer rbcd-write rbcd-getst rbcd-use rbcd-bloodyad constrained-getst adcs-esc1 adcs-esc6 dacl-enum dacl-genericall-user dacl-genericall-computer dacl-genericall-group dacl-forcechangepassword dacl-writedacl-dcsync shadow-creds creds-dcsync creds-dpapi linux-loot win-registry-loot relay-responder relay-smb relay-coerce lat-winrm lat-smb-exec lat-impacket-exec lat-impacket-extras rdp-auth post-seimpersonate av-defender uac-bypass',
-  2: 'session-hunt bloodyad-spn bloodyad-uac keytab targeted-kerberoast silver-ticket ticket-inspect spn-hijack-deleg unconstrained-coerce adcs-esc4 adcs-esc8 adcs-esc2-esc3 adcs-esc9-esc16 adcs-esc10 adcs-esc11 adcs-esc13 adcs-esc15 dacl-writeowner creds-gmsa creds-ntds-offline sebackup relay-ldap relay-rbcd relay-socks mitm6 lat-rdp post-gpo post-adidns dsrm dnsadmins bloodyad-badsuccessor mssql-connect mssql-xpcmdshell mssql-impersonate trust-enum trust-cross-domain-roast trust-sid-history trust-foreign-groups',
-  1: 'adcs-esc7 adcs-golden-cert adcs-esc17 adcs-esc5-esc12-esc14 dacl-adminsdholder cve-zerologon cve-nopac cve-printnightmare cve-certifried krbrelay entra-connect adfs-goldensaml sccm mssql-linked mssql-coerce mssql-alt-rce trust-raisechild'
+  3: 'pth-check kerb-check anon-enum pw-spray ldap-dump bloodyad-basics bloodyad-enum bloodyad-groups bloodyad-password asrep gettgt getst golden-ticket deleg-enum rbcd-read rbcd-addcomputer rbcd-write rbcd-getst rbcd-use rbcd-bloodyad constrained-getst adcs-esc1 adcs-esc6 dacl-enum dacl-genericall-user dacl-genericall-computer dacl-genericall-group dacl-forcechangepassword dacl-writedacl-dcsync shadow-creds creds-dcsync creds-dpapi linux-loot win-registry-loot relay-responder relay-smb relay-coerce lat-winrm lat-smb-exec lat-impacket-exec lat-impacket-extras rdp-auth post-seimpersonate av-defender uac-bypass bhcli-setup bhcli-recon',
+  2: 'session-hunt bloodyad-spn bloodyad-uac keytab targeted-kerberoast silver-ticket ticket-inspect spn-hijack-deleg unconstrained-coerce adcs-esc4 adcs-esc8 adcs-esc2-esc3 adcs-esc9-esc16 adcs-esc10 adcs-esc11 adcs-esc13 adcs-esc15 dacl-writeowner creds-gmsa creds-ntds-offline sebackup relay-ldap relay-rbcd relay-socks mitm6 lat-rdp post-gpo post-adidns dsrm dnsadmins bloodyad-badsuccessor bhcli-cypher mssql-connect mssql-xpcmdshell mssql-impersonate trust-enum trust-cross-domain-roast trust-sid-history trust-foreign-groups',
+  1: 'adcs-esc7 adcs-golden-cert adcs-esc17 adcs-esc5-esc12-esc14 dacl-adminsdholder cve-zerologon cve-nopac cve-printnightmare cve-certifried krbrelay entra-connect adfs-goldensaml sccm mssql-linked mssql-coerce mssql-alt-rce trust-raisechild bhcli-alternatives'
 };
 const FLOW_PRI = {creds:4, nopwn:4, foothold:4, hash:3, aes:3, keytab:3, rbcd:3, constrained:3, adcs:3, dacl:3, da:3, unconstrained:2, mssql:2, trusts:2, gpo:2};
 const PRI = {};
@@ -2815,7 +2885,8 @@ const HELP_TOOL = {
  'mitm6': 'IPv6 DHCPv6/DNS takeover: becomes the DNS server for the network, answers WPAD and feeds authentication to ntlmrelayx.',
  'ADFSpoof.py': 'Forges SAML tokens (Golden SAML) from ADFSDump output for o365 or generic saml2 relying parties.',
  'roadrecon': 'ROADtools client for Entra ID: authenticate, gather tenant objects/apps/roles (gather) and browse them (gui).',
- 'bloodhound-ce-python': 'BloodHound CE collector — same data as bloodhound-python, newer package name.'
+ 'bloodhound-ce-python': 'BloodHound CE collector — same data as bloodhound-python, newer package name.',
+ 'bhcli': 'Unofficial CLI client for the BloodHound CE API — query, upload, mark Owned, audit and import custom queries from the terminal.'
 };
 const HELP_ATTACK = {
  'trust-raisechild': 'Child domains store a trust key for their parent. With DA in the child you can forge an inter-realm TGT carrying the parent Enterprise Admins SID and authenticate to the parent DC as Administrator — escalation across the trust.',
@@ -2953,6 +3024,7 @@ function zshToolData(){
     if(key === 'certipy' && second) d.subs.add(second);
     if(key === 'bloodyAD'){ const m = t.match(/\b(add|get|set|remove|msldap)\b/); if(m) d.subs.add(m[1]); }
     if(key === 'nxc' && second && /^[a-z]+$/.test(second)) d.subs.add(second);
+    if(key === 'bhcli' && second && /^[a-z-]+$/.test(second)) d.subs.add(second);
     const mm = t.match(/-M\s+([A-Za-z0-9_]+)/); if(mm) d.modules.add(mm[1]);
     const hm = t.match(/-m\s+(\d+)/); if(hm) d.modes.add(hm[1]);
   }));
@@ -2963,7 +3035,7 @@ function zshEmit(data){
   const fnName = n => '_hk_' + n.replace(/[^A-Za-z0-9_]/g, '_');
   const q = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
   let out = '#compdef ' + names.join(' ') + '\n';
-  out += '# Hackerman v1.8.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
+  out += '# Hackerman v1.9.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
   out += '_hackerman() {\n  local tool=${words[1]:t}\n  case $tool in\n';
   names.forEach(n => { out += '    ' + n + ') ' + fnName(n) + ' ;;\n'; });
   out += '  esac\n}\n\n';
@@ -3011,6 +3083,7 @@ const REQ_DEFS = {
   root:        {label:'root', tip:'root on the Linux host', sev:30},
   trustedcreds:{label:'trust creds', tip:'credentials accepted in the trusted domain', sev:25},
   creds:       {label:'creds', tip:'a domain account (password, NT hash or ticket)', sev:20},
+  bh:          {label:'BH data', tip:'a running BloodHound CE instance with ingested data', sev:15},
   nocreds:     {label:'no creds', tip:'works unauthenticated / via poisoning or null sessions', sev:10}
 };
 const REQS = {
@@ -3055,7 +3128,8 @@ const REQS = {
   'mssql-linked':['mssql'], 'mssql-coerce':['mssql','coercion'], 'mssql-alt-rce':['mssql'],
   'trust-enum':['creds'], 'trust-raisechild':['da'], 'trust-cross-domain-roast':['trustedcreds'],
   'trust-sid-history':['trustkey','da'], 'trust-foreign-groups':['creds'],
-  'bh-python':['creds'], 'bh-nxc':['creds']
+  'bh-python':['creds'], 'bh-nxc':['creds'],
+  'bhcli-setup':['bh'], 'bhcli-recon':['bh'], 'bhcli-cypher':['bh'], 'bhcli-alternatives':['bh']
 };
 const REQ_ISSUES = [];
 function reqSorted(reqs){ return (reqs || []).slice().sort((a, b) => (REQ_DEFS[b] ? REQ_DEFS[b].sev : 0) - (REQ_DEFS[a] ? REQ_DEFS[a].sev : 0)); }
