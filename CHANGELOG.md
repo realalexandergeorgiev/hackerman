@@ -3,6 +3,234 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.20.0] — 2026-09-25
+
+### Added
+
+- **Loot tab — multiple identities**: persistent credential collection (`adah.loot.v1`) with domain,
+  user, password, NT hash, AES key, ccache, RID and notes per entry. Apply an entry as
+  *foothold / partner domain / impersonate / victim* with one click, or pick it from the new `▾`
+  next to every credential field. Entries get their own colour; the store is independent from presets
+  and has its own JSON export/import.
+- **Loot suggestions**: recipe cards and wizard steps show which credentials they use and which are
+  missing, and offer matching loot entries as clickable chips (for example
+  `loot: eric.dutton — {{user}}+{{password}}`).
+- **Identity colours**: related context fields (user/password/NT hash/AES key/ccache and their
+  trust/target/victim counterparts) share a colour — the loot-entry hue when matched, a role hue
+  otherwise. The semantic text colours stay unchanged.
+- **New recipe `dc-rbcd`** — RBCD against a DC computer object (same-domain and cross-domain
+  variants), including the bloodyAD naming rule (create without `$`, reference with `$`), the
+  HOST-SPN getST and the `secretsdump -k -no-pass -just-dc` follow-up.
+- **New wizard flow `dcacl`** — "I have write rights on a DC object": confirm the right → RBCD on the
+  DC → shadow credentials on the DC → DCSync.
+- New context variables `trust_dc_host` and derived `trust_dc_fqdn` (partner DC) and `user_rid`
+  (for ticketer `-user-id` and ACEs that name your own SID).
+- **NetExec RBCD coverage**: `rbcd-getst` and `dc-rbcd` document nxc **`--delegate`** usage
+  (S4U2Self+S4U2Proxy; `--self`, `--spn`, `--generate-st`, `--u2u`), `rbcd-addcomputer` covers
+  **`-M add-computer`** and `rbcd-read`/`deleg-enum` cover **`--find-delegation`**. The cards state
+  explicitly that nxc **cannot write** `msDS-AllowedToActOnBehalfOfOtherIdentity` (no write module,
+  open feature request #1219) — that step stays with impacket-rbcd or bloodyAD, with
+  `-M shadow-creds` as the alternative takeover.
+
+### Changed
+
+- **Help texts expanded across the board**: every context-field tooltip now follows
+  *What / Where / Careful*, and all 66 tool plus 57 attack hover texts gained usage and pitfall
+  details; tooltip width/height increased.
+- `golden-ticket`, `silver-ticket`, `gettgt`, `getst` and `constrained-getst`: **AES variants come
+  first**, the NT hash is clearly labelled as RC4 fallback.
+- `trust-sid-history`: steps 6/6e use `{{user_rid}}`; hardcoded cross-domain placeholders were
+  replaced by the new `{{trust_dc_fqdn}}` / `{{trust_dc_host}}$`; `trust-dcsync` uses
+  `{{trust_dc_fqdn}}` too.
+- Preset save now suggests the currently selected (or last used) name — Enter overwrites — and asks
+  for confirmation before overwriting a different preset.
+- `rbcd-bloodyad` documents the Kerberos computer-create variant and points to `dc-rbcd` when the
+  target is a DC.
+- RID brute commands pin `--rid-brute 2000` (nxc default is 4000; RID ≤1000 are built-in/standard
+  accounts, custom accounts usually sit in 1000–2000).
+- README feature list/counts (128 recipes, 17 flows) updated.
+
+## [1.19.0] — 2026-09-19
+
+### Added
+
+- **Collapsible wizard steps**: each step header is clickable (chevron + checkbox + title + summary
+  `N cards · needs: …`); only the first unfinished step is open by default, manual toggles are
+  persisted per step (`UI.stepOpen` in `adah.ui.v1`). Checking a step collapses it and opens the next
+  unfinished one; `expand all` / `collapse all` buttons and a `done/total` counter sit in the flow
+  header. Keyboard support (`aria-expanded`, Enter/Space) and the first open step is accent-marked.
+- Wizard step cards now follow the global `compact` setting (collapsed overview, full details in the
+  focus overlay) instead of always rendering every command inline.
+
+### Changed
+
+- README design note "Wizard steps always stay expanded" removed; feature list updated.
+
+### Fixed
+
+- Trust docs: `impacket-secretsdump -trust-keys` / `-just-trust-keys` exist **only on impacket master**
+  (PR #2207, after the 0.13.1 release of 2026-05-19) — on pip/Kali 0.13.1 the flag fails with
+  `unrecognized arguments`. `trust-sid-history`, `trust-raisechild`, `trust-dcsync` and the
+  `trust_aeskey` tooltip now say so, add a
+  `pipx install --force 'git+https://github.com/fortra/impacket'` step and point at mimikatz
+  (`lsadump::trust /patch`, new step 5c) as the release fallback.
+- `trust-sid-history`: ticketer forge commands no longer pass `-groups` — that flag only sets group RIDs
+  of **your own** domain (impacket default `513,512,520,518,519`); target-domain SIDs belong in
+  `-extra-sid`. Documented that `-extra-sid` takes **one comma-separated list** — a repeated flag
+  overwrites the previous value (argparse `store`), so only the last SID survives.
+- `trust-sid-history`: added `-user-id <RID>` to the forge commands (impacket default is `500`); the
+  real RID is needed when the PAC user SID must match (new ACL pivot) and against
+  `KDC_ERR_TGT_REVOKED`.
+- `trust-sid-history`: new step **6e) ACL pivot** for cross-forest: if the surviving RID > 1000 is a
+  group with WriteDACL/GenericAll on the target DC object, use the forged ticket (Kerberos) to add the
+  ticket user's SID as GenericAll with bloodyAD, then continue via shadow credentials/RBCD on the DC.
+
+## [1.18.3] — 2026-09-19
+
+### Changed
+
+- Disabled tiers ("always / common / situational / rare") are now **struck through everywhere** the
+  label appears: the tier filter chips decorate their label span (renders reliably in every browser,
+  not just Chromium), and the tier badges on wizard flow cards, recipe cards and the Legend table
+  get the same `.off` state when the tier is disabled. Disabled tiers stay recognisable without
+  reading the toolbar.
+
+## [1.18.2] — 2026-09-19
+
+### Added
+
+- `trust-raisechild` / `trust-dcsync`: the **trust-attribute check is now the first command**
+  (`--dc-list`) — `Within Forest` (0x20) means the extra-SID path is viable, cross-forest
+  (`Forest Transitive`/`Treat as External`/`Quarantined`) means it is not. `trust-dcsync` additionally
+  verifies the forged PAC with `impacket-describeTicket` (step 0d).
+- `trust-sid-history`: new **cross-forest RID > 1000 variant** (step 6d) for trusts with SID history
+  enabled (`Treat as External` 0x40).
+
+### Fixed
+
+- Cross-forest SID-filtering guidance corrected everywhere (`trust-enum`, `trust-sid-history`,
+  `trust-raisechild`, `trust-dcsync` + hover help): the target forest's **RID 500–1000 (EA 519,
+  DA 512, Account Operators 548) is always filtered**, even with `/enablesidhistory:yes` — only
+  RID > 1000 can be spoofed when the trust is relaxed. The raiseChild module calls any inbound AD
+  trust "parent domain"; it does not check `trustAttributes`, so a cross-forest partner fails with
+  a valid TGT but `rpc_s_access_denied` (and a follow-up `ERROR_DS_DRA_BAD_DN` from `nxc --ntds`).
+
+## [1.18.1] — 2026-09-19
+
+### Added
+
+- `trust-dcsync` is now self-contained: commands **0)** `nxc ldap … -M raisechild -o ETYPE=aes256`
+  (automated ticket, saves `<USER>.ccache`) and **0b)** the manual `impacket-ticketer -aesKey …`
+  forge with a pointer to the key acquisition in `trust-sid-history`; the dump commands are numbered
+  accordingly. `desc` and note got a "Ticket first" explanation (ticket source vs. partner-credential
+  paths), and `trust-raisechild` / `trust-sid-history` / the `trusts` flow now point to `trust-dcsync`
+  for the dump.
+
+## [1.18.0] — 2026-09-19
+
+### Added
+
+- New Trusts recipe **`trust-dcsync` — "DCSync the partner domain (across the trust)"**: ticket-based
+  dump (`--ntds`, `impacket-secretsdump -k -no-pass -just-dc`), partner-credential variants
+  (password + PtH) and a note with the decision tree — replication rights live on the target domain
+  NC, a transitive trust does not pass them on; intra-forest works via trust key / extra-SID
+  (Enterprise Admins), cross-forest needs real rights, and transitive forest trusts do not chain
+  across forests. Technique hover + `REQS` (`DCSync`, `trust key`) added.
+
+### Fixed
+
+- `trusts` wizard flow: final "Dump" step pointed at `creds-dcsync`, which targets your own domain —
+  it now uses `trust-dcsync` (the partner domain).
+- `trust-enum` note states explicitly that a trust never grants replication rights and links the new
+  card.
+
+## [1.17.2] — 2026-09-19
+
+### Added
+
+- `trust-raisechild` / `trust-sid-history`: **real-world failure diagnosis** for the extra-SID
+  shortcut — Kerberos auth succeeds but the parent denies RemoteOperations/DCSync
+  (`rpc_s_access_denied`, then a misleading `ERROR_DS_DRA_BAD_DN` from `nxc smb --ntds`).
+  - how to recognise SID filtering: `--dc-list` shows `Within Forest` (ok) vs `Forest Transitive` /
+    `Treat as External` / `Quarantined Domain` (filtered), `Get-ADTrust … SIDFilteringQuarantined`,
+    `netdom trust <parent> /domain:<child> /quarantine`;
+  - note that different namespaces (argon.htb ↔ ofc.local) are usually separate forests, so
+    filtering is on by default and the nxc module's `parent domain` is just the first trusted
+    AD domain;
+  - `impacket-describeTicket '<USER>.ccache'` command to check whether the extra SID is in the PAC
+    (present but denied = stripped by the parent);
+  - DCSync tip: prefer
+    `impacket-secretsdump -k -no-pass -just-dc '<child-realm>/<user>@<parent-dc>.<parent>'` over
+    `nxc --ntds` (which needs local admin for RemoteOperations);
+  - lab fixes: `netdom trust … /quarantine:no` (external/domain trust) or
+    `/enablesidhistory:yes` (forest trust, at the trusting forest root).
+
+## [1.17.1] — 2026-09-19
+
+### Added
+
+- `trust-raisechild`: **nxc `raisechild` module** as the primary automation
+  (`nxc ldap <child-dc> -u … -p … -M raisechild`, plus `-o ETYPE=aes256` for AES-only domains);
+  documented options `USER`, `USER_ID`, `RID`, `ETYPE` — the module DCSyncs the child krbtgt itself
+  and saves the forged ticket to `<USER>.ccache`. `impacket-raiseChild` stays as the alternative.
+- **SID filtering warning + detection**: note explains that the extra-SID shortcut fails when the
+  parent trust is quarantined, and how to recognise it — `--dc-list` decodes 0x4 as
+  `Quarantined Domain`, LDAP `trustAttributes`, Windows `Get-ADTrust … SIDFilteringQuarantined`, or
+  `netdom trust <child> /domain:<parent> /quarantine` on the parent (symptom: valid TGT, extra SID
+  stripped, access denied on the parent).
+- `trust-enum`: `Get-ADTrust` now selects `SIDFilteringQuarantined`, `SIDFilteringForestAware` and
+  `TreatAsExternal`; note documents the quick check.
+
+## [1.17.0] — 2026-09-19
+
+### Added
+
+- New context variable **`trust_aeskey`** (inter-realm AES256 key of the TrustedDomain object) next to
+  `trust_key` (RC4).
+- `trust-sid-history` and `trust-raisechild`: **AES256 forge variants**
+  (`impacket-ticketer -aesKey '{{trust_aeskey}}' …`) and the acquisition command
+  `impacket-secretsdump -just-trust-keys …` (current impacket; derives AES + RC4 for both trust
+  directions). RC4 stays as a clearly labelled fallback.
+
+### Fixed
+
+- `trust-sid-history` claimed "Only RC4/NT works for forging and mimikatz AES values cannot request
+  a TGT" — wrong and now corrected: AES works, but its key is salted **per direction**
+  (`YOURDOMAINkrbtgtPARTNER`), so it must come from the TrustedDomain object, not the ordinary
+  trust-account DCSync. RC4 has no salt, but the account dump only covers the outgoing direction and
+  can diverge from the incoming key after the 30-day rotation — noted on `trust_key` too.
+- `trust-sid-history` note now mentions the intra-forest shortcut (child krbtgt AES key + extra-sid
+  without any trust key).
+
+## [1.16.0] — 2026-09-19
+
+### Added
+
+- Split the second-domain workflow into focused Trusts cards, all driven by the `trust_*` context
+  (no more first-domain commands inside a partner-domain flow):
+  - `second-domain` is now **collect & ingest** only (nxc/bloodhound-python + `bhcli upload`).
+  - `second-domain-recon` — groups, nested memberships (`bloodyad get membership`, `memberOf`,
+    `bhcli members --indirect`) plus `bhcli users/computers/groups/stats/audit` for the partner.
+  - `second-domain-mark` — `bhcli mark Owned` for the partner foothold and bulk users/computers.
+  - `second-domain-abuse` — partner-context `get writable`, `certipy find`, shadow credentials,
+    group takeover, `add dcsync` and the follow-up DCSync dump.
+- `trust-coerce-relay` gained a coercion variant fired with partner-domain credentials.
+
+### Fixed
+
+- Second-domain wizard flow: steps no longer reference first-domain recipes (`bhcli-mark-owned`,
+  `bhcli-recon`, `dacl-*`, `shadow-creds`, `adcs-find`) or duplicate the collect card; each step now
+  maps to one partner-domain card.
+- `second-domain` bloodhound-python invocations were missing `--zip`, so `bhcli upload *.zip` had
+  nothing to ingest.
+- Flow readiness for the second-domain flow now requires `trust_domain`/`trust_dc_ip`/`trust_user`
+  and accepts `trust_nthash` as the credential variant.
+- `FLOW_PRI` now lists `second-domain` explicitly (was silently defaulting to tier 2).
+- `da` flow: a Domain Admin with only a password is now recognised as ready.
+- `unconstrained` flow: removed the `unconstrained-coerce` duplicate from the coercion step (the
+  card stays in the ticket-stealing step, restoring the 1.6.1 split).
+- README coverage corrected (126 recipes, 16 flows, actual per-category counts).
+
 ## [1.15.1] — 2026-09-19
 
 ### Added

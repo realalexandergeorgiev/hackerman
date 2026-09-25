@@ -1,4 +1,4 @@
-# Hackerman v1.15.1
+# Hackerman v1.20.0
 
 > Single-file, offline Active Directory attack helper for Kali — fill in the context, get the next-step commands.
 
@@ -22,6 +22,10 @@ non-obvious tools and attacks.
   ccache, attacker IP/interface, listener port, rogue machine, CA/template, group, krbtgt key,
   SIDs, parent domain, wordlist, keytab, output file. Persisted in `localStorage`, plus named
   presets and JSON export/import.
+- **Loot tab — multiple identities** — keep foothold, partner-domain, victim and impersonation
+  accounts (password, NT hash, AES key, ccache, RID) in their own store; apply them per click or via
+  the `▾` next to every credential field. Wizard steps and recipe cards show which credentials they
+  use and suggest matching loot entries.
 - **Derived fields** (`realm`, `domain_dn`, `dc_fqdn`, `target_fqdn`) are visually distinct
   (dashed border, cyan value, `auto` tag) and hovering them highlights the source fields they are
   computed from.
@@ -29,7 +33,9 @@ non-obvious tools and attacks.
   (`N required missing`) opens the context bar and flashes the missing fields on click.
 - **Colored arguments** — domains cyan, hosts/DNs yellow, IPs orange, users green, secrets red,
   hashes magenta, AES keys purple, SPNs blue, file paths violet, SIDs indigo. Missing values are
-  highlighted (`‹DC IP?›`), and the card gets a `missing:` badge.
+  highlighted (`‹DC IP?›`), and the card gets a `missing:` badge. Related identity fields share a
+  left-border hue (loot-entry colour when matched, role colour otherwise) so user/password/hash
+  bundles are visible at a glance.
 - **Click-to-set placeholders** — click any `‹value?›` inside a command or note to set it right
   there in a small popover. Rendered values are clickable too: click `eric.dutton` to change it
   (a selection guard keeps text marking/copying working). Derived values jump to their source
@@ -38,11 +44,12 @@ non-obvious tools and attacks.
   background and a `ready` badge; `ready only` filter and `ready → priority` sort are available.
 - **Applicability tiers** — every recipe/flow is ranked `always` / `common` / `situational` /
   `rare`. Default sort is priority → ready, with tier filter chips in the toolbar.
-- **Hover help** — `?` markers on titles and command labels explain the attack or tool
-  (54 tool entries, 42 attack entries); toggle with the `help` chip.
-- **Context field tooltips** — hover any context label (dotted underline) for **how to get the
-  value**: `--get-sid` for SIDs, trust-account/key commands, hash sources, SPN/DN lookups, certipy
-  fields, … Derived fields show their formula. Toggle with the `help` chip.
+- **Hover help** — `?` markers on titles and command labels explain the attack or tool, with usage
+  and pitfalls (66 tool entries, 57 attack entries); toggle with the `help` chip.
+- **Context field tooltips** — hover any context label (dotted underline) for a structured
+  **What / Where / Careful** explanation: `--get-sid` for SIDs, trust-account/key commands, hash
+  sources, SPN/DN lookups, certipy fields, … Derived fields show their formula. Toggle with the
+  `help` chip.
 - **LDAPS by default** — every raw `ldapsearch` runs over `ldaps://` (636) with
   `LDAPTLS_REQCERT=never` (self-signed DC certs); a dedicated **LDAP over TLS** card covers the
   STARTTLS fallback, certificate grab and per-tool TLS flags (nxc `--port 636`, bloodyAD `-s`,
@@ -57,16 +64,19 @@ non-obvious tools and attacks.
 - **Visible requirements** — every recipe carries requirement tags (DA, DCSync, local admin, write
   rights, ADCS enrollment, …) as amber chips with the full list on expand/overlay; wizard flows
   show prerequisites and per-step `needs:` hints, so it is clear what a technique actually requires.
-- **Compact lists** — recipe cards render collapsed (header + short description) by default so 123
+- **Compact lists** — recipe cards render collapsed (header + short description) by default so 127
   recipes stay scannable; click a card to open it in the focus overlay, or switch the `compact`
-  chip off to expand everything inline. Wizard steps always stay expanded.
+  chip off to expand everything inline. Wizard steps collapse as well: only the first unfinished
+  step is open, checking a step auto-advances to the next, and `expand all`/`collapse all` sit in
+  the flow header.
 - **zsh completion export** — the header button generates `_hackerman` from the embedded recipes
   (flags, subcommands, nxc `-M` modules, hashcat modes, xfreerdp options); see below.
 - **`proxychains` toggle** — prefixes network commands, local tools (Responder, hashcat, SMB
   server, krb5 tooling) are exempt.
-- **123 recipes** across 13 categories, each with a copy button per command and for the whole card.
-- **15 wizard flows** — pick what you have, get an ordered runbook with progress checkboxes and
-  "copy flow as markdown".
+- **128 recipes** across 13 categories, each with a copy button per command and for the whole card.
+- **17 wizard flows** — pick what you have, get an ordered runbook with collapsible steps, progress
+  checkboxes, per-step credential needs and "copy flow as markdown". Includes the DC-object flow
+  (write rights on a DC → RBCD/shadow credentials → DCSync).
 - **43 BloodHound Cypher queries** — collection commands plus pathfinding/rights snippets (CE / legacy):
   high-value paths, DCSync/write rights, LAPS/gMSA readers, sessions on owned hosts, ADCS CA rights, domain SIDs, …
 - **BH workflow (`bhcli`)** — terminal-first BloodHound: setup/audit recipes, **mark Owned/Tier Zero**
@@ -85,14 +95,14 @@ xdg-open index.html        # or just double-click the file
 3. Or use **Recipes** — search/filter, hover the `?` markers, click placeholders to fill them.
 4. Toggle **proxychains** when you attack through a pivot.
 
-## Coverage (123 recipes)
+## Coverage (128 recipes)
 
 | Category | # | Highlights |
 |---|---:|---|
-| Recon & Auth | 10 | auth checks (pw/PtH/ccache), shares, spider_plus, user/group enum, **kerbrute**, password spraying, **session hunting**, **LDAP dumps** |
+| Recon & Auth | 11 | auth checks (pw/PtH/ccache), shares, spider_plus, user/group enum, **kerbrute**, password spraying, **session hunting**, **LDAP dumps**, **LDAP over TLS** |
 | BloodyAD | 8 | auth styles (pw/hash/ccache/keytab), `get writable`, SPN add/del, password/UAC/groups, **BadSuccessor/dMSA** |
 | Kerberos | 11 | **kerberos-auth helper** (krb5.conf, hosts, ntp/rdate/faketime, unset, kinit/klist/kvno, per-tool cheat sheet), keytab extraction, AS-REP, kerberoasting, targeted kerberoast, getTGT/getST, golden/silver, **ticket inspection/renewal** |
-| Delegation & RBCD | 10 | full RBCD runbook, **SPN hijack → constrained delegation → DC takeover**, constrained/unconstrained abuse |
+| Delegation & RBCD | 11 | full RBCD runbook, **RBCD/shadow-cred path against a DC**, **SPN hijack → constrained delegation → DC takeover**, constrained/unconstrained abuse |
 | ADCS / Certipy | 15 | find, ESC1, **ESC2/ESC3**, ESC4, **ESC5/12/14 recon**, **ESC6**, **ESC7**, ESC8 relay, **ESC9/ESC16**, **ESC10**, **ESC11**, **ESC13**, **ESC15 (EKUwu)**, **ESC17**, **golden certificate** |
 | ACL / DACL Abuse | 9 | enum, GenericAll user/computer/group, ForceChangePassword/AddSelf, WriteDACL→DCSync, WriteOwner, shadow credentials, **AdminSDHolder** |
 | Creds & Secrets | 8 | DCSync, SAM/LSA/LSASS, DPAPI, gMSA/LAPS, offline ntds.dit, **SeBackupPrivilege**, **Linux loot**, **Windows registry loot** |
@@ -100,15 +110,17 @@ xdg-open index.html        # or just double-click the file
 | Lateral Movement | 7 | WinRM, nxc exec, impacket exec family, **dcomexec/services/reg**, **rdp-auth helper**, file transfer |
 | Post-Exploitation | 17 | SeImpersonate, **UAC bypass**, **SeBackup**, **DSRM**, **DNSAdmins**, AV/Defender checks, **linpeas/winpeas**, **reverse shells**, GPO abuse, ADIDNS, **ZeroLogon**, **noPac**, **PrintNightmare**, **Certifried**, **KrbRelayUp**, **Entra ID Connect**, **ADFS Golden SAML**, **SCCM** |
 | MSSQL | 6 | connect (pw/hash/ccache), xp_cmdshell, **OLE/CLR RCE**, impersonation, linked servers, NetNTLM theft |
-| Trusts | 5 | trust enum (+ direction/attributes), **cross-domain roasting**, **SID history / ExtraSIDs**, **foreign group membership**, raiseChild / trust-key golden ticket |
-| BloodHound | 6 | bloodhound-python / **bloodhound-ce-python**, nxc `--bloodhound`, **bhcli workflow** (CE setup, lists/audit, cypher, alternatives) |
+| Trusts | 11 | trust enum (+ direction/attributes), **cross-domain roasting**, **SID history / ExtraSIDs**, **foreign group membership**, **cross-trust coercion & relay**, **DCSync across the trust** (who may replicate), raiseChild / trust-key golden ticket, **second-domain cards** (collect, recon, mark, abuse) |
+| BloodHound | 7 | bloodhound-python / **bloodhound-ce-python**, nxc `--bloodhound`, **bhcli workflow** (CE setup, lists/audit, mark Owned, cypher, alternatives) |
 
 ### Wizard flows
 
 Valid credentials · NT hash (PtH) · AES key / ccache · keytab · write rights over a computer
-(RBCD) · constrained delegation · unconstrained delegation / coercion · ADCS · ACL rights over
-user/group/computer · MSSQL · no credentials (poison/relay/coerce) · Windows shell foothold ·
-domain trusts · GPO/ADIDNS · Domain Admin / krbtgt endgame.
+(RBCD) · **write rights over a DC object** (RBCD/shadow credentials → DCSync) · constrained
+delegation · unconstrained delegation / coercion · ADCS · ACL rights over user/group/computer ·
+MSSQL · no credentials (poison/relay/coerce) · Windows shell foothold · domain trusts ·
+second/partner-domain foothold (collect, recon, mark, abuse) · GPO/ADIDNS · Domain Admin /
+krbtgt endgame.
 
 ## Design notes
 

@@ -7,10 +7,10 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-const match = html.match(/<script>([\s\S]*)<\/script>/);
+const match = html.match(/<script>([\s\S]*?)<\/script>/);
 if(!match) throw new Error('script block not found in index.html');
 
-const js = match[1].replace('initUI();', '/* initUI disabled for generation */');
+const js = match[1].replaceAll('initUI();', '/* initUI disabled for generation */');
 const build = new Function(js + '\nreturn buildZshCompletion();');
 const out = build();
 
