@@ -1,4 +1,4 @@
-# Hackerman v1.21.0
+# Hackerman v1.22.0
 
 > Single-file, offline Active Directory attack helper for Kali — fill in the context, get the next-step commands.
 
@@ -80,7 +80,10 @@ non-obvious tools and attacks.
   server, krb5 tooling) are exempt.
 - **128 recipes** across 13 categories, each with a copy button per command and for the whole card.
 - **17 wizard flows** — pick what you have, get an ordered runbook with collapsible steps, progress
-  checkboxes, per-step credential needs and "copy flow as markdown". Includes the DC-object flow
+  checkboxes, per-step credential needs and "copy flow as markdown". **Decision groups** mark
+  alternative paths (`pick one` — e.g. RBCD vs shadow credentials on a DC, trust key vs relay vs
+  hybrid identity) and pick-one radios dim the alternatives; **conditional steps** carry an
+  `only if: …` badge when they apply just sometimes. Includes the DC-object flow
   (write rights on a DC → RBCD/shadow credentials → DCSync).
 - **43 BloodHound Cypher queries** — collection commands plus pathfinding/rights snippets (CE / legacy):
   high-value paths, DCSync/write rights, LAPS/gMSA readers, sessions on owned hosts, ADCS CA rights, domain SIDs, …

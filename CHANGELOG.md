@@ -3,6 +3,35 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.22.0] — 2026-09-26
+
+### Added
+
+- **Wizard decision groups (`pick one`)**: flow steps can now be alternatives instead of a strict
+  sequence — a group header asks the decision question (e.g. *"What is your position in the
+  partner domain?"*), the alternatives render as sub-cards separated by OR lines with radio
+  semantics: picking one marks the step done, dims the other paths and auto-advances. Groups
+  count as one step in the progress bar; the pick persists per flow (`adah.progress.v1`,
+  `pick:`n`` key — old flat progress never marks a group done without an explicit pick).
+- **Conditional steps (`only if: …`)**: steps that apply only sometimes (e.g. *SPN hijack onto the
+  DC — only if the delegation target SPN is missing or unreachable*) carry a dashed amber badge
+  and render dimmed until opened or checked.
+- `copy flow as markdown` renders groups as `### n. question — pick ONE path` with `#### Option A/B`
+  sections and annotates conditional steps.
+
+### Changed
+
+- **9 flows restructured into decision trees**: `trusts` (trust key/DA vs coercion+relay vs hybrid
+  identity — the user-named example), `dcacl` (RBCD vs shadow credentials, replacing the manual
+  "Path A/B" titles), `dacl` (by object type: user/computer/group/dMSA/domain object), `adcs`
+  (by ESC class: template rights vs weak mapping vs relay/exotic vs ESC8), `da` (golden ticket vs
+  golden certificate), `mssql` (RCE vs SQL-internal vs hash theft), `nopwn` (relay target SMB vs
+  LDAP(S) vs ADCS), `foothold` (SeImpersonate vs UAC vs KrbRelayUp, plus a conditional AV recon
+  step), `creds` (ACL edges vs MSSQL). `constrained` gained the conditional SPN-hijack step.
+- `trust-foreign-groups` moved into the trusts *Enumerate* step (recon, not an attack path);
+  `av-defender` moved out of the foothold escalation step into its own conditional step.
+- Wizard intro text explains groups and conditional steps; flows stay at 17.
+
 ## [1.21.0] — 2026-09-25
 
 ### Added

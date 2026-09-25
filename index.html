@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hackerman v1.21.0 — AD Attack Helper (Kali · HTB)</title>
+<title>Hackerman v1.22.0 — AD Attack Helper (Kali · HTB)</title>
 <style>
 :root{
   --bg:#0a0f1a; --panel:#0f1729; --panel2:#131d33; --line:#1e2b45;
@@ -210,6 +210,32 @@ body.focus-open{overflow:hidden}
 .step.done .step-head h3{color:var(--dim)}
 .step .stip{color:var(--dim);font-size:12.5px;margin:0 0 10px}
 .step .grid{grid-template-columns:1fr}
+.stepgroup{border-left:2px solid #7c3aed;padding:0 0 16px 16px;position:relative;margin-left:6px}
+.stepgroup::before{content:"";position:absolute;left:-7px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--panel2);border:2px solid #7c3aed}
+.stepgroup.done::before{background:var(--ok);border-color:var(--ok)}
+.stepgroup.current::before{background:var(--accent);border-color:var(--accent)}
+.stepgroup-head{display:flex;align-items:center;gap:10px;margin-bottom:9px;cursor:pointer;user-select:none}
+.stepgroup-head:hover h3{color:#e9d5ff}
+.stepgroup-head h3{margin:0;font-size:15px;flex:1;color:#c4b5fd}
+.stepgroup .chev{color:var(--dim);font-size:10px;flex:none;transition:transform .15s ease}
+.stepgroup.open .chev{transform:rotate(90deg)}
+.stepgroup.collapsed .stepgroup-body{display:none}
+.stepgroup.done .stepgroup-head h3{color:var(--dim)}
+.pickone{flex:none;font-size:10px;color:#a78bfa;border:1px solid #7c3aed88;border-radius:999px;padding:1px 8px;text-transform:uppercase;letter-spacing:.07em}
+.altstep{border:1px solid var(--line);border-radius:8px;padding:10px 12px 12px;background:#0a1322}
+.altstep.picked{border-color:#2f6f5e;background:#0f1c2c;box-shadow:inset 3px 0 0 var(--ok)}
+.altstep.faded{opacity:.4}
+.alt-head{display:flex;align-items:center;gap:9px;margin-bottom:8px;cursor:pointer;user-select:none}
+.alt-head:hover h4{color:#dbeafe}
+.alt-head h4{margin:0;font-size:13.5px;flex:1}
+.alt-head input{accent-color:var(--ok);width:15px;height:15px;cursor:pointer}
+.alt-opt{color:#a78bfa;font-size:11px;font-weight:700;flex:none}
+.alt-head .step-hint{font-size:10.5px}
+.altstep .step-body{margin-top:2px}
+.or-sep{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:10px;margin:7px 0;letter-spacing:.14em}
+.or-sep::before,.or-sep::after{content:"";flex:1;height:1px;background:var(--line)}
+.whenbadge{flex:none;font-size:10.5px;color:#fbbf24;border:1px dashed #fbbf2455;border-radius:6px;padding:1px 7px;white-space:nowrap}
+.step.conditional:not(.open):not(.done) .step-head h3{color:var(--dim)}
 
 .tbl{width:100%;border-collapse:collapse}
 .tbl td,.tbl th{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top;font-size:13px}
@@ -254,7 +280,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
 
 <header>
   <div class="hwrap">
-    <div class="brand">Hackerman <b>v1.21.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
+    <div class="brand">Hackerman <b>v1.22.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
     <div class="hactions">
       <select id="presetSel" title="Load preset"><option value="">— presets —</option></select>
       <button id="presetSave" title="Save current context as preset">Save</button>
@@ -311,7 +337,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
   <section id="tab-legend" class="tab"></section>
 </main>
 
-<footer class="mono">Hackerman v1.21.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
+<footer class="mono">Hackerman v1.22.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
 
 <div id="focusOverlay" class="hidden">
   <div id="focusBox" role="dialog" aria-modal="true" tabindex="-1" aria-label="recipe focus">
@@ -455,7 +481,12 @@ if(!UI.stepOpen || typeof UI.stepOpen !== 'object') UI.stepOpen = {};
 delete UI.readyFirst;
 function saveUI(){ try { localStorage.setItem(LS_UI, JSON.stringify(UI)); } catch(e){} }
 function tierOff(t){ return !!(UI.tiers && UI.tiers[t] === false); }
-function firstOpenStep(f){ const st = PROG[f.id] || {}; return f.steps.findIndex((s, i) => !st[i]); }
+function firstOpenStep(f){ const st = PROG[f.id] || {}; return f.steps.findIndex((s, i) => !stepDoneAt(f, st, i)); }
+function stepDoneAt(f, st, i){
+  const s = f.steps[i];
+  if(s && s.any) return !!st[i] && st['pick:' + i] !== undefined;
+  return !!st[i];
+}
 function stepOpen(f, i){ const k = f.id + ':' + i; return (k in UI.stepOpen) ? !!UI.stepOpen[k] : i === firstOpenStep(f); }
 function setStepOpen(f, i, open){ UI.stepOpen[f.id + ':' + i] = !!open; saveUI(); }
 
@@ -1143,7 +1174,7 @@ let activeFlow = null;
 function flowProgress(f){
   const st = PROG[f.id] || {};
   let done = 0;
-  f.steps.forEach((s, i) => { if(st[i]) done++; });
+  f.steps.forEach((s, i) => { if(stepDoneAt(f, st, i)) done++; });
   return {done, total:f.steps.length};
 }
 
@@ -1161,7 +1192,7 @@ function renderWizard(){
     const p = document.createElement('p');
     p.className = 'dim';
     p.style.marginTop = '0';
-    p.innerHTML = 'Pick what you have — each flow lists ordered steps with ready-to-copy commands using your context above.';
+    p.innerHTML = 'Pick what you have — each flow lists ordered steps with ready-to-copy commands using your context above. Decision groups (<b>pick one</b>) are alternatives — picking one path marks the step done; dashed <b>only if: …</b> badges mark conditional steps you can skip.';
     tab.appendChild(p);
     const grid = document.createElement('div');
     grid.className = 'flows';
@@ -1256,49 +1287,10 @@ function renderWizard(){
 
   const st = PROG[f.id] || {};
   const current = firstOpenStep(f);
-  f.steps.forEach((step, i) => {
-    const open = stepOpen(f, i);
-    const el = document.createElement('div');
-    el.className = 'step' + (st[i] ? ' done' : '') + (open ? ' open' : ' collapsed') + (i === current ? ' current' : '');
-    const sh = document.createElement('div');
-    sh.className = 'step-head';
-    sh.tabIndex = 0;
-    sh.setAttribute('aria-expanded', open ? 'true' : 'false');
-    const chev = document.createElement('span');
-    chev.className = 'chev'; chev.textContent = '▸';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox'; cb.checked = !!st[i];
-    cb.title = 'mark step done';
-    const h3 = document.createElement('h3');
-    h3.textContent = (i + 1) + '. ' + step.t;
-    const sr = stepReqs(step);
-    const hint = document.createElement('span');
-    const cards = (step.r || []).length;
-    hint.className = 'step-hint';
-    hint.textContent = cards + ' card' + (cards === 1 ? '' : 's') + (sr ? ' · ' + sr : '');
-    hint.title = (step.r || []).map(id => { const r = RECIPES.find(x => x.id === id); return r ? r.title : id; }).join(' · ');
-    sh.appendChild(chev); sh.appendChild(cb); sh.appendChild(h3); sh.appendChild(hint);
-    const toggle = () => { setStepOpen(f, i, !stepOpen(f, i)); renderWizard(); };
-    sh.addEventListener('click', e => { if(e.target.closest('input')) return; toggle(); });
-    sh.addEventListener('keydown', e => {
-      if(e.target !== sh) return;
-      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); }
-    });
-    cb.addEventListener('click', e => e.stopPropagation());
-    cb.addEventListener('change', () => {
-      if(!PROG[f.id]) PROG[f.id] = {};
-      PROG[f.id][i] = cb.checked;
-      saveProg();
-      if(cb.checked){
-        setStepOpen(f, i, false);
-        const next = f.steps.findIndex((s, j) => j > i && !(PROG[f.id] && PROG[f.id][j]));
-        if(next >= 0) setStepOpen(f, next, true);
-      }
-      renderWizard();
-    });
-    el.appendChild(sh);
+  const buildStepBody = step => {
     const body = document.createElement('div');
     body.className = 'step-body';
+    const sr = stepReqs(step);
     if(sr){
       const p = document.createElement('p');
       p.className = 'stepreq'; p.textContent = 'needs: ' + sr;
@@ -1328,7 +1320,144 @@ function renderWizard(){
       if(r) grid.appendChild(recipeCard(r));
     });
     body.appendChild(grid);
-    el.appendChild(body);
+    return body;
+  };
+  const openNextAfter = i => {
+    const pst = PROG[f.id] || {};
+    const next = f.steps.findIndex((s, j) => j > i && !stepDoneAt(f, pst, j));
+    if(next >= 0) setStepOpen(f, next, true);
+  };
+  const setPick = (i, ai, clear) => {
+    if(!PROG[f.id]) PROG[f.id] = {};
+    if(clear){ PROG[f.id][i] = false; delete PROG[f.id]['pick:' + i]; }
+    else { PROG[f.id][i] = true; PROG[f.id]['pick:' + i] = ai; setStepOpen(f, i, false); openNextAfter(i); }
+    saveProg();
+    renderWizard();
+  };
+  f.steps.forEach((step, i) => {
+    const open = stepOpen(f, i);
+    if(step.any){
+      /* ---- decision group: pick one alternative ---- */
+      const picked = st['pick:' + i];
+      const gDone = stepDoneAt(f, st, i);
+      const el = document.createElement('div');
+      el.className = 'stepgroup' + (gDone ? ' done' : '') + (open ? ' open' : ' collapsed') + (i === current ? ' current' : '');
+      const sh = document.createElement('div');
+      sh.className = 'stepgroup-head';
+      sh.tabIndex = 0;
+      sh.setAttribute('aria-expanded', open ? 'true' : 'false');
+      const chev = document.createElement('span');
+      chev.className = 'chev'; chev.textContent = '▸';
+      const h3 = document.createElement('h3');
+      h3.textContent = (i + 1) + '. ' + step.q;
+      const pick = document.createElement('span');
+      pick.className = 'pickone'; pick.textContent = 'pick one';
+      const totalCards = step.any.reduce((n, a) => n + (a.r || []).length, 0);
+      const hint = document.createElement('span');
+      hint.className = 'step-hint';
+      hint.textContent = step.any.length + ' paths · ' + totalCards + ' cards';
+      hint.title = step.any.map(a => a.t).join(' · ');
+      sh.appendChild(chev); sh.appendChild(h3); sh.appendChild(pick); sh.appendChild(hint);
+      const toggle = () => { setStepOpen(f, i, !stepOpen(f, i)); renderWizard(); };
+      sh.addEventListener('click', toggle);
+      sh.addEventListener('keydown', e => {
+        if(e.target !== sh) return;
+        if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); }
+      });
+      el.appendChild(sh);
+      const body = document.createElement('div');
+      body.className = 'stepgroup-body';
+      step.any.forEach((alt, ai) => {
+        if(ai){
+          const sep = document.createElement('div');
+          sep.className = 'or-sep'; sep.textContent = 'OR';
+          body.appendChild(sep);
+        }
+        const isPicked = gDone && picked === ai;
+        const isFaded = gDone && picked !== ai;
+        const ael = document.createElement('div');
+        ael.className = 'altstep' + (isPicked ? ' picked' : '') + (isFaded ? ' faded' : '');
+        const ah = document.createElement('div');
+        ah.className = 'alt-head';
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'pick:' + f.id + ':' + i;
+        radio.checked = !!isPicked;
+        radio.title = 'pick this path';
+        const opt = document.createElement('span');
+        opt.className = 'alt-opt'; opt.textContent = String.fromCharCode(65 + ai);
+        const h4 = document.createElement('h4');
+        h4.textContent = alt.t;
+        const sr = stepReqs(alt);
+        const ahint = document.createElement('span');
+        ahint.className = 'step-hint';
+        const acards = (alt.r || []).length;
+        ahint.textContent = acards + ' card' + (acards === 1 ? '' : 's') + (sr ? ' · ' + sr : '');
+        ahint.title = (alt.r || []).map(id => { const r = RECIPES.find(x => x.id === id); return r ? r.title : id; }).join(' · ');
+        ah.appendChild(radio); ah.appendChild(opt); ah.appendChild(h4); ah.appendChild(ahint);
+        ah.addEventListener('click', e => {
+          if(e.target.closest('input')) return;
+          setPick(i, ai);
+        });
+        radio.addEventListener('click', e => {
+          e.stopPropagation();
+          if(gDone && picked === ai){ setPick(i, ai, true); } /* click on the picked radio clears the pick */
+        });
+        radio.addEventListener('change', () => setPick(i, ai));
+        ael.appendChild(ah);
+        ael.appendChild(buildStepBody(alt));
+        body.appendChild(ael);
+      });
+      el.appendChild(body);
+      tab.appendChild(el);
+      return;
+    }
+    const el = document.createElement('div');
+    el.className = 'step' + (st[i] ? ' done' : '') + (open ? ' open' : ' collapsed') + (i === current ? ' current' : '') + (step.when ? ' conditional' : '');
+    const sh = document.createElement('div');
+    sh.className = 'step-head';
+    sh.tabIndex = 0;
+    sh.setAttribute('aria-expanded', open ? 'true' : 'false');
+    const chev = document.createElement('span');
+    chev.className = 'chev'; chev.textContent = '▸';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = !!st[i];
+    cb.title = 'mark step done';
+    const h3 = document.createElement('h3');
+    h3.textContent = (i + 1) + '. ' + step.t;
+    const sr = stepReqs(step);
+    const hint = document.createElement('span');
+    const cards = (step.r || []).length;
+    hint.className = 'step-hint';
+    hint.textContent = cards + ' card' + (cards === 1 ? '' : 's') + (sr ? ' · ' + sr : '');
+    hint.title = (step.r || []).map(id => { const r = RECIPES.find(x => x.id === id); return r ? r.title : id; }).join(' · ');
+    sh.appendChild(chev); sh.appendChild(cb); sh.appendChild(h3);
+    if(step.when){
+      const wb = document.createElement('span');
+      wb.className = 'whenbadge'; wb.textContent = 'only if: ' + step.when;
+      wb.title = 'conditional step — skip it when the condition does not apply';
+      sh.appendChild(wb);
+    }
+    sh.appendChild(hint);
+    const toggle = () => { setStepOpen(f, i, !stepOpen(f, i)); renderWizard(); };
+    sh.addEventListener('click', e => { if(e.target.closest('input')) return; toggle(); });
+    sh.addEventListener('keydown', e => {
+      if(e.target !== sh) return;
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); }
+    });
+    cb.addEventListener('click', e => e.stopPropagation());
+    cb.addEventListener('change', () => {
+      if(!PROG[f.id]) PROG[f.id] = {};
+      PROG[f.id][i] = cb.checked;
+      saveProg();
+      if(cb.checked){
+        setStepOpen(f, i, false);
+        openNextAfter(i);
+      }
+      renderWizard();
+    });
+    el.appendChild(sh);
+    el.appendChild(buildStepBody(step));
     tab.appendChild(el);
   });
 }
@@ -1342,15 +1471,27 @@ function mdNote(s){
 
 function flowMarkdown(f){
   let out = '## ' + f.title + '\n\n' + (f.when || '') + '\n';
-  f.steps.forEach((step, i) => {
-    out += '\n### ' + (i + 1) + '. ' + step.t + '\n';
-    if(step.d) out += '\n' + mdNote(step.d) + '\n';
+  const cardsOf = step => {
     (step.r || []).forEach(id => {
       const r = RECIPES.find(x => x.id === id);
       if(!r) return;
       out += '\n**' + r.title + '**\n';
       r.cmds.forEach(c => { out += '\n```sh\n' + renderCommand(c, {noProxy:true}).text + '\n```\n'; });
     });
+  };
+  f.steps.forEach((step, i) => {
+    if(step.any){
+      out += '\n### ' + (i + 1) + '. ' + step.q + ' — pick ONE path\n';
+      step.any.forEach((alt, ai) => {
+        out += '\n#### Option ' + String.fromCharCode(65 + ai) + ': ' + alt.t + '\n';
+        if(alt.d) out += '\n' + mdNote(alt.d) + '\n';
+        cardsOf(alt);
+      });
+      return;
+    }
+    out += '\n### ' + (i + 1) + '. ' + step.t + (step.when ? ' *(only if: ' + step.when + ')*' : '') + '\n';
+    if(step.d) out += '\n' + mdNote(step.d) + '\n';
+    cardsOf(step);
   });
   return out;
 }
@@ -1419,7 +1560,7 @@ function renderLegend(){
   const tab = $('#tab-legend');
   tab.innerHTML = '';
   const about = document.createElement('div');
-  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.21.0</h2>' +
+  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.22.0</h2>' +
     '<p class="dim">Single-file Active Directory attack helper for Kali, built by <b>@bongoalex</b> with <b>deepseek</b>. ' +
     RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries. Offline, no dependencies, no telemetry.</p>' +
     '<p class="dim">Use only for authorized testing (HTB labs, your own infrastructure, signed engagements). Syntax is version-sensitive — cross-check against your target versions.</p>';
@@ -3480,7 +3621,10 @@ steps:[
  {t:'Collect BloodHound data',d:'Map the domain before picking a path.',r:['bh-python','bh-nxc']},
  {t:'Hunt weak spots',d:'Roast service accounts and check what you can write.',r:['kerberoast','asrep','bloodyad-writable']},
  {t:'Check ADCS',d:'Certificate services often give a shortcut to DA.',r:['adcs-find']},
- {t:'Escalate via ACLs / services',d:'Depending on what BloodHound and get writable showed.',r:['dacl-enum','mssql-connect','dacl-genericall-user','dacl-genericall-computer']},
+ {q:'What did BloodHound / get writable show?', any:[
+   {t:'ACL edges on users or computers',d:'GenericAll / WriteDACL / ForceChangePassword — take over the object, then re-authenticate.',r:['dacl-enum','dacl-genericall-user','dacl-genericall-computer']},
+   {t:'MSSQL exposure',d:'A reachable SQL login often leads to service account hashes and linked servers.',r:['mssql-connect']}
+ ]},
  {t:'If admin: dump and move',d:'Local admin on a host → SAM/LSA/LSASS. Domain Admin → DCSync.',r:['lat-winrm','creds-sam-lsa','creds-dpapi','creds-dcsync']}
 ]},
 {id:'hash',title:'I have an NT hash (pass-the-hash)',when:'Dumped a hash but could not / do not want to crack it.', reqs:['an NT hash'],
@@ -3522,8 +3666,10 @@ steps:[
 need:['dc_host'], needAny:['password','nthash','ccache'],
 steps:[
  {t:'Confirm the rights',d:'Verify exactly which write right you hold over the DC object (GenericAll/WriteDACL vs WriteAccountRestrictions).',r:['dacl-enum','bloodyad-writable','dacl-genericall-computer']},
- {t:'Path A: RBCD on the DC',d:'Create a rogue machine, point the DC object at it, impersonate Administrator and dump.',r:['rbcd-addcomputer','dc-rbcd','rbcd-getst','rbcd-use']},
- {t:'Path B: shadow credentials on the DC',d:'Add a key credential to the DC machine account, authenticate via PKINIT, then DCSync as the DC account.',r:['shadow-creds','dacl-genericall-computer']},
+ {q:'Which takeover path do you take on the DC object?', any:[
+   {t:'RBCD on the DC',d:'Create a rogue machine, point the DC object at it, impersonate Administrator and dump.',r:['rbcd-addcomputer','dc-rbcd','rbcd-getst','rbcd-use']},
+   {t:'Shadow credentials on the DC',d:'Add a key credential to the DC machine account, authenticate via PKINIT, then DCSync as the DC account.',r:['shadow-creds','dacl-genericall-computer']}
+ ]},
  {t:'DCSync',d:'Dump the domain — krbtgt included.',r:['creds-dcsync','trust-dcsync']}
 ]},
 {id:'constrained',title:'I found constrained delegation',when:'An account has msDS-AllowedToDelegateTo — S4U2Proxy/Protocol Transition abuse.', reqs:['an account with msDS-AllowedToDelegateTo and its key (keytab/hash/AES)'],
@@ -3531,7 +3677,7 @@ need:['spn'], needAny:['password','nthash','ccache','aeskey'],
 steps:[
  {t:'Enumerate the delegation',d:'Find which account may delegate to which service.',r:['deleg-enum']},
  {t:'Abuse S4U',d:'Request a ticket as any user for the allowed service.',r:['constrained-getst']},
- {t:'Target SPN missing or unreachable?',d:'Move the delegation SPN onto the DC with bloodyAD (needs write on the DC object), then request the ticket with -altservice HOST/DC.',r:['spn-hijack-deleg']},
+ {t:'SPN hijack onto the DC',when:'the delegation target SPN is missing or unreachable',d:'Move the delegation SPN onto the DC with bloodyAD (needs write on the DC object), then request the ticket with -altservice HOST/DC.',r:['spn-hijack-deleg']},
  {t:'Use the ticket',d:'Export and use the ccache (Kerberos env: see kerberos-auth), then dump.',r:['kerberos-auth','ccache-usage','creds-sam-lsa','creds-dcsync']}
 ]},
 {id:'unconstrained',title:'I found unconstrained delegation (or a coerced DC)',when:'A host is trusted for delegation and you can make a machine authenticate to it.', reqs:['local admin on a delegation host or a relay position, plus a coercion vector'],
@@ -3546,30 +3692,36 @@ steps:[
 need:['user'], needAny:['password','nthash','ccache'],
 steps:[
  {t:'Enumerate properly',d:'Get the full picture before requesting anything.',r:['adcs-find']},
- {t:'Exploit the template',d:'ESC1 (supplied SAN), ESC4 (rewrite template), ESC2/ESC3 (any-purpose / enrollment agent), ESC7 (CA rights).',req:'enrollment rights on the vulnerable template',r:['adcs-esc1','adcs-esc4','adcs-esc2-esc3','adcs-esc7']},
- {t:'Missing/weak mapping & CA flags',d:'ESC9/ESC16 (no SID extension, UPN swap), ESC10 (Schannel mapping), ESC6 (SAN via request attributes).',r:['adcs-esc9-esc16','adcs-esc10','adcs-esc6']},
- {t:'Relay, OID groups, EKUwu, server auth',d:'ESC11 (RPC relay), ESC13 (linked issuance policy), ESC15 (EKUwu), ESC17 (server-auth SAN), ESC5/12/14 recon, Certifried.',r:['adcs-esc11','adcs-esc13','adcs-esc15','adcs-esc17','adcs-esc5-esc12-esc14','cve-certifried']},
- {t:'Relay to the CA',d:'ESC8 if web enrollment over HTTP is exposed.',r:['adcs-esc8','relay-coerce']},
+ {q:'Which finding did certipy report?', any:[
+   {t:'Template rights (ESC1 / ESC4 / ESC2+ESC3 / ESC7)',d:'ESC1 (supplied SAN), ESC4 (rewrite template), ESC2/ESC3 (any-purpose / enrollment agent), ESC7 (CA rights).',req:'enrollment rights on the vulnerable template',r:['adcs-esc1','adcs-esc4','adcs-esc2-esc3','adcs-esc7']},
+   {t:'Weak mapping & CA flags (ESC9 / ESC16 / ESC10 / ESC6)',d:'ESC9/ESC16 (no SID extension, UPN swap), ESC10 (Schannel mapping), ESC6 (SAN via request attributes).',r:['adcs-esc9-esc16','adcs-esc10','adcs-esc6']},
+   {t:'Relay & exotic paths (ESC11 / ESC13 / ESC15 / ESC17 / ESC5+12+14, Certifried)',d:'ESC11 (RPC relay), ESC13 (linked issuance policy), ESC15 (EKUwu), ESC17 (server-auth SAN), ESC5/12/14 recon, Certifried.',r:['adcs-esc11','adcs-esc13','adcs-esc15','adcs-esc17','adcs-esc5-esc12-esc14','cve-certifried']},
+   {t:'Web enrollment relay (ESC8)',d:'Relay coerced NTLM to the CA web enrollment endpoint and get a DC certificate.',r:['adcs-esc8','relay-coerce']}
+ ]},
  {t:'Use the certificate',d:'certipy auth gives you the NT hash — then PtH or DCSync. With CA key backup: golden certificate for persistence.',r:['creds-dcsync','adcs-golden-cert']}
 ]},
 {id:'dacl',title:'I have rights over a user / group / computer',when:'GenericAll, GenericWrite, WriteDACL, WriteOwner, ForceChangePassword, AddSelf or AddKeyCredentialLink.', reqs:['write rights (GenericAll/GenericWrite/WriteDACL/WriteOwner) over an object'],
 need:['user'], needAny:['password','nthash','ccache'],
 steps:[
  {t:'Read the ACL and find write rights',d:'Confirm exactly which object/attribute you can write.',r:['dacl-enum','bloodyad-writable']},
- {t:'User takeover',d:'Pick the least destructive option: shadow credentials, targeted kerberoast, password reset, group add.',r:['dacl-genericall-user','dacl-forcechangepassword','shadow-creds']},
- {t:'Computer takeover',d:'Shadow credentials on the machine, or RBCD with a rogue computer.',r:['dacl-genericall-computer','rbcd-addcomputer','rbcd-write','rbcd-getst']},
- {t:'Group takeover',d:'Add yourself to the group, then re-authenticate.',r:['dacl-genericall-group']},
- {t:'dMSA / BadSuccessor (Server 2025)',d:'If the domain allows it, create a delegated MSA linked to a privileged account — verify with badsuccessor_check first.',r:['bloodyad-badsuccessor']},
- {t:'Domain object (WriteDACL/Owner)',d:'Grant DCSync, take ownership, or abuse AdminSDHolder for protected groups.',r:['dacl-writedacl-dcsync','dacl-writeowner','dacl-adminsdholder']},
+ {q:'What do you have write rights on?', any:[
+   {t:'A user',d:'Pick the least destructive option: shadow credentials, targeted kerberoast, password reset, group add.',r:['dacl-genericall-user','dacl-forcechangepassword','shadow-creds']},
+   {t:'A computer',d:'Shadow credentials on the machine, or RBCD with a rogue computer.',r:['dacl-genericall-computer','rbcd-addcomputer','rbcd-write','rbcd-getst']},
+   {t:'A group',d:'Add yourself to the group, then re-authenticate.',r:['dacl-genericall-group']},
+   {t:'A dMSA-capable domain (Server 2025)',d:'BadSuccessor: create a delegated MSA linked to a privileged account — verify with badsuccessor_check first.',r:['bloodyad-badsuccessor']},
+   {t:'The domain object (WriteDACL/Owner)',d:'Grant DCSync, take ownership, or abuse AdminSDHolder for protected groups.',r:['dacl-writedacl-dcsync','dacl-writeowner','dacl-adminsdholder']}
+ ]},
  {t:'Cleanup',d:'Remove the ACEs, key credentials and group memberships you added.',r:['shadow-creds','dacl-genericall-group']}
 ]},
 {id:'mssql',title:'I have MSSQL access',when:'A SQL login or Windows account reaches a MSSQL server.', reqs:['a reachable MSSQL login'],
 need:['target_host'], needAny:['password','nthash','ccache'],
 steps:[
  {t:'Connect',d:'Windows auth or SQL login; hash and Kerberos also supported.',r:['mssql-connect']},
- {t:'Get OS command execution',d:'xp_cmdshell, or OLE automation / CLR when it is disabled.',r:['mssql-xpcmdshell','mssql-alt-rce']},
- {t:'Escalate inside SQL',d:'Impersonate sa / sysadmin logins, pivot through linked servers.',r:['mssql-impersonate','mssql-linked']},
- {t:'Steal the service account hash',d:'Coerce NTLM out and crack or relay it.',r:['mssql-coerce','relay-ldap','relay-smb']},
+ {q:'What does the server allow?', any:[
+   {t:'OS command execution',d:'xp_cmdshell — or OLE automation / CLR when it is disabled.',r:['mssql-xpcmdshell','mssql-alt-rce']},
+   {t:'Escalation inside SQL',d:'Impersonate sa / sysadmin logins, pivot through linked servers.',r:['mssql-impersonate','mssql-linked']},
+   {t:'Service account hash theft',d:'Coerce NTLM out and crack or relay it.',r:['mssql-coerce','relay-ldap','relay-smb']}
+ ]},
  {t:'Loot local secrets',d:'The SQL service account often has local admin elsewhere — SPN + Kerberos helps.',r:['kerberoast','creds-sam-lsa']}
 ]},
 {id:'nopwn',title:'No credentials — only network access',when:'Internal position, nothing but a Kali box attached to the network.', reqs:['network access only — no credentials'],
@@ -3578,14 +3730,23 @@ steps:[
  {t:'Enumerate anonymously',d:'Null sessions, SMB, DNS.',r:['anon-enum','user-enum']},
  {t:'Kerberos userenum & spray',d:'Valid users via pre-auth errors, then a single-password spray after checking the lockout policy.',r:['kerbrute','pw-spray']},
  {t:'Coerce machine accounts',d:'Make DCs/services authenticate to your listener.',r:['relay-coerce']},
- {t:'Relay the auth',d:'SMB → dump; LDAP(S) → DCSync rights; ADCS → certificate.',r:['relay-smb','relay-ldap','relay-rbcd','adcs-esc8']},
+ {q:'Where do you relay the captured auth to?', any:[
+   {t:'SMB — dump the target',d:'Relay to SMB and dump SAM/LSA or get command execution.',r:['relay-smb']},
+   {t:'LDAP(S) — escalate rights on the DC',d:'Relay to the DC: DCSync rights via --escalate-user, or a rogue machine for RBCD.',r:['relay-ldap','relay-rbcd']},
+   {t:'ADCS — DC certificate (ESC8)',d:'Relay to the CA web enrollment endpoint and get a DomainController certificate.',r:['adcs-esc8']}
+ ]},
  {t:'Crack captures',d:'NetNTLMv2 offline, then reuse passwords.',r:['relay-responder']}
 ]},
 {id:'foothold',title:'I have a shell on a Windows host',when:'Foothold achieved — privilege escalation and lateral movement.', reqs:['a shell on a Windows host (medium integrity at least)'],
 needAny:['password','nthash','ccache'],
 steps:[
  {t:'Enumerate host & credential reach',d:'What is local (winPEAS) and which of my credentials actually reach which services.',r:['auth-check','pth-check','pe-suites']},
- {t:'Privilege escalation',d:'SeImpersonate/UAC/Kerberos relay paths to SYSTEM — check AV/Defender first.',req:'a shell plus SeImpersonate/UAC/Kerberos relay path',r:['post-seimpersonate','uac-bypass','krbrelay','av-defender']},
+ {t:'AV / Defender recon',when:'AV/EDR might be present',d:'Detect products, realtime status and exclusions before dropping binaries — or disable realtime protection (loud).',r:['av-defender']},
+ {q:'Which escalation path fits your session?', any:[
+   {t:'Service account (SeImpersonate)',d:'Potato family: PrintSpoofer / GodPotato — forged capture to SYSTEM.',r:['post-seimpersonate']},
+   {t:'UAC (admin account, medium integrity)',d:'fodhelper / eventvwr / computerdefaults — high-integrity shell without a second login.',r:['uac-bypass']},
+   {t:'Machine account + Kerberos relay',d:'KrbRelayUp: relay to LDAP (RBCD / shadow creds) and spawn SYSTEM.',r:['krbrelay']}
+ ]},
  {t:'Loot local secrets',d:'SAM/LSA/LSASS/DPAPI plus registry autologon, saved creds and SeBackup file copies.',r:['creds-sam-lsa','creds-dpapi','win-registry-loot','sebackup']},
  {t:'Enable remote access',d:'RDP / firewall / reverse shells / file transfer.',r:['lat-rdp','rdp-auth','revshells','lat-transfer']},
  {t:'Move laterally',d:'Reuse hashes and tickets on other hosts.',r:['lat-winrm','lat-smb-exec','lat-impacket-exec']}
@@ -3593,12 +3754,13 @@ steps:[
 {id:'trusts',title:'There are domain trusts (child/parent/forest)',when:'BloodHound or enumeration shows a parent or sibling domain.', reqs:['a domain user; escalation needs DA/DCSync in the child domain'],
 need:['user'], needAny:['password','nthash','ccache'],
 steps:[
- {t:'Enumerate the trusts',d:'Understand direction and which domain you control.',r:['trust-enum']},
- {t:'Cross-domain & SID history',d:'Roast the other domain, forge extra-SID tickets with the trust key, and check foreign group memberships.',r:['trust-cross-domain-roast','trust-sid-history','trust-foreign-groups']},
- {t:'Coerce & relay across the trust',d:'Force a DC in the partner domain to authenticate to you, then relay it to LDAP(S)/ADCS there — or into an unconstrained host of your own domain.',req:'a valid account in your domain that the partner trusts + a reachable relay or unconstrained target',r:['trust-coerce-relay','relay-coerce']},
- {t:'Abuse the trust',d:'Trust key extraction + inter-realm golden ticket, or the nxc raisechild module (mind SID filtering).',req:'Domain Admin / DCSync rights in the child domain (trust key)',r:['trust-raisechild']},
- {t:'Hybrid identity',d:'AD Connect connector accounts (MSOL/ADSync) and AD FS Golden SAML bridge on-prem AD into Entra ID and federated apps.',r:['entra-connect','adfs-goldensaml']},
- {t:'Dump',d:'Ticket from the raiseChild / SID-history step — then DCSync the target, or use the real replication rights there.',r:['trust-dcsync']}
+ {t:'Enumerate the trusts',d:'Understand direction, which domain you control, and which foreign groups your account maps into.',r:['trust-enum','trust-foreign-groups']},
+ {q:'What is your position in the partner domain?', any:[
+   {t:'Trust key / admin in the child domain',d:'Roast the other domain, forge extra-SID tickets with the trust key, or run the automated child→parent escalation (mind SID filtering).',req:'Domain Admin / DCSync rights in the child domain (trust key)',r:['trust-cross-domain-roast','trust-sid-history','trust-raisechild']},
+   {t:'Coercion + relay position',d:'Force a DC in the partner domain to authenticate to you, then relay it to LDAP(S)/ADCS there — or into an unconstrained host of your own domain.',req:'a valid account in your domain that the partner trusts + a reachable relay or unconstrained target',r:['trust-coerce-relay','relay-coerce']},
+   {t:'Hybrid identity (AD Connect / AD FS)',d:'Connector accounts (MSOL/ADSync) and Golden SAML bridge on-prem AD into Entra ID and federated apps.',r:['entra-connect','adfs-goldensaml']}
+ ]},
+ {t:'Dump the partner domain',d:'Ticket from the raiseChild / SID-history step — then DCSync the target, or use the real replication rights there.',r:['trust-dcsync']}
 ]},
 {id:'second-domain',title:'I have a foothold in the second/partner domain',when:'A trust partner (second domain) gave you an account — for example you are a member of its IT group.', reqs:['a valid account in the partner domain + BloodHound CE reachable'],
 need:['trust_domain','trust_dc_ip','trust_user'], needAny:['trust_pass','trust_nthash'],
@@ -3620,9 +3782,12 @@ steps:[
 needAny:['krbtgt_hash','aeskey','ccache','password'],
 steps:[
  {t:'Dump everything',d:'krbtgt + all hashes.',r:['creds-dcsync']},
- {t:'Forge golden tickets',d:'Persistence that survives password resets — krbtgt or CA key (golden certificate).',req:'krbtgt hash or the CA private key',r:['golden-ticket','adcs-golden-cert']},
+ {q:'Which persistence do you forge?', any:[
+   {t:'Golden ticket (krbtgt)',d:'Persistence that survives password resets of every account except krbtgt itself.',req:'the krbtgt hash',r:['golden-ticket']},
+   {t:'Golden certificate (CA key)',d:'Back up the CA key and forge certificates for any identity — no krbtgt needed.',req:'ManageCA / ManageCertificates or the CA private key',r:['adcs-golden-cert']}
+ ]},
  {t:'Pivot to trusts',d:'Use trust keys and extra SIDs for parent/forest domains.',r:['trust-enum','trust-raisechild']},
- {t:'Extract the rest',d:'Offline ntds parsing, DSRM local admin and DNSAdmins plugin abuse for persistence.',r:['creds-ntds-offline','dsrm','dnsadmins']}
+ {t:'Alternative persistence',d:'Offline ntds parsing, DSRM local admin and DNSAdmins plugin abuse.',r:['creds-ntds-offline','dsrm','dnsadmins']}
 ]}
 );
 R({id:'bhcli-setup',cat:'bh',title:'BloodHound CE setup + bhcli',desc:'Minimal Docker-based BloodHound CE install, then the terminal workflow: authenticate, ingest, mark and query.',
@@ -3929,7 +4094,7 @@ function zshEmit(data){
   const fnName = n => '_hk_' + n.replace(/[^A-Za-z0-9_]/g, '_');
   const q = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
   let out = '#compdef ' + names.concat(Object.keys(aliases)).join(' ') + '\n';
-  out += '# Hackerman v1.21.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
+  out += '# Hackerman v1.22.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
   out += '_hackerman() {\n  local tool=${words[1]:t}\n  case $tool in\n';
   names.forEach(n => { out += '    ' + n + ') ' + fnName(n) + ' ;;\n'; });
   Object.keys(aliases).forEach(a => { out += '    ' + a + ') ' + fnName(aliases[a]) + ' ;;\n'; });
