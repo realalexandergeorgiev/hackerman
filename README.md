@@ -1,4 +1,4 @@
-# Hackerman v1.20.0
+# Hackerman v1.21.0
 
 > Single-file, offline Active Directory attack helper for Kali — fill in the context, get the next-step commands.
 
@@ -42,6 +42,11 @@ non-obvious tools and attacks.
   fields instead.
 - **Readiness highlighting** — commands that can run with the current context get a brighter
   background and a `ready` badge; `ready only` filter and `ready → priority` sort are available.
+- **PtH pendant per command** — every password-authenticating command has its NT-hash variant
+  directly below it (`… via PtH` / `… with NT hash`) wherever the tool supports it: NetExec
+  `-H`, impacket `-hashes`, bloodyAD `-p :NTHASH`, certipy `-hashes`, coercer/sccmhunter
+  `--hashes`, samba `--pw-nt-hash`, bloodhound-python `--hashes`. Hash-only tools (ldapsearch,
+  ldapdomaindump) say so and point at nxc/bloodyAD instead.
 - **Applicability tiers** — every recipe/flow is ranked `always` / `common` / `situational` /
   `rare`. Default sort is priority → ready, with tier filter chips in the toolbar.
 - **Hover help** — `?` markers on titles and command labels explain the attack or tool, with usage

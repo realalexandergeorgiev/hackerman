@@ -3,6 +3,27 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [1.21.0] — 2026-09-25
+
+### Added
+
+- **PtH pendant for every password command**: each command that authenticates with a password now
+  has an NT-hash variant directly below it (label `… via PtH` / `… with NT hash`) — wherever the
+  tool supports it. 402 new lines across ~80 recipes: NetExec (`-H`), impacket (`-hashes`),
+  bloodyAD (`-p :NTHASH`), certipy (`-hashes`), coercer (`--hashes`), sccmhunter (`-hashes`),
+  bloodhound-python (`--hashes`), pygpoabuse (`-hashes`), noPac/CVE-2021-1675 PoCs, samba
+  (`--pw-nt-hash` for smbclient/net/rpcclient). With only a hash in the context, cards now render
+  ready instead of showing `‹Password?›` everywhere.
+- `shares`: the lone trailing `--shares` PtH line moved to its password counterpart (consistent
+  pendant placement); `auth-check` ↔ `pth-check` cross-reference each other in their notes.
+
+### Changed
+
+- Tools that cannot pass-the-hash state so explicitly: `ldap-dump` and `ldap-tls` notes point at
+  `nxc ldap -H` / `bloodyAD -p :NTHASH` for the hash-only case (ldapsearch/ldapdomaindump do
+  plaintext simple binds only). RDP PtH stays a dedicated `/pth:` + `/restricted-admin` line
+  (lat-rdp / rdp-auth) instead of per-line pendants.
+
 ## [1.20.0] — 2026-09-25
 
 ### Added
