@@ -93,6 +93,12 @@ main{padding:16px;max-width:1500px;margin:0 auto}
 .tab.active{display:block}
 
 .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;position:sticky;top:calc(var(--headerH,45px) + var(--tabsH,43px));z-index:30;background:var(--bg);padding:8px 0}
+.search-row{display:contents}
+#filterPanel{display:contents}
+#filterToggle{display:none}
+#filterToggle.on{border-color:var(--accent);color:#fff}
+#filterToggle.has-active{border-color:var(--warn);color:var(--warn)}
+#filterToggle.has-active.on{color:#fff}
 #search{flex:0 0 330px;font-family:var(--mono)}
 .chips{display:flex;gap:5px;flex-wrap:wrap}
 .chip{font-size:12px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);cursor:pointer;color:var(--dim)}
@@ -277,7 +283,25 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
 @media (max-width:760px){
   .ctx-body{grid-template-columns:1fr}
   .field label{flex-basis:80px}
-  #search{flex:1 1 100%}
+  main{padding:12px}
+  /* stable single-row header/tabs: no wrap, horizontal scroll instead of tall stacks */
+  .hwrap{flex-wrap:nowrap;overflow-x:auto;padding:9px 12px}
+  .brand{flex:none}
+  .hactions{flex:none;margin-left:auto;flex-wrap:nowrap}
+  nav.tabs{overflow-x:auto;white-space:nowrap;padding:0 12px;scrollbar-width:none}
+  nav.tabs::-webkit-scrollbar{display:none}
+  nav.tabs button{flex:none}
+  /* toolbar itself scrolls away; only the slim search row sticks (no tall overlay) */
+  .toolbar{display:block;position:static;margin-bottom:12px;padding:0;background:transparent;z-index:auto}
+  .search-row{position:sticky;top:calc(var(--headerH,45px) + var(--tabsH,43px));z-index:30;display:flex;gap:8px;align-items:center;background:var(--bg);padding:8px 0;border-bottom:1px solid var(--line)}
+  #search{flex:1 1 auto;min-width:0}
+  #sortSel{flex:none;max-width:38vw}
+  #filterToggle{display:inline-block;flex:none}
+  #filterPanel{display:none;flex-direction:column;gap:8px;align-items:flex-start;padding:10px 0 4px}
+  #filterPanel.open{display:flex}
+  #filterPanel .chips{width:100%}
+  .grid{grid-template-columns:1fr}
+  .recipe{min-width:0}
 }
 </style>
 </head>
@@ -323,18 +347,23 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
   <section id="tab-wizard" class="tab active"></section>
   <section id="tab-recipes" class="tab">
     <div class="toolbar">
-      <input id="search" placeholder="search recipes / commands…   [/]">
-      <select id="sortSel" title="sort recipes">
-        <option value="priority">sort: priority → ready</option>
-        <option value="ready">sort: ready → priority</option>
-        <option value="data">sort: data order</option>
-      </select>
-      <button class="chip" id="readyOnlyChip" title="only show recipes with at least one runnable command">ready only</button>
-      <button class="chip" id="helpChip" title="hover explanations on/off">help</button>
-      <button class="chip" id="compactChip" title="collapse recipe cards (click a card to open the focus popup)">compact</button>
-      <span id="readyCount" class="dim mono" style="font-size:12px"></span>
-      <div class="chips" id="catFilter"></div>
-      <div class="chips" id="tierFilter"></div>
+      <div class="search-row">
+        <input id="search" placeholder="search recipes / commands…   [/]">
+        <select id="sortSel" title="sort recipes">
+          <option value="priority">sort: priority → ready</option>
+          <option value="ready">sort: ready → priority</option>
+          <option value="data">sort: data order</option>
+        </select>
+        <button class="chip" id="filterToggle" aria-expanded="false" aria-controls="filterPanel" title="show/hide filters">filter ▾</button>
+      </div>
+      <div id="filterPanel">
+        <button class="chip" id="readyOnlyChip" title="only show recipes with at least one runnable command">ready only</button>
+        <button class="chip" id="helpChip" title="hover explanations on/off">help</button>
+        <button class="chip" id="compactChip" title="collapse recipe cards (click a card to open the focus popup)">compact</button>
+        <span id="readyCount" class="dim mono" style="font-size:12px"></span>
+        <div class="chips" id="catFilter"></div>
+        <div class="chips" id="tierFilter"></div>
+      </div>
     </div>
     <div class="grid" id="recipeList"></div>
   </section>
@@ -1304,9 +1333,11 @@ function renderRecipes(){
     p.className = 'dim';
     p.textContent = 'no recipes match.';
     list.appendChild(p);
+    try { syncFilterToggle(); } catch(e){}
     return;
   }
   found.forEach(r => list.appendChild(recipeCard(r)));
+  try { syncFilterToggle(); } catch(e){}
 }
 
 /* ============================== wizard tab ============================== */
@@ -1950,14 +1981,53 @@ function downloadModal(){
 }
 
 function updateOffsets(){
-  const root = document.documentElement.style;
-  root.setProperty('--headerH', document.querySelector('header').offsetHeight + 'px');
-  root.setProperty('--tabsH', document.querySelector('nav.tabs').offsetHeight + 'px');
+  try {
+    const root = document.documentElement.style;
+    const h = document.querySelector('header');
+    const t = document.querySelector('nav.tabs');
+    if(h) root.setProperty('--headerH', h.offsetHeight + 'px');
+    if(t) root.setProperty('--tabsH', t.offsetHeight + 'px');
+  } catch(e){}
+}
+let _offT = 0;
+function scheduleOffsets(){ clearTimeout(_offT); _offT = setTimeout(updateOffsets, 100); }
+function filtersActive(){
+  try {
+    if(typeof searchQ === 'string' && searchQ) return true;
+    if(UI.readyOnly) return true;
+    if(typeof activeCat !== 'undefined' && activeCat !== 'all') return true;
+    if(UI.tiers && Object.keys(UI.tiers).some(k => UI.tiers[k] === false)) return true;
+  } catch(e){}
+  return false;
+}
+function syncFilterToggle(){
+  const btn = document.querySelector('#filterToggle'), panel = document.querySelector('#filterPanel');
+  if(!btn || !panel) return;
+  const open = !!UI.filtersOpen;
+  panel.classList.toggle('open', open);
+  btn.classList.toggle('on', open);
+  try { btn.classList.toggle('has-active', filtersActive()); } catch(e){}
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  btn.textContent = open ? 'filter ▴' : 'filter ▾';
+}
+function initFilters(){
+  const btn = document.querySelector('#filterToggle');
+  if(!btn) return;
+  if(typeof UI.filtersOpen !== 'boolean') UI.filtersOpen = false;
+  syncFilterToggle();
+  btn.addEventListener('click', () => {
+    UI.filtersOpen = !UI.filtersOpen; saveUI();
+    syncFilterToggle(); scheduleOffsets();
+  });
 }
 
 function initUI(){
   updateOffsets();
-  window.addEventListener('resize', updateOffsets);
+  window.addEventListener('resize', scheduleOffsets);
+  window.addEventListener('orientationchange', scheduleOffsets);
+  if(window.visualViewport) window.visualViewport.addEventListener('resize', scheduleOffsets);
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(() => updateOffsets()).catch(() => {});
+  initFilters();
   initTip();
   initMissPop();
   initFocus();
