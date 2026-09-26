@@ -1,4 +1,4 @@
-# Hackerman v2.1.0
+# Hackerman v2.2.0
 
 > Single-file, offline Active Directory attack helper for Kali — fill in the context, get the next-step commands.
 
@@ -50,7 +50,7 @@ non-obvious tools and attacks.
 - **Applicability tiers** — every recipe/flow is ranked `always` / `common` / `situational` /
   `rare`. Default sort is priority → ready, with tier filter chips in the toolbar.
 - **Hover help** — `?` markers on titles and command labels explain the attack or tool, with usage
-  and pitfalls (66 tool entries, 57 attack entries); toggle with the `help` chip.
+  and pitfalls (71 tool entries, 62 attack entries); toggle with the `help` chip.
 - **Context field tooltips** — hover any context label (dotted underline) for a structured
   **What / Where / Careful** explanation: `--get-sid` for SIDs, trust-account/key commands, hash
   sources, SPN/DN lookups, certipy fields, … Derived fields show their formula. Toggle with the
@@ -73,7 +73,7 @@ non-obvious tools and attacks.
 - **Visible requirements** — every recipe carries requirement tags (DA, DCSync, local admin, write
   rights, ADCS enrollment, …) as amber chips with the full list on expand/overlay; wizard flows
   show prerequisites and per-step `needs:` hints, so it is clear what a technique actually requires.
-- **Compact lists** — recipe cards render collapsed (header + short description) by default so 128
+- **Compact lists** — recipe cards render collapsed (header + short description) by default so 133
   recipes stay scannable; click a card to open it in the focus overlay, or switch the `compact`
   chip off to expand everything inline. Wizard steps collapse as well: only the first unfinished
   step is open, checking a step auto-advances to the next, and `expand all`/`collapse all` sit in
@@ -83,7 +83,7 @@ non-obvious tools and attacks.
   (incl. SID-filtering range), IPv4/FQDN/NetBIOS shape, `$` on `computer_name`, spaces in paths,
   SPN/DN/proxy format, ports. ⚠ badge + red border on the field, tooltip with the reason,
   `⚠ N` counter in the context summary; `ready` state is deliberately never blocked.
-- **Flashcards (`flashcards.html`)** — separate page, mobile-first, offline: 126 cards on AD attack
+- **Flashcards (`flashcards.html`)** — separate page, mobile-first, offline: 135 cards on AD attack
   **strategies, principles and procedures** (no CLI-flag trivia; basics like `klist` included),
   10 categories incl. **Ketten / Chaining** ("capability or loot reached — what is the next
   logical step?"), SM-2-lite spaced repetition (Again/Hard/Good/Easy with interval previews, learning
@@ -98,7 +98,7 @@ non-obvious tools and attacks.
   (flags, subcommands, nxc `-M` modules, hashcat modes, xfreerdp options); see below.
 - **`proxychains` toggle** — prefixes network commands, local tools (Responder, hashcat, SMB
   server, krb5 tooling) are exempt.
-- **128 recipes** across 13 categories, each with a copy button per command and for the whole card.
+- **133 recipes** across 13 categories, each with a copy button per command and for the whole card.
 - **17 wizard flows** — pick what you have, get an ordered runbook with collapsible steps, progress
   checkboxes, per-step credential needs and "copy flow as markdown". **Decision groups** mark
   alternative paths (`pick one` — e.g. RBCD vs shadow credentials on a DC, trust key vs relay vs
@@ -124,20 +124,20 @@ xdg-open flashcards.html   # spaced-repetition trainer (mobile-friendly, standal
 3. Or use **Recipes** — search/filter, hover the `?` markers, click placeholders to fill them.
 4. Toggle **proxychains** when you attack through a pivot.
 
-## Coverage (128 recipes)
+## Coverage (133 recipes)
 
 | Category | # | Highlights |
 |---|---:|---|
-| Recon & Auth | 11 | auth checks (pw/PtH/ccache), shares, spider_plus, user/group enum, **kerbrute**, password spraying, **session hunting**, **LDAP dumps**, **LDAP over TLS** |
+| Recon & Auth | 11 | auth checks (pw/PtH/ccache, **runas /netonly**), shares, spider_plus, user/group enum, **kerbrute**, password spraying (**pre-2k computers**), **session hunting**, **LDAP dumps**, **LDAP over TLS** |
 | BloodyAD | 8 | auth styles (pw/hash/ccache/keytab), `get writable`, SPN add/del, password/UAC/groups, **BadSuccessor/dMSA** |
-| Kerberos | 11 | **kerberos-auth helper** (krb5.conf, hosts, ntp/rdate/faketime, unset, kinit/klist/kvno, per-tool cheat sheet), keytab extraction, AS-REP, kerberoasting, targeted kerberoast, getTGT/getST, golden/silver, **ticket inspection/renewal** |
+| Kerberos | 12 | **kerberos-auth helper** (krb5.conf, hosts, ntp/rdate/faketime, unset, kinit/klist/kvno, per-tool cheat sheet), keytab extraction, AS-REP (**AS-REQ roast**), kerberoasting (**Timeroast**), targeted kerberoast, getTGT/getST, golden/silver (**diamond/sapphire**), **dollar ticket**, **ticket inspection/renewal** |
 | Delegation & RBCD | 11 | full RBCD runbook, **RBCD/shadow-cred path against a DC**, **SPN hijack → constrained delegation → DC takeover**, constrained/unconstrained abuse |
 | ADCS / Certipy | 15 | find, ESC1, **ESC2/ESC3**, ESC4, **ESC5/12/14 recon**, **ESC6**, **ESC7**, ESC8 relay, **ESC9/ESC16**, **ESC10**, **ESC11**, **ESC13**, **ESC15 (EKUwu)**, **ESC17**, **golden certificate** |
-| ACL / DACL Abuse | 9 | enum, GenericAll user/computer/group, ForceChangePassword/AddSelf, WriteDACL→DCSync, WriteOwner, shadow credentials, **AdminSDHolder** |
-| Creds & Secrets | 8 | DCSync, SAM/LSA/LSASS, DPAPI, gMSA/LAPS, offline ntds.dit, **SeBackupPrivilege**, **Linux loot**, **Windows registry loot** |
+| ACL / DACL Abuse | 9 | enum, GenericAll user/computer/group (**logon-script**), ForceChangePassword/AddSelf, WriteDACL→DCSync, WriteOwner, shadow credentials, **AdminSDHolder** |
+| Creds & Secrets | 8 | DCSync, SAM/LSA/LSASS, DPAPI, gMSA/LAPS (**GoldenGMSA**), offline ntds.dit, **SeBackupPrivilege**, **Linux loot**, **Windows registry loot** (KeePass) |
 | Poisoning & Relay | 7 | Responder, **mitm6**, ntlmrelayx SMB/LDAP(S) incl. LDAP shell + LAPS/gMSA dumps, ADCS/SOCKS relay, RBCD via relay, coercion |
 | Lateral Movement | 7 | WinRM, nxc exec, impacket exec family, **dcomexec/services/reg**, **rdp-auth helper**, file transfer |
-| Post-Exploitation | 17 | SeImpersonate, **UAC bypass**, **SeBackup**, **DSRM**, **DNSAdmins**, AV/Defender checks, **linpeas/winpeas**, **reverse shells**, GPO abuse, ADIDNS, **ZeroLogon**, **noPac**, **PrintNightmare**, **Certifried**, **KrbRelayUp**, **Entra ID Connect**, **ADFS Golden SAML**, **SCCM** |
+| Post-Exploitation | 21 | SeImpersonate, **UAC bypass**, **SeBackup**, **DSRM**, **DNSAdmins**, AV/Defender checks, **linpeas/winpeas**, **reverse shells**, GPO abuse, ADIDNS, **ZeroLogon**, **noPac**, **PrintNightmare**, **Certifried**, **KrbRelayUp**, **Entra ID Connect**, **ADFS Golden SAML**, **SCCM** (AdminService), **Exchange** (PrivExchange/Proxy*), **DCShadow**, **Skeleton Key**, **RODC** |
 | MSSQL | 6 | connect (pw/hash/ccache), xp_cmdshell, **OLE/CLR RCE**, impersonation, linked servers, NetNTLM theft |
 | Trusts | 11 | trust enum (+ direction/attributes), **cross-domain roasting**, **SID history / ExtraSIDs**, **foreign group membership**, **cross-trust coercion & relay**, **DCSync across the trust** (who may replicate), raiseChild / trust-key golden ticket, **second-domain cards** (collect, recon, mark, abuse) |
 | BloodHound | 7 | bloodhound-python / **bloodhound-ce-python**, nxc `--bloodhound`, **bhcli workflow** (CE setup, lists/audit, mark Owned, cypher, alternatives) |
@@ -163,7 +163,7 @@ krbtgt endgame.
 - Clicking a `‹var?›` placeholder opens `#missPop`; derived variables redirect to their source
   fields via `focusContextFields()`.
 - All state lives in `localStorage` (`adah.state.v1`, `adah.progress.v1`, `adah.presets.v1`,
-  `adah.ui.v1`) — export/import presets in the header before switching browser profiles.
+  `adah.ui.v1`, `adah.loot.v1`, plus `hkm.flash.v1` for flashcards) — export/import presets in the header before switching browser profiles.
 - No external assets: system font stacks, everything else inline.
 
 ### Verify after editing

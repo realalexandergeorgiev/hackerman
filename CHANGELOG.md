@@ -3,6 +3,43 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [2.2.0] — 2026-09-26
+
+### Added
+
+- **New recipe `exchange`** — Exchange attack surface (OWA/ECP recon + build fingerprint,
+  PrivExchange push-subscription coercion with LDAP relay, version-gated ProxyLogon/ProxyShell
+  RCE pointers), incl. hover help and `→ creds-dcsync` chaining.
+- **New recipe `dcshadow`** — fake-DC replication persistence (mimikatz stage/push/cleanup,
+  DA requirement, no UNIX tooling, replication-metadata detection note).
+- **New recipe `skeleton`** — Skeleton Key master password on the DC (inject, use-as-anyone,
+  reboot cleanup; ≤2019, NTLM + RC4 only).
+- **New recipe `rodc`** — RODC abuse (allowed-cached dump, reveal vs never-reveal lists, RODC
+  krbtgt extraction, keylist attack incl. single-user `LIST` mode, Rubeus RODC golden +
+  ticketer `-rodcNo` variant with PR caveat).
+- **New recipe `dollar-ticket`** — machine account `root$` (MAQ) → TGT → SSH/GSSAPI as Linux
+  root (MIT `$`-stripping), incl. cleanup and CVE/KB5008380 context.
+- **GoldenGMSA in `creds-gmsa`** — KDS root key dump (`kdsinfo`), account data (`gmsainfo`),
+  password compute (→ MD4 = NT hash → PtH), pyGoldenGMSA alternative.
+- **SCCM depth in `sccm`** — `show` tables + json/csv export, manual `http` enrollment
+  (`-cn`/`-cp`, `-mp`/`-uuid` retry), `admin` AdminService console (get_creds/decrypt,
+  speak_to_the_manager, script, show/add_admin; NTLM blocked v2509+), coercion angle in note.
+- **Roast variants in `kerberoast`** — Timeroast (`timeroast-ng.py`, unauthenticated NTP,
+  hashcat `-m 31300 --username`) and AS-REQ roast (Rubeus `/nopreauth`, 4768 vs 4769).
+- **Diamond/Sapphire in `golden-ticket`** — Rubeus `diamond` (resigned PAC) and impacket
+  `ticketer -request -impersonate` (grafted PAC) with KB5008380 caveat, plus krbtgt-RBCD
+  persistence pointer.
+- **Small additions** — KeePass (`keepass_discover`/`trigger`) in `win-registry-loot`,
+  logon-script option in `dacl-genericall-user`, pre-2k computers + `--no-bruteforce` in
+  `pw-spray`, `runas /netonly` in `auth-check`, UnPAC note in `shadow-creds`, manual
+  sAMAccountName chain in `cve-nopac` note, MAQ pointers in `rbcd-addcomputer` note.
+- **9 new flashcards** (`n21`–`n29`: Exchange, DCShadow, Skeleton, GoldenGMSA,
+  Diamond/Sapphire, Timeroast, RODC, Guessing, Dollar Ticket) with verified Weiterlesen links.
+- **Wiring** — all new recipes in `PRI_TIERS` (tier 2), `REQS`, `NEXT`
+  (`exchange → creds-dcsync`, `dcshadow → flow:da`, `skeleton/rodc → flow:creds`,
+  `dollar-ticket → linux-loot`) and `HELP_TOOL`/`HELP_ATTACK`; zsh completions regenerated
+  (GoldenGMSA.exe, bloodyAD `-v`/`set`).
+
 ## [2.1.0] — 2026-09-26
 
 ### Added

