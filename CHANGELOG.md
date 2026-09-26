@@ -3,6 +3,43 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [2.1.0] — 2026-09-26
+
+### Added
+
+- **Recipe chaining (`→ next`)** — technique cards now link to their logical follow-ups as
+  clickable chips (`spn-hijack-deleg → constrained-getst → creds-dcsync`,
+  `creds-dcsync → golden-ticket → flow:da`, …): recipe targets open in the focus overlay,
+  `flow:` targets jump to the wizard flow. 119 sources wired through a central `NEXT` map with
+  `NEXT_ISSUES` validation (same pattern as `PRI_TIERS`/`FLOW_PRI`); works in lists, wizard
+  steps and the overlay.
+- **Flashcards: new "Ketten / Chaining" category** — 20 cards in the form "capability or loot
+  reached — what is the next logical step?" (SPN hijack, keytab find, NT hash, ccache, DC$
+  takeover, ADCS cert, captured NetNTLMv2, cracked roast, child DA, RBCD ticket, GPO write,
+  gMSA, MSSQL without RCE, coercion with no relay target, …).
+- **Flashcards: Weiterlesen links** — every card now carries 1–2 further-reading links
+  (thehacker.recipes, HackTricks, original research posts and tool repos), shown below the
+  revealed answer. URLs verified against the THR sitemap and the HackTricks repo tree, with
+  spot fetch checks for original posts.
+- **Flashcard `k18` extended** — the inter-realm ticket answer now explains which trust key to
+  take ((Incoming) AES256 of the TrustedDomain object) and how to dump it
+  (`secretsdump -just-trust-keys`, impacket master only; RC4/`PARTNER$`/mimikatz fallbacks),
+  mirroring the `trust-sid-history` recipe.
+
+### Fixed
+
+- **`shadow-creds` gaps closed** — NetExec `-M shadow-creds` variants added to the recipe
+  (`list`/`add` with password and PtH pendants, `clear` cleanup, PFX path plus
+  `certipy auth -pfx` follow-up in the note; module options verified against the nxc source),
+  and the card is now embedded in the `dacl` flow's "A computer" step (previously RBCD only).
+- **zsh completions regenerated** — `shadow-creds` now completes for `nxc -M`.
+- **`trust-enum` SID coverage clarified** — the ldapsearch line is now labeled as what it is
+  (partner SIDs with no target creds, via your own domain's TDO), plus `rpcclient enumtrust`
+  (+ PtH pendant) and a PowerShell TDO one-liner; the note spells out that `--get-sid`
+  against the partner DC authenticates with your own creds via the trust (real partner creds
+  only needed for one-way-outbound/selective-auth), and `trust-enum` chains to
+  `trust-sid-history` via `→ next`.
+
 ## [2.0.0] — 2026-09-26
 
 ### Added

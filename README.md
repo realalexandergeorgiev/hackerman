@@ -1,4 +1,4 @@
-# Hackerman v2.0.0
+# Hackerman v2.1.0
 
 > Single-file, offline Active Directory attack helper for Kali — fill in the context, get the next-step commands.
 
@@ -66,10 +66,14 @@ non-obvious tools and attacks.
 - **Recipe focus overlay** — click any recipe card for a full-width popup (Esc / backdrop / ×
   closes). Copy buttons, hover help and click-to-set keep working inside; the overlay refreshes
   when the context changes.
+- **Recipe chaining (`→ next`)** — technique cards link to their logical follow-ups
+  (e.g. `spn-hijack-deleg → constrained-getst → creds-dcsync`); recipe targets open in the
+  focus overlay, `flow:` targets jump to the wizard flow. Wired through a central `NEXT` map,
+  validated like `PRI_TIERS`/`FLOW_PRI`.
 - **Visible requirements** — every recipe carries requirement tags (DA, DCSync, local admin, write
   rights, ADCS enrollment, …) as amber chips with the full list on expand/overlay; wizard flows
   show prerequisites and per-step `needs:` hints, so it is clear what a technique actually requires.
-- **Compact lists** — recipe cards render collapsed (header + short description) by default so 127
+- **Compact lists** — recipe cards render collapsed (header + short description) by default so 128
   recipes stay scannable; click a card to open it in the focus overlay, or switch the `compact`
   chip off to expand everything inline. Wizard steps collapse as well: only the first unfinished
   step is open, checking a step auto-advances to the next, and `expand all`/`collapse all` sit in
@@ -79,10 +83,12 @@ non-obvious tools and attacks.
   (incl. SID-filtering range), IPv4/FQDN/NetBIOS shape, `$` on `computer_name`, spaces in paths,
   SPN/DN/proxy format, ports. ⚠ badge + red border on the field, tooltip with the reason,
   `⚠ N` counter in the context summary; `ready` state is deliberately never blocked.
-- **Flashcards (`flashcards.html`)** — separate page, mobile-first, offline: 106 cards on AD attack
+- **Flashcards (`flashcards.html`)** — separate page, mobile-first, offline: 126 cards on AD attack
   **strategies, principles and procedures** (no CLI-flag trivia; basics like `klist` included),
-  9 categories, SM-2-lite spaced repetition (Again/Hard/Good/Easy with interval previews, learning
+  10 categories incl. **Ketten / Chaining** ("capability or loot reached — what is the next
+  logical step?"), SM-2-lite spaced repetition (Again/Hard/Good/Easy with interval previews, learning
   steps 1 min → 10 min → 1 d, session re-queue), streak + daily new-card limit, category filter,
+  **Weiterlesen links** on every card (thehacker.recipes, HackTricks, original research),
   progress export/import, `localStorage` `hkm.flash.v1`. Linked from the header (`flashcards`).
 - **Conditional templates** — recipe commands support `{{#if var}}…{{/if}}` and `{{#if !var}}…{{/if}}`
   blocks (inactive blocks vanish entirely — no missing-value placeholders). Used by the Kerberos
@@ -152,7 +158,8 @@ krbtgt endgame.
   `{{#if var}}…{{/if}}` (and `{{#if !var}}…{{/if}}`) blocks render conditionally — used for the
   second-domain Kerberos config; `validateField()` in the same file powers the context warnings.
 - Central maps keep maintenance cheap: `PRI_TIERS`/`FLOW_PRI` (applicability), `HELP_TOOL` and
-  `HELP_ATTACK` (hover help). New recipes go before the `/* @@RECIPES@@ */` marker.
+  `HELP_ATTACK` (hover help), `NEXT` (recipe chaining, `flow:` targets jump to wizard flows).
+  New recipes go before the `/* @@RECIPES@@ */` marker.
 - Clicking a `‹var?›` placeholder opens `#missPop`; derived variables redirect to their source
   fields via `focusContextFields()`.
 - All state lives in `localStorage` (`adah.state.v1`, `adah.progress.v1`, `adah.presets.v1`,
