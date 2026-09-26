@@ -3,6 +3,37 @@
 All notable changes to **Hackerman** are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [2.0.0] — 2026-09-26
+
+### Added
+
+- **Flashcards (`flashcards.html`)** — a separate, mobile-first, offline study page: 106 cards on AD
+  attack **strategies, principles and procedures** across 9 categories (Kerberos, ACL/DACL,
+  Credentials, ADCS, Trusts, Relay & Coercion, Lateral & Privesc, Recon & Prinzipien, MSSQL) —
+  no CLI-flag trivia, foundational lookups (e.g. `klist`) included. SM-2-lite spaced repetition:
+  Again/Hard/Good/Easy with live interval previews, learning steps 1 min → 10 min → 1 d,
+  in-session re-queue for due learning cards, ease/interval caps, daily new-card limit (5/10/20/40),
+  streak, category filter and "nur fällige". Swipe (← Again, Good →) and keyboard control
+  (Space flip, 1–4 rate), progress export/import as JSON, `localStorage` `hkm.flash.v1`. Linked
+  from the header (`flashcards` button) and the README.
+- **Context plausibility checks (warn-only)** — `validateField()` flags implausible values with a
+  ⚠ badge, red input border and a tooltip explaining the expected shape; an `⚠ N` counter appears
+  in the context summary. Rules cover NT hashes (32 hex; a whole `LM:NT` secretsdump line is
+  called out), krbtgt (NT or AES256), AES keys (64 hex; 32 hex → AES128 hint), SIDs incl. the
+  SID-filtering RID range, RIDs, ports, IPv4, FQDN/NetBIOS shape, `computer_name` with trailing
+  `$`, spaces in passwords/paths, SPN/DN/proxy-chain formats. Values are **never rewritten** and
+  the `ready` state is never blocked.
+- **Conditional command templates** — `{{#if var}}…{{/if}}` and `{{#if !var}}…{{/if}}` blocks in
+  recipe commands; inactive blocks are removed before placeholder substitution, so they produce no
+  missing markers and do not affect readiness. Used for the Kerberos setup card.
+
+### Fixed
+
+- **krb5.conf ignored the second domain**: the Kerberos config now renders the partner
+  `[realms]` entry and the `[domain_realm]` pairs automatically once `{{trust_domain}}` /
+  `{{trust_dc_ip}}` are set, and the `/etc/hosts` command appends the partner DC line — one conf
+  for both realms. Card note updated.
+
 ## [1.22.0] — 2026-09-26
 
 ### Added

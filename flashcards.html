@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hackerman Flashcards — AD Attack Training</title>
+<style>
+:root{
+  --bg:#0a0f1a; --panel:#0f1729; --panel2:#131d33; --line:#1e2b45;
+  --txt:#dbe4f3; --dim:#7c8db0; --accent:#22d3ee; --accent2:#38bdf8;
+  --ok:#34d399; --warn:#fbbf24; --bad:#f87171;
+  --mono:ui-monospace,SFMono-Regular,"JetBrains Mono","Fira Code",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:15px;line-height:1.5;min-height:100dvh;display:flex;flex-direction:column}
+button,select,input{font-family:inherit;font-size:13px;color:var(--txt);background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:6px 10px}
+button{cursor:pointer}
+button:hover{border-color:var(--accent)}
+a{color:var(--accent2);text-decoration:none}
+.wrap{width:min(760px,100%);margin:0 auto;padding:0 12px}
+header{padding:14px 0 8px}
+.brand{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.brand h1{margin:0;font-size:18px}
+.brand .fl{color:var(--accent);font-weight:700}
+.brand .dim{color:var(--dim);font-size:12px}
+.stats{display:flex;gap:14px;flex-wrap:wrap;margin-top:9px;font-size:12px;color:var(--dim)}
+.stats b{color:var(--txt);font-variant-numeric:tabular-nums}
+.stats .due b{color:var(--warn)}
+.stats .streak b{color:var(--ok)}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0 4px}
+.toolbar select{padding:4px 7px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 12px}
+.chip{font-size:12px;padding:4px 11px;border-radius:999px;background:var(--panel);border:1px solid var(--line)}
+.chip.on{border-color:var(--accent);color:var(--accent);background:#0d2230}
+.chip small{color:var(--dim);margin-left:5px}
+main{flex:1}
+.cardwrap{position:relative;margin-bottom:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 16px;min-height:44vh;display:flex;flex-direction:column;cursor:pointer;user-select:none;-webkit-user-select:none;transition:transform .12s}
+.card:active{transform:scale(.995)}
+.card .cat{font-size:11px;color:var(--accent2);letter-spacing:.09em;text-transform:uppercase;margin-bottom:10px}
+.card .q{font-size:18px;font-weight:600;line-height:1.4}
+.card .hintline{margin-top:auto;padding-top:16px;color:var(--dim);font-size:12.5px}
+.card .a{display:none;margin-top:14px;padding-top:13px;border-top:1px dashed var(--line);font-size:15px}
+.card.revealed .a{display:block}
+.card.revealed .hintline{display:none}
+.card .a code,.card .q code{font-family:var(--mono);font-size:.92em;color:#a5d8ff;background:#0a1322;border:1px solid var(--line);border-radius:5px;padding:0 4px}
+.rating{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;position:sticky;bottom:0;padding:9px 0 calc(9px + env(safe-area-inset-bottom));background:linear-gradient(180deg,#0a0f1acc,#0a0f1af2 30%);backdrop-filter:blur(4px)}
+.rating button{padding:9px 4px;border-radius:10px;display:flex;flex-direction:column;gap:2px;align-items:center;font-weight:600;font-size:13px}
+.rating button small{font-weight:400;font-size:10.5px;color:var(--dim)}
+.rating button[data-r="1"]{border-color:#7f1d1d}
+.rating button[data-r="1"]:hover{background:#2a1113;border-color:var(--bad)}
+.rating button[data-r="2"]{border-color:#78350f}
+.rating button[data-r="2"]:hover{background:#2a1c0d;border-color:#fb923c}
+.rating button[data-r="3"]{border-color:#14532d}
+.rating button[data-r="3"]:hover{background:#0d2318;border-color:var(--ok)}
+.rating button[data-r="4"]{border-color:#164e63}
+.rating button[data-r="4"]:hover{background:#0d2230;border-color:var(--accent)}
+.rating.hidden{visibility:hidden}
+.sessbar{height:4px;background:var(--panel2);border-radius:999px;overflow:hidden;margin:2px 0 10px}
+.sessbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#0891b2,#22d3ee);transition:width .2s}
+.done{display:none;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 18px;text-align:center}
+.done.show{display:block}
+.done h2{margin:0 0 8px;font-size:19px}
+.done p{color:var(--dim);margin:6px 0}
+.done .actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+footer{color:var(--dim);text-align:center;padding:20px 12px calc(14px + env(safe-area-inset-bottom));font-size:12px}
+#toast{position:fixed;bottom:calc(18px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(90px);background:#0e7490;color:#fff;padding:8px 18px;border-radius:999px;font-weight:600;font-size:13px;transition:transform .2s;z-index:50;box-shadow:0 6px 20px #0008;max-width:90vw;text-align:center}
+#toast.show{transform:translateX(-50%) translateY(0)}
+.swipe-hint{color:var(--dim);font-size:11.5px;text-align:center;margin-top:4px}
+@media (min-width:620px){
+  .card{min-height:50vh;padding:24px 22px}
+  .card .q{font-size:20px}
+}
+</style>
+</head>
+<body>
+<header class="wrap">
+  <div class="brand">
+    <h1>Hackerman <span class="fl">Flashcards</span></h1>
+    <span class="dim">AD-Attack-Training · Spaced Repetition</span>
+  </div>
+  <div class="stats">
+    <span class="due">fällig <b id="stDue">0</b></span>
+    <span>neu heute <b id="stNew">0/10</b></span>
+    <span>gelernt <b id="stLearned">0</b></span>
+    <span class="streak">streak <b id="stStreak">0</b> Tage</span>
+  </div>
+  <div class="toolbar">
+    <label class="dim" style="font-size:12px">neue/Tag
+      <select id="newPerDay">
+        <option value="5">5</option>
+        <option value="10" selected>10</option>
+        <option value="20">20</option>
+        <option value="40">40</option>
+      </select>
+    </label>
+    <button id="dueOnly" class="chip">nur fällige</button>
+    <button id="exportBtn" title="Fortschritt als JSON sichern">export</button>
+    <button id="importBtn" title="Fortschritt aus JSON laden">import</button>
+    <button id="resetBtn" title="Lernfortschritt zurücksetzen">reset</button>
+    <a href="index.html" style="margin-left:auto;font-size:12.5px">← hackerman</a>
+  </div>
+</header>
+<main class="wrap">
+  <div class="chips" id="catChips"></div>
+  <div class="sessbar"><i id="sessFill"></i></div>
+  <div class="cardwrap">
+    <div class="card" id="card">
+      <div class="cat" id="cardCat"></div>
+      <div class="q" id="cardQ"></div>
+      <div class="a" id="cardA"></div>
+      <div class="hintline">Tippen / Leertaste: Antwort zeigen · ← Again · Good →</div>
+    </div>
+    <div class="rating hidden" id="rating">
+      <button data-r="1">Nochmal<small></small></button>
+      <button data-r="2">Schwer<small></small></button>
+      <button data-r="3">Gut<small></small></button>
+      <button data-r="4">Einfach<small></small></button>
+    </div>
+    <div class="swipe-hint" id="swipeHint"></div>
+  </div>
+  <div class="done" id="done">
+    <h2 id="doneTitle">Session fertig</h2>
+    <p id="doneText"></p>
+    <div class="actions">
+      <button id="extraNewBtn" class="chip">+10 neue Karten trotzdem</button>
+      <a href="index.html" class="chip">zurück zu Hackerman</a>
+    </div>
+  </div>
+</main>
+<footer>
+  <span id="footCount"></span> · offline, localStorage <span class="mono">hkm.flash.v1</span> · <a href="index.html">Hackerman</a>
+</footer>
+<input type="file" id="importFile" accept="application/json,.json" style="display:none">
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* ================= Deck (Strategien, Prinzipien, Abläufe — bewusst ohne CLI-Flags) ================= */
+const CATS = [
+  ['kerb','Kerberos'], ['acl','ACL / DACL'], ['creds','Credentials'], ['adcs','ADCS'],
+  ['trust','Trusts'], ['relay','Relay & Coercion'], ['lat','Lateral & Privesc'],
+  ['recon','Recon & Prinzipien'], ['mssql','MSSQL & Apps']
+];
+const DECK = [
+/* ---- Kerberos ---- */
+{id:'k1',cat:'kerb',q:'Wofür steht ein TGT und was enthält er?',a:'<b>Ticket Granting Ticket</b> vom KDC, signiert mit dem krbtgt-Schlüssel (in Wirklichkeit verschlüsselt, der KDC prüft ihn). Er enthält deine Identität und den <b>PAC</b> (User-SID, Gruppen-SIDs), und mit ihm fordert man Service Tickets an. Auf Linux liegt er im ccache.'},
+{id:'k2',cat:'kerb',q:'Wie siehst du dein aktuelles Kerberos-Ticket, den Ablauf und die Enctypes?',a:'<code>klist</code> zeigt Ticket + Ablauf. <code>klist -e</code> zusätzlich die Enctypes, <code>klist -A</code> alle Caches, <code>klist -c &lt;file&gt;</code> einen bestimmten ccache ohne Export.'},
+{id:'k3',cat:'kerb',q:'TGT und Service Ticket (TGS) — was ist der Unterschied?',a:'Das <b>TGT</b> holst du einmal beim KDC (AS-REQ/AS-REP) mit deinen Credentials. Ein <b>Service Ticket</b> holst du dir damit bei Bedarf für einen konkreten SPN (TGS-REQ) — nur damit sprichst du den Dienst an.'},
+{id:'k4',cat:'kerb',q:'Overpass-the-Hash — was ist das und wann nutzt du es?',a:'Aus einem <b>NT-Hash oder AES-Key</b> ein TGT erzeugen (AS-REQ mit dem Schlüssel, z. B. impacket-getTGT), um dann <b>Kerberos statt NTLM</b> zu verwenden. Nötig, wenn NTLM blockiert ist oder Dienste Kerberos-only fahren.'},
+{id:'k5',cat:'kerb',q:'Warum ist der AES-Key dem NT-Hash vorzuziehen?',a:'Er umgeht die <b>RC4-Härtung</b> (AES-only-Domains lehnen RC4 ab), ist <b>nicht zu einem Passwort crackbar</b> und signiert Tickets korrekt. NT-Hash ist nur der RC4-Fallback.'},
+{id:'k6',cat:'kerb',q:'Golden Ticket — was brauchst du, was kannst du damit?',a:'Benötigt den <b>krbtgt-Schlüssel</b> (besser AES256), Domain-SID und Domain-Name. Damit forge man ein TGT für <b>jeden beliebigen Benutzer</b>, inklusive beliebiger Gruppe — volle Domain-Persistenz, die Passwort-Resets aller anderen Konten überlebt.'},
+{id:'k7',cat:'kerb',q:'Silver Ticket — Unterschied zum Golden Ticket?',a:'Signiert mit dem <b>Schlüssel eines Maschinen-/Servicekontos</b> statt krbtgt und direkt für einen Dienst gefälscht. Kein KDC-Kontakt nötig (oft leiser), wirkt aber nur für <b>diesen Dienst</b> auf diesem Host.'},
+{id:'k8',cat:'kerb',q:'Kerberoasting — Ablauf in Kurzform?',a:'Ein Benutzerkonto mit SPN anvisieren, mit <b>jedem Domänen-Account</b> ein TGS für den SPN anfordern (es ist mit dem Service-Account-Key verschlüsselt) und <b>offline cracken</b>. RC4-Tickets sind leicht, AES deutlich schwerer.'},
+{id:'k9',cat:'kerb',q:'AS-REP Roasting — Ablauf in Kurzform?',a:'Konten mit deaktivierter Pre-Auth (DONT_REQ_PREAUTH) liefern eine <b>verschlüsselte AS-REP unauthentifiziert</b>. Man fordert sie ohne Credentials an und crackt sie offline.'},
+{id:'k10',cat:'kerb',q:'S4U2Self vs. S4U2Proxy — was macht was?',a:'<b>S4U2Self</b> (Protocol Transition): Ein Dienst fordert für einen beliebigen Nutzer ein Ticket <b>an sich selbst</b>. <b>S4U2Proxy</b>: Dieses Ticket dient als Beleg, um beim KDC ein Ticket für einen <b>anderen erlaubten Dienst</b> zu bekommen — die Basis der Delegation.</b>'},
+{id:'k11',cat:'kerb',q:'Unconstrained Delegation — Prinzip und Angriffskette?',a:'Ein Host mit unconstrained Delegation <b>cacht die TGTs aller Nutzer</b>, die sich an ihm authentifizieren. Kette: Admin auf diesem Host → ein Opfer (z. B. DC) dorthin koercen → LSASS dumpen → TGT einsammeln (DC-Maschinenkonto = Domain Takeover).'},
+{id:'k12',cat:'kerb',q:'Constrained Delegation — Prinzip?',a:'<code>msDS-AllowedToDelegateTo</code> listet SPNs, für die das Konto <b>beliebige Nutzer impersonieren</b> darf. Man braucht das eigene Konto + dessen Schlüssel (Keytab/AES/Hash); Sonst richtet man den SPN per SPN-Hijack auf ein lohnendes Ziel.'},
+{id:'k13',cat:'kerb',q:'RBCD — Prinzip und Voraussetzungen?',a:'Resource-Based Constrained Delegation: Das <b>Ziel-Objekt</b> erlaubt einem Konto, für es zu delegieren (<code>msDS-AllowedToActOnBehalfOfOtherIdentity</code>). Voraussetzung: Schreibrecht auf das Ziel (GenericWrite/GenericAll/WriteAccountRestrictions) + ein <b>eigenes Maschinenkonto</b>. Dann S4U2Proxy als privilegierter Nutzer.'},
+{id:'k14',cat:'kerb',q:'KRB_AP_ERR_SKEW — Ursache und Fix?',a:'Die Uhr weicht <b>mehr als 5 Minuten</b> vom DC ab. Fix: Zeitsync (ntpdate/rdate/chrony) oder für ein einzelnes Kommando mit <code>faketime</code> umhüllen.'},
+{id:'k15',cat:'kerb',q:'Warum braucht Kerberos FQDNs und funktioniert nicht mit IPs?',a:'Der SPN ist <b>service/hostname</b>; mit einer IP stimmt der Hostname im Ticket nicht und der KDC antwortet z. B. mit „Server not found in Kerberos database". Deshalb <code>/etc/hosts</code> + krb5.conf pflegen.'},
+{id:'k16',cat:'kerb',q:'Was steht in einer Keytab und wofür nutzt man sie?',a:'Langzeit-Kerberos-Keys eines Kontos (NTLM + AES128/256). Man kann daraus mit <code>kinit -k -t</code> direkt ein TGT holen oder die Keys extrahieren (KeyTabExtract) — bei Maschinenkonten oft der einzige Weg.'},
+{id:'k17',cat:'kerb',q:'Wofür steht ccache und was exportiert man?',a:'Credential Cache-Datei mit TGT/Service-Tickets. Man setzt <code>export KRB5CCNAME=datei.ccache</code> und arbeitet dann mit <code>-k -no-pass</code> bzw. <code>--use-kcache</code>. Windows-<code>.kirbi</code> wird vorher konvertiert.'},
+{id:'k18',cat:'kerb',q:'Inter-Realm-Ticket über Trusts — wie hängt das zusammen?',a:'Mit dem <b>Trust-Key</b> (TrustedDomain-Objekt) und einem <b>extra-SID</b> des Zielwalds (z. B. Enterprise Admins) forge man ein Ticket mit SPN <code>krbtgt/PARTNER</code>. Der Partner-KDC akzeptiert es als Inter-Realm-TGT — außer SID-Filtering strippt die Extra-SIDs (RID 500–1000).'},
+/* ---- ACL / DACL ---- */
+{id:'a1',cat:'acl',q:'Du hast GenericAll auf einen Benutzer — welche Strategien kommen als Nächstes?',a:'<b>Shadow Credentials</b> (KeyCredentialLink + PKINIT, leise), <b>Targeted Kerberoast</b> (SPN setzen, roasten, entfernen), <b>Passwort-Reset</b> (laut, für Service-Konten), oder <b>Gruppen-Add</b>, wenn er in etwas Nützlichem ist.'},
+{id:'a2',cat:'acl',q:'Du hast GenericAll auf einen Computer — welche zwei Hauptstrategien?',a:'<b>RBCD</b>: eigenes Maschinenkonto erstellen und als Delegate eintragen, dann S4U2Proxy als Admin. Oder <b>Shadow Credentials</b> am Computer + PKINIT → NT-Hash des Maschinenkontos.'},
+{id:'a3',cat:'acl',q:'Du hast GenericAll oder WriteMembers auf eine Gruppe — was tun?',a:'Dich selbst oder ein kontrolliertes Konto als <b>Mitglied hinzufügen</b> (leise, wenn das Konto unauffällig ist), neu einloggen/Ticket holen und die Rechte der Gruppe nutzen. Cleanup nicht vergessen.'},
+{id:'a4',cat:'acl',q:'Was erlaubt ForceChangePassword?',a:'Das Extended Right <b>User-Force-Change-Password</b>: Passwort eines Nutzers ändern, <b>ohne dessen aktuelles Passwort</b> zu kennen. Laut (Opfer merkt es) — gut für Service-Accounts oder Owned-Ziele.'},
+{id:'a5',cat:'acl',q:'WriteDACL auf einem Objekt — welche typische Kette?',a:'DACL editieren und sich z. B. auf dem <b>Domain-Objekt DCSync-Rechte</b> geben → DCSync. Auf User/Computer: sich <b>Full Control (GenericAll)</b> geben und die GenericAll-Pfade fahren.'},
+{id:'a6',cat:'acl',q:'WriteOwner — wie nutzt man das aus?',a:'Ownership übernehmen (SeTakeOwnership / impacket-owneredit), dann als Owner die <b>DACL beliebig ändern</b> (Full Control) und wie bei WriteDACL weitermachen.'},
+{id:'a7',cat:'acl',q:'Shadow Credentials — Prinzip und Ablauf?',a:'Am Objekt den <code>msDS-KeyCredentialLink</code> setzen (eigenes Key-Paar hinterlegen), dann per <b>PKINIT</b> ein TGT + NT-Hash erhalten (certipy). Leise, kein Passwort-Reset, keine Gruppenänderung — Cleanup per clear.'},
+{id:'a8',cat:'acl',q:'Targeted Kerberoast — Prinzip und wann?',a:'Schreibrecht auf einen User: ihm einen <b>SPN verpassen</b>, ein TGS anfordern, cracken, SPN wieder entfernen. Die Alternative, wenn kein Passwort-Reset gewünscht/erlaubt ist.'},
+{id:'a9',cat:'acl',q:'AdminSDHolder / SDProp — was ist der Trick?',a:'Rechte am <b>AdminSDHolder-Container</b> werden vom SDProp-Job (ca. alle 60 Min) auf alle <b>geschützten Objekte</b> (DA/EA etc.) kopiert. WriteDACL dort = Persistenz auf allen protected objects.'},
+{id:'a10',cat:'acl',q:'BloodHound-Kante „AddKeyCredentialLink" — was heißt das?',a:'Man hat GenericWrite/GenericAll auf ein User-/Computer-Objekt → <b>Shadow Credentials</b> sind möglich, also Übernahme über PKINIT ohne Passwort.'},
+{id:'a11',cat:'acl',q:'Was bedeutet „Owned" in BloodHound und warum markiert man es?',a:'Owned = Konten/Hosts, die du <b>kontrollierst</b>. Pfadabfragen starten dort. „Tier Zero" markiert die Crown Jewels, die du suchst — nicht verwechseln.'},
+{id:'a12',cat:'acl',q:'In welcher Reihenfolge gehst du ACL-Rechte an?',a:'1) Rechte lesen (dacledit/bloodyAD get writable), 2) Objekttyp + Ziel bestimmen, 3) <b>leisesten</b> Weg wählen (Shadow Creds > Kerberoast > Reset), 4) Cleanup-Plan festlegen.'},
+{id:'a13',cat:'acl',q:'BadSuccessor (dMSA) in einem Satz?',a:'Ab Server 2025: Ein <b>delegated MSA erstellen</b> und per <code>msDS-ManagedAccountPrecededByLink</code> an ein privilegiertes Konto linken → das dMSA erbt dessen Rechte (Managed Password lesbar). Vorher mit badsuccessor_check prüfen.'},
+{id:'a14',cat:'acl',q:'Was bringt die ACE „WriteMembers" auf einer Gruppe?',a:'Man darf <b>Mitglieder der Gruppe hinzufügen/entfernen</b> (auch sich selbst), ohne GenericAll zu besitzen — oft der unauffälligste Weg in eine privilegierte Gruppe.'},
+/* ---- Credentials ---- */
+{id:'c1',cat:'creds',q:'Welche Rechte braucht DCSync?',a:'Die <b>Replikationsrechte auf der Domain</b> (Replicating Directory Changes / All): konkret GetChanges + GetChangesAll (oft als eine Kante „DCSync"). Standard: DA/EA — oder explizit delegiert an ein Service-Konto.'},
+{id:'c2',cat:'creds',q:'DCSync vs. ntds.dit kopieren — Vor- und Nachteile?',a:'<b>DCSync</b>: live über das Replikationsprotokoll, nur Rechte + Netzwerk nötig, gezielt (z. B. krbtgt), hinterlässt aber Replikationsspuren. <b>ntds.dit</b>: Offline-Kopie (VSS/SeBackup), laut, braucht lokalen Admin/Backup-Recht auf dem DC, dafür vollständig.'},
+{id:'c3',cat:'creds',q:'Was liegt in SAM, LSA und LSASS?',a:'<b>SAM</b>: lokale Konten (NTLM-Hashes). <b>LSA</b>: Service-/Autologon-Secrets und gecachte Domänen-Credentials (DCC2). <b>LSASS</b>: aktive Tickets und Klartext-Creds (z. B. WDigest) und DPAPI-Masterkeys.'},
+{id:'c4',cat:'creds',q:'Was kannst du mit secretsdump alles ziehen?',a:'SAM/LSA lokal, <b>NTDS</b> (alle Domänen-Hashes), Kerberos-Keys (AES), <b>Trust-Keys</b>, und per <code>-just-dc-user</code> gezielt einzelne Konten (z. B. krbtgt).'},
+{id:'c5',cat:'creds',q:'Pass-the-Hash — was ist das und welche Voraussetzung gilt?',a:'Authentifizierung mit dem <b>NT-Hash</b> statt des Passworts, ohne zu cracken. Voraussetzung: der Dienst akzeptiert <b>NTLM</b> — Kerberos-only geht nicht, dafür gibt es Overpass-the-Hash.'},
+{id:'c6',cat:'creds',q:'Warum funktioniert Pass-the-Hash technisch überhaupt?',a:'Die NTLM-Antwort ist eine Berechnung über den Hash — der Klartext ist <b>nirgends nötig</b>. Kerberos braucht dagegen den Schlüssel als Ticket-Signatur, weshalb ein Hash dort nur via AS-REQ (OPTH) nutzbar ist.'},
+{id:'c7',cat:'creds',q:'Kerberos-Hash-Cracking: RC4 vs. AES?',a:'<b>RC4</b> (etype 23) ist schnell und GPU-freundlich. <b>AES</b> ist um Größenordnungen teurer. Moderne Domains erzwingen AES — dann lieber Tickets relayen/missbrauchen als cracken.'},
+{id:'c8',cat:'creds',q:'DPAPI — wofür und wie lootet man?',a:'Windows-verschlüsselte Secrets (Credential Manager, Browser, RDP). Masterkeys + Blobs dumpen (<code>nxc --dpapi</code>, SharpDPAPI) und mit Benutzer-Passwort oder -Hash entschlüsseln.'},
+{id:'c9',cat:'creds',q:'gMSA — was ist angreifbar?',a:'Gruppenverwaltete Service Accounts: Berechtigte Principals dürfen <code>msDS-ManagedPassword</code> lesen. Daraus wird der <b>NT-Hash</b> des Kontos rekonstruiert → Pass-the-Hash ohne je das Passwort zu kennen.'},
+{id:'c10',cat:'creds',q:'LAPS — Zweck und Angriff?',a:'Pro Host rotierte <b>lokale Admin-Passwörter</b>, in AD gespeichert. Wer Leserecht auf die LAPS-Attribute hat (User/Gruppe), zieht die Passwörter und wird lokal Admin auf allen betroffenen Hosts.'},
+{id:'c11',cat:'creds',q:'Wann nutzt du Passwort, wann Hash, wann Ticket?',a:'<b>Passwort</b>, wenn du es hast (voller Funktionsumfang). <b>Hash</b>, wenn kein Crack möglich/erwünscht und NTLM erlaubt. <b>Ticket</b>, wenn ein TGT/ccache vorliegt — leise und ohne Klartext auf der Leitung.'},
+{id:'c12',cat:'creds',q:'„RC4-Fallback" bei Golden/Silver Tickets — was bedeutet das?',a:'Ohne AES-Key nutzt man den <b>NT-Hash → RC4-verschlüsselte</b> Tickets. Funktioniert nur dort, wo RC4 nicht deaktiviert ist — AES ist immer der bevorzugte Weg.'},
+/* ---- ADCS ---- */
+{id:'d1',cat:'adcs',q:'ESC1 in einem Satz?',a:'Ein Template erlaubt <b>einen vom Antragsteller gewählten SAN</b> plus Client/Server-Auth → man beantragt ein Zertifikat mit fremder UPN (z. B. Administrator) und authentifiziert sich als diese Person.'},
+{id:'d2',cat:'adcs',q:'ESC2 und ESC3 — Prinzip?',a:'<b>ESC2</b>: Any-Purpose-EKU → Zertifikat kann für beliebige Dienste genutzt werden. <b>ESC3</b>: Certificate Request Agent → damit Zertifikate <b>im Namen anderer</b> beantragen (On-Behalf-Of).'},
+{id:'d3',cat:'adcs',q:'ESC4 — Prinzip?',a:'Man hat <b>Schreibrecht auf das Template-Objekt</b>: Template zu einem ESC1-Template umbauen (Flags/EKU), Zertifikat abholen, Template zurücksetzen. Ein Template-Edit weitergedacht.'},
+{id:'d4',cat:'adcs',q:'ESC6 — Prinzip?',a:'Die CA hat <b>EDITF_ATTRIBUTESUBJECTALTNAME2</b> gesetzt: Man kann den SAN über Request-Attribute in <b>jedes enrollbare Template</b> injizieren — auch wenn das Template selbst keinen SAN erlaubt.'},
+{id:'d5',cat:'adcs',q:'ESC7 — Prinzip?',a:'Man hat <b>Manage CA / Manage Certificates</b>: sich selbst zum Officer machen, Requests approven, oder Templates freischalten (z. B. SubCA) → Zertifikate für beliebige Identitäten.'},
+{id:'d6',cat:'adcs',q:'ESC8 — Prinzip?',a:'<b>NTLM-Relay auf die HTTP-Web-Enrollment der CA</b>. Man koerct ein Ziel (z. B. DC) und holt sich im relayten Namen ein Zertifikat (Template DomainController) → PKINIT → NT-Hash → DCSync.'},
+{id:'d7',cat:'adcs',q:'ESC9 / ESC16 — Prinzip?',a:'Das Zertifikat bekommt <b>keine SID-Security-Extension</b> (Template-Flag, bzw. CA global bei ESC16). Bei PKINIT gewinnt dann der <b>UPN im SAN</b> — man tauscht an einem schreibbaren Konto den UPN auf einen DA und enrollt.'},
+{id:'d8',cat:'adcs',q:'ESC10 — Prinzip?',a:'<b>Schwaches Schannel-Zertifikatsmapping</b>: Statt der SID wird der UPN für die Zuordnung benutzt (CertificateMappingMethods 0x4) → SAN-UPN-Fälschung bei LDAPS-Authentifizierung.'},
+{id:'d9',cat:'adcs',q:'ESC11 — Prinzip?',a:'Die <b>CA-RPC-Schnittstelle (ICPR)</b> erzwingt keine Verschlüsselung (IF_ENFORCEENCRYPTICERTREQUEST fehlt) → coerced NTLM kann auf den RPC-Endpunkt relayt und in ein Zertifikat umgetauscht werden.'},
+{id:'d10',cat:'adcs',q:'ESC13 — Prinzip?',a:'Eine <b>Issuance Policy-OID</b> am Template ist mit einer AD-Gruppe verknüpft. Enrollt man, nimmt der KDC die <b>Gruppen-SID ins TGT</b> auf — Gruppenrechte ohne Gruppenmitgliedschaft.'},
+{id:'d11',cat:'adcs',q:'Golden Certificate — was brauchst du, was kannst du?',a:'Den <b>privaten CA-Schlüssel</b> (Backup mit „Manage CA", z. B. certipy ca -backup). Damit forge man Zertifikate für beliebige Identitäten — <b>Persistenz unabhängig vom krbtgt</b>. Entfernen erfordert CA-Key-Rotation.'},
+{id:'d12',cat:'adcs',q:'Was liefert dir certipy auth nach dem PKINIT?',a:'Ein <b>TGT (ccache)</b> und den <b>NT-Hash</b> des impersonierten Kontos. Mit dem Hash geht es direkt per PtH weiter (z. B. DCSync auf dem DC).'},
+/* ---- Trusts ---- */
+{id:'t1',cat:'trust',q:'Was bedeuten Trust-Richtungen (incoming/outgoing/bidirectional)?',a:'Sie legen fest, <b>wer wem authentifizieren darf</b>: Eine Domäne nutzt Ressourcen der anderen. Für den Angriff zählt, welcher <b>Trust-Key</b> zu welcher Richtung gehört — nicht die pauschale "bidirectional"-Angabe.'},
+{id:'t2',cat:'trust',q:'SID-Filtering — wann stört es und wie erkennst du es?',a:'Bei <b>Forest-/External-Trusts</b> strippt der Zielwald SIDs mit RID 500–1000. Extra-SIDs wie Enterprise Admins (RID 519) funktionieren dann nicht; nur <b>RIDs > 1000</b> überleben. Trust-Attribute (0x20 = Within Forest) verraten es.'},
+{id:'t3',cat:'trust',q:'Trust-Accounts — wie heißen sie und woher kommt der Key?',a:'Das Konto in <b>deiner</b> Domäne ist nach dem <b>Partner</b> benannt (<code>PARTNERNETBIOS$</code>). Der Schlüssel steckt im TrustedDomain-Objekt und ist pro Richtung gesalzen.'},
+{id:'t4',cat:'trust',q:'Trust-Key: welchen Wert nimmst du wofür?',a:'Für Tickets <b>in Richtung Partner</b> den <b>(Incoming) AES256</b> — der ist stabil und RC4-härtungsfest. Der RC4-Key rotiert alle 30 Tage und ist nur der Fallback; die Dump-Richtungen unterscheiden sich.'},
+{id:'t5',cat:'trust',q:'Wie funktioniert der Inter-Realm-Hop technisch?',a:'Man signiert ein Ticket mit SPN <code>krbtgt/PARTNER</code> und den Extra-SIDs (z. B. Enterprise Admins) mit dem Trust-Key. Der Partner-KDC wertet es als <b>Inter-Realm-TGT</b> — die PAC-SIDs bleiben, sofern SID-Filtering es zulässt.'},
+{id:'t6',cat:'trust',q:'raiseChild — was macht der Angriff?',a:'Kompromittiertes Child: krbtgt des Childs dumpen → <b>Trust-Key zum Parent</b> extrahieren → EA-Extra-SID ins Ticket → Parent wird mitkompromittiert. Automatisiert: nxc -M raisechild / impacket-raiseChild.'},
+{id:'t7',cat:'trust',q:'Was ist die Rolle des eigenen Domain-SID bei Trust-Angriffen?',a:'Er wird als <b>Basis-SID</b> ins Ticket gestellt; die extra-SIDs des Zielwaldes hängt man zusätzlich an. Beide SIDs (eigener + Partner) müssen exakt stimmen, sonst wirft der KDC das Ticket ab.'},
+{id:'t8',cat:'trust',q:'Foreign Groups / ForeignSecurityPrincipals — was ist das?',a:'Im eigenen AD liegen SIDs von Principals des <b>Partnerwalds</b> (ForeignSecurityPrincipals), die in lokalen Gruppen Mitglied sind. Sie geben Rechte, auch wenn das eigentliche Konto nicht im eigenen AD existiert.'},
+{id:'t9',cat:'trust',q:'Cross-Domain-Kerberoast — wie gehst du vor?',a:'Mit Credentials, die der Partner akzeptiert, gegen den <b>Partner-DC</b> SPNs anfordern (GetUserSPNs/kerberoast mit den Trust-Creds) und die TGS offline cracken — gleiche Technik, andere Domäne.'},
+{id:'t10',cat:'trust',q:'Welche Trust-Felder sammelst du für den Angriff?',a:'Richtung, <b>Trust-Attribute</b> (Within Forest / Transitive / Quarantined), Partner-SID + NetBIOS (flatName) und Partner-DC-IP/FQDN — daraus entscheidet sich, ob SID-Filtering greift und welcher Key gilt.'},
+{id:'t11',cat:'trust',q:'Intra-Forest (Parent/Child) vs. Forest-Trust — Hauptunterschied für Angreifer?',a:'<b>Intra-Forest</b>: gemeinsamer Schema/Config, SID-History erlaubt, EA-Trick und Trust-Keys klappen meist. <b>Forest-Trust</b>: getrennte Wälder, strengeres SID-Filtering (RID 500–1000 gestrippt).'},
+{id:'t12',cat:'trust',q:'Cross-Forest-Coercion — Kette in Kurzform?',a:'Ein Konto, dem der Partner vertraut, + Relay-/Coercion-Position: Partner-DC zur Authentifizierung zwingen und auf <b>LDAPS/ADCS des Partners</b> relayen (DCSync-Rechte, RBCD, Zertifikat) — oder in einen unconstrained Host der eigenen Domäne.'},
+/* ---- Relay & Coercion ---- */
+{id:'r1',cat:'relay',q:'NTLM-Relay — wichtigste Voraussetzung?',a:'Das Ziel darf NTLM akzeptieren <b>und keine Signatur/Channel-Binding erzwingen</b> (SMB-Signing, LDAP-Signing, EPA). Dann leitet man die Auth weiter — ohne den Hash je zu kennen.'},
+{id:'r2',cat:'relay',q:'Capture vs. Relay — wann entscheidest du dich wofür?',a:'<b>Capture</b> (z. B. Responder), wenn das Ziel signiert oder kein passendes Relay-Ziel erreichbar ist → offline cracken. <b>Relay</b>, wenn das Ziel NTLM ohne Schutz annimmt und direkt Rechte bringt.'},
+{id:'r3',cat:'relay',q:'Coercion — Prinzip und typische Vektoren?',a:'Ein Ziel (oft DC) wird gezwungen, sich an den Angreifer zu authentifizieren: <b>PrinterBug</b> (MS-RPRN), <b>PetitPotam</b> (EFSRPC), DFS, WebDAV. Tools: coercer, nxc -M coerce_plus.'},
+{id:'r4',cat:'relay',q:'Unconstrained Delegation + Coercion — die klassische Kette?',a:'Admin auf einem unconstrained Host → DC <b>dorthin</b> koercen (LISTENER = Host-IP, nicht Kali) → der DC$ cached sein TGT dort → LSASS dumpen → als Maschinenkonto DCSync.'},
+{id:'r5',cat:'relay',q:'ESC8-Kette in einem Satz?',a:'Coerce (z. B. DC) → Relay auf HTTP-Enrollment der CA → <b>DomainController-Zertifikat</b> → PKINIT → NT-Hash des DC-Kontos → DCSync.'},
+{id:'r6',cat:'relay',q:'LDAP-Relay — welche Ziele lohnen?',a:'LDAPS ohne Signing/Channel-Binding: <b>DCSync-Rechte</b> für ein Konto (escalate-user), <b>RBCD</b> via add-computer oder interaktive LDAP-Shell. EPA/CBT brechen den Angriff.'},
+{id:'r7',cat:'relay',q:'mitm6 — wofür nutzt man es?',a:'Wenn LLMNR/NBT-NS abgeschaltet sind: IPv6-DHCP + DNS-Spoofing übernehmen und Clients so auf den Angreifer lenken, der die Auth per ntlmrelayx weiterleitet.'},
+{id:'r8',cat:'relay',q:'Warum ist Relay speziell gegen ADCS so stark?',a:'Zertifikate authentifizieren über die <b>SID im AD</b> (PKINIT). Jedes relayte Konto — auch <b>Maschinenkonten</b>, deren Hashes man nicht cracken kann — wird so zu einem nutzbaren TGT + NT-Hash.'},
+{id:'r9',cat:'relay',q:'SMB-Signing — wie findest du relaybare Hosts?',a:'Mit NetExec per SMB-Enum: <code>--gen-relay-list</code> / Signing-Module sammeln Hosts mit „signing:False". Nur die sind für SMB-Relay brauchbar.'},
+{id:'r10',cat:'relay',q:'Relay vs. Pass-the-Hash — wo liegt der Unterschied?',a:'<b>Relay</b>: Der Auth-Flow wird live durchgeleitet, man hat den Hash nie. <b>PtH</b>: Man besitzt den Hash und authentifiziert sich selbst damit — unabhängig von laufender Auth.'},
+/* ---- Lateral & Privesc ---- */
+{id:'l1',cat:'lat',q:'Warum führt SeImpersonate zu SYSTEM?',a:'Mit SeImpersonate kann man ein <b>vom Ziel selbst erzeugtes Token höherer Integrität</b> übernehmen. Die Potato-Familie (PrintSpoofer/GodPotato) provoziert genau so ein SYSTEM-Token und imitiert es.'},
+{id:'l2',cat:'lat',q:'UAC-Bypass — Prinzip der Auto-Elevate-Zahl?',a:'Bestimmte Windows-Binaries starten sich per Auto-Elevate mit <b>high integrity</b>. Man hinterlegt HKCU-Registry-Keys (z. B. ms-settings/mscfile), triggert das Binary und bekommt eine Elevated-Shell — ohne zweite Anmeldung.'},
+{id:'l3',cat:'lat',q:'Welche lateralen Ausführungswege kennst du (ohne Tool-Flags)?',a:'<b>SMB</b> (Service-Binary), <b>WMI</b>, <b>WinRM</b>, <b>DCOM</b>, <b>Scheduled Tasks</b>, RDP. Wahl nach Stealth, Verfügbarkeit (Ports/Firewall) und dem Kontext (Admin-Rechte nötig).'},
+{id:'l4',cat:'lat',q:'psexec vs. wmiexec — Vor- und Nachteile?',a:'<b>psexec</b> schreibt ein Service-Binary und startet einen Dienst — laut, EDR-freundlich, Artefakte. <b>wmiexec</b> nutzt WMI, ist semi-interaktiv, leiser und braucht keinen Dienst.'},
+{id:'l5',cat:'lat',q:'Kerberos Relay (KrbRelayUp) — Prinzip?',a:'Lokaler Relay-Angriff: Eine selbst ausgelöste Auth wird auf <b>LDAP</b> relayt (RBCD oder Shadow Credentials) und verschafft dem Angreifer SYSTEM-Kontext — funktioniert auch ohne LDAP-Signing, wenn der Relais-Punkt lokal ist.'},
+{id:'l6',cat:'lat',q:'Was brauchst du für RDP-Pass-the-Hash?',a:'<b>Restricted Admin Mode</b> am Ziel (DisableRestrictedAdmin=0) plus die Option /restricted-admin im Client. Ohne das schlägt PtH über NLA fehl.'},
+{id:'l7',cat:'lat',q:'Warum ist WinRM ein beliebter lateraler Weg?',a:'5985/5986 sind für Admins oft offen, liefern eine <b>interaktive Shell</b> und unterstützen Kerberos und PtH — meist unauffälliger als ein Service-Binary.'},
+{id:'l8',cat:'lat',q:'GPO-Missbrauch — die Idee?',a:'Schreibrecht auf ein GPO: <b>geplante Task</b> sofort ausführen lassen (z. B. pygpoabuse) oder GPP-Credentials lesen. Wirkt auf alle verknüpften OUs → schnell, aber laut.'},
+{id:'l9',cat:'lat',q:'ADIDNS — Idee und Wirkung?',a:'AD-integriertes DNS ist beschreibbar: <b>A- oder Wildcard-Records</b> anlegen/überschreiben, um Namen zu übernehmen und Auth (NTLM) an sich zu ziehen oder Clients umzuleiten.'},
+{id:'l10',cat:'lat',q:'SCCM — die wichtigsten Angriffsflächen?',a:'<b>Management Point/PXE</b> (NAA-Credentials in Policies), Client-Push (Relay), und der <b>MSSQL</b> des Site-Servers. Tool: sccmhunter; Ketten laufen meist über Relay oder DB-Rechte.'},
+{id:'l11',cat:'lat',q:'Was ist der schnellste Weg von Local Admin zu Domain Admin?',a:'Nicht blind LSASS dumpen, sondern <b>gezielt auf Domänen-Artefakte</b>: DA-Sessions/LSASS, unconstrained Hosts, ADCS, Delegationen, GPOs, Dienste — BloodHound-Pfade priorisieren.'},
+{id:'l12',cat:'lat',q:'SeBackup / SeRestore — warum mächtig?',a:'Damit liest man Dateien <b>unabhängig von ACLs</b> (Backup-Semantik) — z. B. SAM/SYSTEM oder ntds.dit kopieren und offline die Hashes ziehen, ohne DCSync-Rechte.'},
+/* ---- Recon & Prinzipien ---- */
+{id:'p1',cat:'recon',q:'Was sind deine ersten Schritte nach einem Foothold-Account?',a:'1) Credentials <b>verifizieren</b> (nxc über SMB/LDAP/WinRM), 2) <b>BloodHound</b> sammeln, 3) Shares/Sessions/User enumerieren, 4) Roastables + <b>get writable</b>, 5) ADCS prüfen — dann Pfad wählen.'},
+{id:'p2',cat:'recon',q:'Password-Spraying — die eine wichtigste Regel?',a:'Vorher die <b>Lockout-Policy</b> kennen (Schwelle + Beobachtungsfenster) und pro Fenster deutlich darunter bleiben; ein Passwort pro Runde über viele Accounts statt viele Passwörter pro Account.'},
+{id:'p3',cat:'recon',q:'Warum verrät Kerbrute gültige User ohne Lockout?',a:'Es nutzt die <b>Pre-Auth-Fehlercodes</b> des KDC: unbekannter User = KDC_ERR_C_PRINCIPAL_UNKNOWN, existierender ohne gültige Pre-Auth = PREAUTH_FAILED. Kein Login-Versuch → kein Lockout-Zähler.'},
+{id:'p4',cat:'recon',q:'Wofür nutzt du BloodHound in einem Satz?',a:'Es baut einen <b>Angriffsgraphen</b> aus AD-Daten und zeigt die kürzesten Pfade von deinen Owned-Nodes zu Tier Zero — Rechte, die man sonst übersieht.'},
+{id:'p5',cat:'recon',q:'Was markierst du in BloodHound und warum?',a:'<b>Owned</b> = deine Footholds als Startpunkte der Pfadsuche; <b>Tier Zero</b> = die Crown Jewels (DA, DC, CA …), die du erreichen willst. Ohne Markierung sind Pfadabfragen nutzlos.'},
+{id:'p6',cat:'recon',q:'Null-Session/Guest — wann noch relevant?',a:'Bei älteren/fehlkonfigurierten Domains: anonyme LDAP/SMB-Enum liefert Userlisten (RID-Cycling), Shares und Policy-Infos — ideal als Basis fürs Spraying.'},
+{id:'p7',cat:'recon',q:'Warum lohnen sich Share-Spider?',a:'Configs und Skripte enthalten oft <b>Klartext-Credentials</b>: unattend.xml, web.config, deploy.ps1, Backup-Dateien. Spidern und nach pass/pwd/secret/connectionString greppen.'},
+{id:'p8',cat:'recon',q:'LDAP-Enum — welche „Schätze" suchst du?',a:'Users/Groups/Computers, <b>GPP-Cpasswords</b>, Credentials in descriptions, Kandidaten für BadSuccessor/ADCS, Delegationseinstellungen und fremde SIDs (Foreign Security Principals).'},
+{id:'p9',cat:'recon',q:'Nach welchem Prinzip wählst du den nächsten Angriffsschritt?',a:'Erst das <b>billigste/leiseste</b>, was der Fund hergibt (Cred-Reuse, ACL, Roast, GPP), dann laute Ketten (Relay, Coercion, Reset) — immer mit Cleanup-Plan und Blick auf Logs.'},
+{id:'p10',cat:'recon',q:'Session-Enumeration — warum ist sie so wertvoll?',a:'Sie zeigt, <b>wo DA/EA eingeloggt</b> sind (HasSession/--loggedon-users) → dort lohnt der LSASS-Dump bzw. die laterale Bewegung. Ohne Admin-Rechte sieht man nur die eigene Session.'},
+/* ---- MSSQL & Apps ---- */
+{id:'m1',cat:'mssql',q:'MSSQL-Einstieg mit Windows-Credentials — wie und womit?',a:'impacket-mssqlclient mit Windows-Auth (Passwort, Hash oder ccache). Reine SQL-Logins (z. B. sa) loggen sich ohne Windows-Auth-Flag ein.'},
+{id:'m2',cat:'mssql',q:'xp_cmdshell — Voraussetzung und Alternativen, wenn deaktiviert?',a:'Braucht sysadmin + freigeschaltete advanced options. Deaktiviert: <b>OLE Automation</b>, <b>CLR-Integration</b> oder Agent-Jobs als Ersatz für OS-Kommandos.'},
+{id:'m3',cat:'mssql',q:'Impersonation in MSSQL — Prinzip?',a:'Mit <code>EXECUTE AS LOGIN/USER</code> nimmt man die Rechte eines anderen Logins an — wenn der aktuelle Login <b>IMPERSONATE</b> auf das Ziel hat (oft Richtung sa).'},
+{id:'m4',cat:'mssql',q:'Linked Server — Prinzip und Eskalation?',a:'Über <code>EXEC ... AT [linked]</code> laufen Abfragen auf einem verlinkten Server. Mit passenden Rechten (oder Impersonation) führt das zu <b>RCE auf dem entfernten Host</b>.'},
+{id:'m5',cat:'mssql',q:'MSSQL-Hash-Theft — wie funktioniert der Trick?',a:'Man lässt den SQL-Server-Dienst eine <b>UNC-Verbindung</b> aufbauen (z. B. per xp_dirtree) → er authentifiziert sich per NetNTLM beim Angreifer → Hash cracken oder relayen (Service-Konto!).'},
+{id:'m6',cat:'mssql',q:'MSSQL → AD — der typische Verlauf?',a:'SQL-Zugriff → OS-Kommando/Impersonation → <b>Service-Account-Hash</b> (Kerberoast/Crack) → oft lokal Admin woanders → weiter bis DA. MSSQL ist meist der Sprungbrett-Dienst.'}
+];
+
+/* ================= SRS (SM-2 lite) ================= */
+const LS = 'hkm.flash.v1';
+const MIN = 60000, DAY = 86400000;
+const DEFAULT_ST = { cards:{}, newPerDay:10, newDate:'', newToday:0, streak:{last:'', count:0} };
+let ST = loadST();
+ST.cards = ST.cards || {}; ST.streak = ST.streak || {last:'', count:0};
+let catFilter = 'all', dueOnly = false;
+let queue = [], qIdx = 0, revealed = false, extraNew = 0, sessionRated = 0;
+
+function loadST(){
+  try { const raw = localStorage.getItem(LS); if(raw) return Object.assign({}, DEFAULT_ST, JSON.parse(raw)); } catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULT_ST));
+}
+function saveST(){ try { localStorage.setItem(LS, JSON.stringify(ST)); } catch(e){} }
+function dayStr(t){ const d = new Date(t == null ? Date.now() : t); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function rollDay(){ const t = dayStr(); if(ST.newDate !== t){ ST.newDate = t; ST.newToday = 0; saveST(); } }
+
+function nextState(cur, r){
+  const st = Object.assign({step:0, interval:0, ease:2.5, due:0, reps:0, lapses:0, seen:0}, cur || {});
+  const now = Date.now();
+  const learning = st.step !== null && st.step !== undefined;
+  if(learning){
+    if(r === 1){ st.step = 0; st.due = now + MIN; }
+    else if(r === 2){ st.due = now + (st.step === 0 ? MIN : 10*MIN); }
+    else if(r === 3){
+      if(st.step === 0){ st.step = 1; st.due = now + 10*MIN; }
+      else { st.step = null; st.interval = 1; st.due = now + DAY; }
+    }
+    else { st.step = null; st.interval = 4; st.ease = Math.min(3.0, st.ease + 0.1); st.due = now + 4*DAY; }
+  } else {
+    if(r === 1){ st.lapses++; st.ease = Math.max(1.3, st.ease - 0.2); st.interval = 1; st.step = 1; st.due = now + 10*MIN; }
+    else if(r === 2){ st.interval = Math.min(365, Math.max(1, st.interval * 1.2)); st.ease = Math.max(1.3, st.ease - 0.05); st.due = now + st.interval*DAY; }
+    else if(r === 3){ st.interval = Math.min(365, Math.max(1, st.interval * st.ease)); st.due = now + st.interval*DAY; }
+    else { st.interval = Math.min(365, Math.max(2, st.interval * st.ease * 1.3)); st.ease = Math.min(3.0, st.ease + 0.1); st.due = now + st.interval*DAY; }
+  }
+  st.reps++; st.seen = now;
+  return st;
+}
+function fmtDue(due){
+  const d = due - Date.now();
+  if(d <= 0) return 'jetzt';
+  if(d < 3600000) return Math.max(1, Math.round(d/MIN)) + ' min';
+  if(d < DAY) return Math.round(d/3600000) + ' h';
+  return Math.round(d/DAY) + ' d';
+}
+function preview(card, r){
+  const st = ST.cards[card.id] || null;
+  const ns = nextState(st, r);
+  if(ns.step !== null && ns.step !== undefined) return fmtDue(ns.due);
+  return fmtDue(ns.due) + ' · ƒ' + ns.interval.toFixed(ns.interval < 10 ? 1 : 0);
+}
+
+/* ================= Queue & Session ================= */
+function buildQueue(){
+  rollDay();
+  const now = Date.now();
+  const all = DECK.filter(c => catFilter === 'all' || c.cat === catFilter);
+  const due = [], fresh = [];
+  all.forEach(c => {
+    const st = ST.cards[c.id];
+    if(!st) fresh.push(c);
+    else if(st.due <= now) due.push(c);
+  });
+  due.sort((a,b) => ST.cards[a.id].due - ST.cards[b.id].due);
+  const allowance = Math.max(0, ST.newPerDay - ST.newToday) + extraNew;
+  queue = dueOnly ? due : due.concat(fresh.slice(0, allowance));
+  qIdx = 0; revealed = false; sessionRated = 0;
+  render();
+}
+function dueCount(){
+  const now = Date.now();
+  return DECK.filter(c => { const st = ST.cards[c.id]; return st && st.due <= now; }).length;
+}
+function nextDue(){
+  let min = null;
+  DECK.forEach(c => { const st = ST.cards[c.id]; if(st && (min === null || st.due < min)) min = st.due; });
+  return min;
+}
+function bumpStreak(){
+  const today = dayStr();
+  const s = ST.streak;
+  if(s.last === today) return;
+  s.count = (s.last === dayStr(Date.now() - DAY)) ? s.count + 1 : 1;
+  s.last = today;
+}
+function rate(r){
+  if(!queue.length || qIdx >= queue.length) return;
+  const card = queue[qIdx];
+  const fresh = !ST.cards[card.id];
+  if(fresh){ rollDay(); ST.newToday++; }
+  const ns = nextState(ST.cards[card.id], r);
+  ST.cards[card.id] = ns;
+  /* learning/relearn step due within 15 min → come back later in this session */
+  if(ns.due - Date.now() < 15*MIN && queue.length < 500) queue.push(card);
+  bumpStreak(); saveST();
+  qIdx++; sessionRated++; revealed = false;
+  render();
+}
+
+/* ================= Render ================= */
+const $ = s => document.querySelector(s);
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function render(){
+  rollDay();
+  $('#stDue').textContent = dueCount();
+  $('#stNew').textContent = ST.newToday + '/' + ST.newPerDay;
+  $('#stLearned').textContent = Object.keys(ST.cards).filter(k => ST.cards[k].reps > 0).length + '/' + DECK.length;
+  $('#stStreak').textContent = ST.streak.count || 0;
+  $('#footCount').textContent = DECK.length + ' Karten · ' + CATS.length + ' Kategorien';
+  $('#catChips').querySelectorAll('.chip').forEach(ch => ch.classList.toggle('on', ch.dataset.cat === catFilter));
+  $('#dueOnly').classList.toggle('on', dueOnly);
+  $('#dueOnly').style.borderColor = dueOnly ? 'var(--accent)' : '';
+  $('#dueOnly').style.color = dueOnly ? 'var(--accent)' : '';
+  $('#newPerDay').value = String(ST.newPerDay);
+  const done = $('#done'), card = $('#card'), rating = $('#rating');
+  if(!queue.length || qIdx >= queue.length){
+    card.style.display = 'none'; rating.classList.add('hidden');
+    done.classList.add('show');
+    const nd = nextDue();
+    $('#doneTitle').textContent = sessionRated > 0 ? 'Session fertig 🎉' : 'Gerade nichts fällig';
+    let txt = sessionRated > 0 ? sessionRated + ' Karte' + (sessionRated === 1 ? '' : 'n') + ' bewertet · ' : '';
+    txt += dueCount() + ' fällig · neu heute ' + ST.newToday + '/' + ST.newPerDay;
+    if(nd && dueCount() === 0) txt += ' · nächste Karte in ' + fmtDue(nd);
+    txt += '<br><span style="font-size:12px">Streak: ' + (ST.streak.count||0) + ' Tag' + ((ST.streak.count||0)===1?'':'e') + '</span>';
+    $('#doneText').innerHTML = txt;
+    $('#extraNewBtn').style.display = (dueCount() === 0) ? '' : 'none';
+    $('#sessFill').style.width = '100%';
+    return;
+  }
+  card.style.display = ''; rating.classList.remove('hidden');
+  done.classList.remove('show');
+  const c = queue[qIdx];
+  $('#cardCat').textContent = (CATS.find(x => x[0] === c.cat) || [c.cat, c.cat])[1];
+  $('#cardQ').innerHTML = c.q;
+  $('#cardA').innerHTML = c.a;
+  card.classList.toggle('revealed', revealed);
+  rating.querySelectorAll('button').forEach(b => {
+    const r = parseInt(b.dataset.r, 10);
+    b.querySelector('small').textContent = revealed ? preview(c, r) : '';
+    b.style.visibility = revealed ? 'visible' : 'hidden';
+  });
+  const total = queue.length;
+  $('#sessFill').style.width = total ? Math.round((qIdx / total) * 100) + '%' : '0';
+  $('#swipeHint').textContent = revealed && ('ontouchstart' in window) ? 'swipe ← Nochmal · Gut →' : '';
+}
+function flip(){ if(!queue.length || qIdx >= queue.length) return; revealed = true; render(); }
+
+/* ================= Events ================= */
+function buildChips(){
+  const box = $('#catChips'); box.innerHTML = '';
+  [['all','alle'], ...CATS].forEach(([id, name]) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (id === catFilter ? ' on' : ''); b.dataset.cat = id;
+    const n = id === 'all' ? DECK.length : DECK.filter(c => c.cat === id).length;
+    b.innerHTML = esc(name) + '<small>' + n + '</small>';
+    b.addEventListener('click', () => { catFilter = id; buildQueue(); });
+    box.appendChild(b);
+  });
+}
+$('#card').addEventListener('click', flip);
+$('#rating').addEventListener('click', e => {
+  const b = e.target.closest('button[data-r]');
+  if(b && revealed) rate(parseInt(b.dataset.r, 10));
+});
+$('#dueOnly').addEventListener('click', () => { dueOnly = !dueOnly; buildQueue(); });
+$('#newPerDay').addEventListener('change', e => { ST.newPerDay = parseInt(e.target.value, 10) || 10; saveST(); buildQueue(); });
+$('#extraNewBtn').addEventListener('click', () => { extraNew += 10; buildQueue(); toast('+10 neue Karten für diese Session'); });
+document.addEventListener('keydown', e => {
+  if(e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
+  if(e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); if(revealed) rate(3); else flip(); }
+  else if(revealed && ['1','2','3','4'].indexOf(e.key) >= 0) rate(parseInt(e.key, 10));
+});
+/* swipe: links = Nochmal, rechts = Gut (nur wenn Antwort sichtbar) */
+let tX = null, tY = null;
+$('#card').addEventListener('touchstart', e => { const t = e.changedTouches[0]; tX = t.clientX; tY = t.clientY; }, {passive:true});
+$('#card').addEventListener('touchend', e => {
+  if(tX == null || !revealed) return;
+  const t = e.changedTouches[0], dx = t.clientX - tX, dy = t.clientY - tY;
+  tX = null;
+  if(Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx)) return;
+  rate(dx < 0 ? 1 : 3);
+}, {passive:true});
+/* export / import / reset */
+$('#exportBtn').addEventListener('click', () => {
+  const data = { v:1, app:'hackerman-flashcards', exportedAt:new Date().toISOString(), newPerDay:ST.newPerDay, newToday:ST.newToday, newDate:ST.newDate, streak:ST.streak, cards:ST.cards };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'hackerman-flashcards-progress.json';
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('Fortschritt exportiert');
+});
+$('#importBtn').addEventListener('click', () => $('#importFile').click());
+$('#importFile').addEventListener('change', e => {
+  const f = e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const d = JSON.parse(rd.result);
+      if(!d || !d.cards) throw new Error('kein gültiger Fortschritt');
+      if(!confirm('Lernfortschritt aus "' + f.name + '" laden? Der aktuelle Fortschritt wird ersetzt.')) return;
+      ST.cards = d.cards; ST.streak = d.streak || {last:'',count:0};
+      if(d.newPerDay) ST.newPerDay = d.newPerDay;
+      ST.newToday = d.newToday || 0; ST.newDate = d.newDate || '';
+      saveST(); buildQueue(); toast('Fortschritt geladen');
+    } catch(err){ toast('Import fehlgeschlagen: ' + err.message); }
+  };
+  rd.readAsText(f);
+  e.target.value = '';
+});
+$('#resetBtn').addEventListener('click', () => {
+  if(!confirm('Gesamten Lernfortschritt zurücksetzen?')) return;
+  if(!confirm('Wirklich löschen? Das kann nicht rückgängig gemacht werden.')) return;
+  ST.cards = {}; ST.streak = {last:'',count:0}; ST.newToday = 0; ST.newDate = '';
+  saveST(); buildQueue(); toast('Fortschritt zurückgesetzt');
+});
+let toastT;
+function toast(msg){
+  const el = $('#toast'); el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 1600);
+}
+
+/* ================= Init ================= */
+buildChips();
+buildQueue();
+</script>
+</body>
+</html>

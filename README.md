@@ -1,4 +1,4 @@
-# Hackerman v1.22.0
+# Hackerman v2.0.0
 
 > Single-file, offline Active Directory attack helper for Kali — fill in the context, get the next-step commands.
 
@@ -74,6 +74,20 @@ non-obvious tools and attacks.
   chip off to expand everything inline. Wizard steps collapse as well: only the first unfinished
   step is open, checking a step auto-advances to the next, and `expand all`/`collapse all` sit in
   the flow header.
+- **Plausibility checks** — context fields warn about implausible values without ever rewriting
+  them: NT hash length, secretsdump `LM:NT` line pasted whole, AES128 vs AES256, SID/RID format
+  (incl. SID-filtering range), IPv4/FQDN/NetBIOS shape, `$` on `computer_name`, spaces in paths,
+  SPN/DN/proxy format, ports. ⚠ badge + red border on the field, tooltip with the reason,
+  `⚠ N` counter in the context summary; `ready` state is deliberately never blocked.
+- **Flashcards (`flashcards.html`)** — separate page, mobile-first, offline: 106 cards on AD attack
+  **strategies, principles and procedures** (no CLI-flag trivia; basics like `klist` included),
+  9 categories, SM-2-lite spaced repetition (Again/Hard/Good/Easy with interval previews, learning
+  steps 1 min → 10 min → 1 d, session re-queue), streak + daily new-card limit, category filter,
+  progress export/import, `localStorage` `hkm.flash.v1`. Linked from the header (`flashcards`).
+- **Conditional templates** — recipe commands support `{{#if var}}…{{/if}}` and `{{#if !var}}…{{/if}}`
+  blocks (inactive blocks vanish entirely — no missing-value placeholders). Used by the Kerberos
+  setup card: krb5.conf and the hosts command render the second/trust realm automatically as soon
+  as `{{trust_domain}}` / `{{trust_dc_ip}}` are set.
 - **zsh completion export** — the header button generates `_hackerman` from the embedded recipes
   (flags, subcommands, nxc `-M` modules, hashcat modes, xfreerdp options); see below.
 - **`proxychains` toggle** — prefixes network commands, local tools (Responder, hashcat, SMB
@@ -96,6 +110,7 @@ non-obvious tools and attacks.
 
 ```sh
 xdg-open index.html        # or just double-click the file
+xdg-open flashcards.html   # spaced-repetition trainer (mobile-friendly, standalone)
 ```
 
 1. Fill the **Context** bar, or press **example** for the argon.htb demo values.
@@ -134,6 +149,8 @@ krbtgt endgame.
 
 - Recipes are data: `R({id, cat, title, desc, cmds:[[template, label, flags]], note})`.
   Templates use `{{variable}}` placeholders; flags are `n` (no proxychains) and `s` (sudo).
+  `{{#if var}}…{{/if}}` (and `{{#if !var}}…{{/if}}`) blocks render conditionally — used for the
+  second-domain Kerberos config; `validateField()` in the same file powers the context warnings.
 - Central maps keep maintenance cheap: `PRI_TIERS`/`FLOW_PRI` (applicability), `HELP_TOOL` and
   `HELP_ATTACK` (hover help). New recipes go before the `/* @@RECIPES@@ */` marker.
 - Clicking a `‹var?›` placeholder opens `#missPop`; derived variables redirect to their source
@@ -243,6 +260,7 @@ and [thehacker.recipes](https://www.thehacker.recipes).
 | File | Purpose |
 |---|---|
 | `index.html` | the tool (single file, open in any browser) |
+| `flashcards.html` | spaced-repetition flashcards (standalone, mobile-friendly, same dark theme) |
 | `completions/_hackerman` | generated zsh completions |
 | `tools/gen-zsh-completions.mjs` | headless generator for `completions/_hackerman` |
 | `README.md` | this file |
