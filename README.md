@@ -114,6 +114,8 @@ non-obvious tools and attacks.
 
 ## Quick start
 
+> **Live preview:** https://htmlpreview.github.io/?https://github.com/realalexandergeorgiev/hackerman/blob/main/index.html
+
 ```sh
 xdg-open index.html        # or just double-click the file
 xdg-open flashcards.html   # spaced-repetition trainer (mobile-friendly, standalone)
